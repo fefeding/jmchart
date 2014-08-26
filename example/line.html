@@ -1,0 +1,172 @@
+<!doctype html>
+<html>
+	<head>
+		<meta content="text/html; charset=UTF-8" http-equiv="content-type" />
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<!--[if lt IE 9]><script type="text/javascript" src="../../jmgraph/src/lib/excanvas.js"></script><![endif]-->
+		<script type="text/javascript" src="../src/jmchart.debug.js" id="jmgraph" ></script>
+
+		<style>
+		html,body {
+			margin:0;
+			padding:0;
+			width:100%;
+			height:100%;
+		}
+		#mycanvas canvas, #mycanvas div{
+			background-color:#fff;
+			margin:0 auto;		
+		}
+		/*div.jm-tooltip {
+			background-color: rgba(255,255,255,0.8);
+			padding:4px;
+			border:1px solid #000;
+			box-shadow: 0 0 3px #000;
+			border-radius: 6px;
+		}*/
+		</style>
+		<script type="text/javascript">
+			function load() {
+				var w = (window.innerWidth || window.document.body.clientWidth) * 0.8;
+				var h = Math.min((window.innerHeight || window.document.body.clientHeight) * 0.4,400);			
+				inichart(w,h);
+			}
+			
+
+			function inichart(w,h) {
+					var style = jmUtils.clone(jmChartStyle);
+					style.axis.xLabel.count = 50;
+					//style.axis.xLabel.rotate = 0.2;//设定旋转弧度
+					var chart = new jmChart('mycanvas',w,h,style);
+					chart.legend.position = 'top';
+					chart.legend.visible = true;
+					chart.enableAnimate = false;
+					var xmapping = {field:'x',type:'x',dataType:'date',format:'HH:mm'};
+					var ymapping = {field:'y',type:'y',dataType:'number'};
+					var line1 = chart.createSeries('bar',[xmapping,ymapping]);
+					//line1.curve = true;//画曲线
+					chart.series.add(line1);
+					line1.legendLabel = "测试图例";
+
+					var ymapping2 = {field:'y2',type:'y',dataType:'number',index:2};
+					var line2 = chart.createSeries('line',[xmapping,ymapping2]);
+					line2.curve = true;//画曲线
+					line2.enableAnimate = true;
+
+					//line2.enableAnimate = true;
+					chart.series.add(line2);	
+					line2.legendLabel = "测试图例2afasdf";
+
+
+	
+					var ymapping4 = {field:'y4',type:'y',dataType:'number',index:2};
+					var line4 = chart.createSeries('spline',[xmapping,ymapping4]);
+					line4.legendLabel = "测试图二";
+					chart.series.add(line4);							
+		/*		
+					var ymapping5 = {field:'y5',type:'y',dataType:'number'};
+					var line5 = chart.createSeries('line',[xmapping,ymapping5]);
+					chart.series.add(line5);		
+
+					var ymapping6 = {field:'y6',type:'y',dataType:'number'};
+					var line6 = chart.createSeries('line',[xmapping,ymapping6]);
+					chart.series.add(line6);		
+
+					var ymapping7 = {field:'y7',type:'y',dataType:'number'};
+					var line7 = chart.createSeries('line',[xmapping,ymapping7]);
+					chart.series.add(line7);	
+					line7.enableAnimate = true;	
+*/
+					var datacount = 50;
+					function animate() {
+						if(true) {
+							chart2.source = chart.source = [];
+							for(var i = 0;i<datacount;i++) {
+								var data = {
+									x : i * 1000000 + new Date().getTime(),
+									y :  Math.random() * 200 + 50,
+									y2: Math.random() * 200 + 50,
+									y3: Math.random() * 200 + 50,
+									y4:Math.random() * 200 + 50,
+									y5:Math.random() * 200 + 50,
+									y6:Math.random() * 200 + 50,
+									y7:i,
+									y8:Math.random() * 200 - 50,
+									y9:Math.random() * 200 - 50,
+									y10:Math.random() * 200 - 50
+								};
+								if(i == 3) {
+									data.y = null;
+								}
+								chart.source.push(data);
+							}
+						}
+						else {
+							for(var i=datacount-1;i>0;i--) {
+								var x = chart.source[i].x;
+								chart.source[i] = jmUtils.clone(chart.source[i - 1]);
+								chart.source[i].x = x;
+							}
+							
+								chart.source[0] = {
+									x : chart.source[0].x,
+									y : Math.random() * 200 - 100
+								};
+								
+						}
+						
+						//setTimeout(animate,500);
+						chart.draw();
+						chart2.draw();
+					}
+
+
+					
+
+					var chart2 = new jmChart('mycanvas2',w,Math.max(h,500),style);
+					chart2.legendPosition = 'top';
+					chart2.legend.visible = true;
+					chart2.enableAnimate = false;
+					
+					var ymapping3 = {field:'y6',type:'y',dataType:'number'};
+					var line3 = chart2.createSeries('pie',[ymapping3]);
+					line3.legendLabel = "{DATA.y8}";
+					chart2.series.add(line3);
+
+					
+					animate();
+
+					jmUtils.bindEvent(document.getElementById('btnRedraw'),'click',function() {
+							chart.source = [];
+							//datacount = Math.random() * 10 + 4;
+							for(var i = 0;i<datacount;i++) {
+								var data = {
+									x : Math.random() * 10000 + (new Date).getTime(),
+									y : Math.random() * 200 + 100,
+									y2:Math.random() * 200,
+									y3:Math.random() * 200 + 50,
+									y4:Math.random() * 200 + 50,
+									y5:Math.random() * 200 + 50,
+									y6:Math.random() * 200 - 50,
+									y7:Math.random() * 200 + 50,
+									y8:Math.random() * 200 - 50,
+									y9:Math.random() * 200 - 50,
+									y10:Math.random() * 200 - 50
+								};
+								chart.source.push(data);
+							}
+							chart.draw();
+							chart2.draw();
+						});
+					
+				}
+		</script>
+	</head>
+	<body onload="load()">
+		<div id="mycanvas">
+			</div>	
+		<div id="mycanvas2">
+			</div>	
+			<button id="btnRedraw">重绘</button>		
+	</body>
+</html>
