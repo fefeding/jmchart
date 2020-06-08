@@ -1,5 +1,5 @@
 
-
+import { jmPath, jmList } from '../../node_modules/jmgraph/src/core/jmGraph.js';
 
 /**
  * 图形基类
@@ -12,7 +12,12 @@
  */
 
 //构造线图
-function jmSeries(chart,mappings,style) {		
+export default class jmSeries extends jmPath {	
+	constructor(options) {
+		super(options);
+
+		this.init(options);
+	}
 };
 
 
@@ -24,18 +29,10 @@ function jmSeries(chart,mappings,style) {
  * @param {array} mappings 图形字段映射
  * @param {style} style 样式
  */
-jmSeries.prototype.init = function(chart,mappings,style) {
+jmSeries.prototype.init = function(options) {
 	if(!this.shapes) {
-		this.shapes = new jmUtils.list();
+		this.shapes = new jmList();
 	}
-
-	/**
-	 * 当前轴所在的图表
-	 *
-	 * @property chart
-	 * @type jmChart
-	 */
-	this.chart = chart;
 
 	/**
 	 * 当前图形字段映射
@@ -43,7 +40,7 @@ jmSeries.prototype.init = function(chart,mappings,style) {
 	 * @property mappings
 	 * @type array
 	 */
-	this.mappings = new jmUtils.list(mappings);
+	this.mappings = new jmList(options.mappings || {});
 
 	/**
 	 * 图例名称
@@ -54,20 +51,12 @@ jmSeries.prototype.init = function(chart,mappings,style) {
 	this.legendLabel = '';
 
 	/**
-	 * 轴样式，默认为jmChartStyle中的配置
-	 *
-	 * @property type
-	 * @type object
-	 */
-	this.style = style || jmUtils.clone(jmChartStyle.line);
-
-	/**
 	 * 当前图形数据源，默认使用chart的源，除非需要单独设置此数据源
 	 *
 	 * @property source
 	 * @type array
 	 */
-	this.source = chart.source;
+	this.source = options.source;
 }
 
 /**
@@ -92,7 +81,7 @@ jmSeries.prototype.reset = function() {
 	
 	//创建X轴
 	if(xmapping) {
-		var xaxis = this.chart.createXAxis(xmapping.dataType,xmapping.zeroBase);
+		var xaxis = this.graph.createXAxis(xmapping.dataType,xmapping.zeroBase);
 		//格式化属性
 		if(xmapping.format) {
 			xaxis.format = xmapping.format;
@@ -100,9 +89,9 @@ jmSeries.prototype.reset = function() {
 	}
 	//创建Y轴
 	if(ymapping) {
-		var yaxis = this.chart.createYAxis(ymapping.index,ymapping.dataType,ymapping.zeroBase);
+		var yaxis = this.graph.createYAxis(ymapping.index,ymapping.dataType,ymapping.zeroBase);
 	}
-	var source = this.source || this.chart.source;
+	var source = this.source || this.graph.source;
 	//计算最大值和最小值
 	if(source) {
 		var ycatCount;		
@@ -112,12 +101,12 @@ jmSeries.prototype.reset = function() {
 				var vx = s[xmapping.field];	
 				//如果为日期，则转为毫秒数
 				if(xmapping.dataType == 'date') {
-					vx = jmUtils.parseDate(vx);
+					vx = this.graph.utils.parseDate(vx);
 					vx = vx.getTime();
 				}
 				//如果为字符串或日期，则把每个分类加到X轴中					
 				if(xmapping.dataType !== 'number') {
-					if(jmUtils.indexOf(vx,xaxis.values) == -1) {
+					if(this.graph.utils.indexOf(vx,xaxis.values) == -1) {
 						xaxis.values.push(vx);
 					}
 				}
@@ -140,7 +129,7 @@ jmSeries.prototype.reset = function() {
 					if(!ycatCount[vy]) {
 						ycatCount[vy] = 1;
 						ycatCount.__count++;
-						if(jmUtils.indexOf(vy,yaxis.values) == -1) {
+						if(this.graph.utils.indexOf(vy,yaxis.values) == -1) {
 							yaxis.values.push(vy);
 						}
 					}
@@ -164,7 +153,7 @@ jmSeries.prototype.reset = function() {
  * @method createPoints
  */
 jmSeries.prototype.createPoints = function(source) {
-	source = source || this.source || this.chart.source;		
+	source = source || this.source || this.graph.source;		
 	if(!source) return;
 
 	var chartinfo = this.chartInfo;
@@ -200,19 +189,19 @@ jmSeries.prototype.createPoints = function(source) {
 		};
 
 		if(chartinfo.xMapping.dataType == 'date') {
-			xv = jmUtils.parseDate(xv);
+			xv = this.graph.utils.parseDate(xv);
 			xv = xv.getTime();
-			p.xLabel = jmUtils.formatDate(xv,chartinfo.xMapping.format);			
+			p.xLabel = this.graph.utils.formatDate(xv,chartinfo.xMapping.format);			
 		}
 		//字符串X轴起画点为它距左边一个单元(暂不右偏移一个单位)
 		else if(chartinfo.xMapping.dataType == 'string') {
-			xv = jmUtils.indexOf(xv,chartinfo.xAxis.values);
+			xv = this.graph.utils.indexOf(xv,chartinfo.xAxis.values);
 		}
 		
 		if(chartinfo.yMapping.dataType == 'date') {
-			yv = jmUtils.parseDate(yv);
+			yv = this.graph.utils.parseDate(yv);
 			yv = yv.getTime();
-			p.yLabel = jmUtils.formatDate(yv,chartinfo.yMapping.format);		
+			p.yLabel = this.graph.utils.formatDate(yv,chartinfo.yMapping.format);		
 		}
 		
 		
@@ -224,7 +213,7 @@ jmSeries.prototype.createPoints = function(source) {
 		}
 		else {
 			if(chartinfo.yMapping.dataType == 'string') {
-				yv = jmUtils.indexOf(yv,chartinfo.yAxis.values);
+				yv = this.graph.utils.indexOf(yv,chartinfo.yAxis.values);
 			}
 			p.y = chartinfo.yAxis.start.y - (yv - chartinfo.yAxis.min()) * ystep;
 		}			
@@ -239,11 +228,11 @@ jmSeries.prototype.createPoints = function(source) {
  */
 jmSeries.prototype.createLegend = function() {
 	//生成图例前的图标
-	var style = jmUtils.clone(this.style);
+	var style = this.graph.utils.clone(this.style);
 	style.fill = style.color;	
 	//delete style.stroke;
-	var shape = this.chart.graph.createShape('rect',{style:style});
-	this.chart.legend.append(this,shape);
+	var shape = this.graph.createShape('rect',{style:style});
+	this.legend.append(this,shape);
 }
 
 /**
@@ -274,25 +263,24 @@ jmSeries.prototype.decodeInfo = function(info,item) {
  */
 jmSeries.prototype.bindTooltip = function(shape,item) {	
 	shape.itemPoint = item;
-	shape.chart = this.chart;
 	shape.tooltip = this.decodeInfo(this.tooltip,item);	
 	//显示提示信息	
 	shape.bind('mousemove',function(evt) {						
-		this.chart.tooltip.value(this.tooltip);
-		var x = evt.position.x - this.chart.tooltip.width();
+		this.graph.tooltip.value(this.tooltip);
+		var x = evt.position.x - this.graph.tooltip.width();
 		if(x < 0) {
 			x = evt.position.x;
 		}
-		this.chart.tooltip.setPosition(x,evt.position.y + 10);
-		this.chart.tooltip.show();
+		this.graph.tooltip.setPosition(x,evt.position.y + 10);
+		this.graph.tooltip.show();
 		//应用动态样式
-		jmUtils.apply(this.style.hover,this.style);
+		Object.assign(this.style.hover, this.style);
 		this.graph.refresh();
 		return false;
 	});
 	shape.bind('mouseleave',function(evt) {
-		this.chart.tooltip.hide();
-		jmUtils.apply(this.style.normal,this.style);
+		this.graph.tooltip.hide();
+		Object.assign(this.style.normal, this.style);
 		this.graph.refresh();
 	});	
 }

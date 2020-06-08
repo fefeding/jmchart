@@ -1,3 +1,4 @@
+import jmRect from '../../../node_modules/jmgraph/src/shapes/jmRect.js';
 
 /**
  * 图例
@@ -7,36 +8,17 @@
  * @param {jmChart} chart 当前图表
  */
 
-function jmLegend(chart) {
-	/**
-	 * 当前轴所在的图表
-	 *
-	 * @property chart
-	 * @type jmChart
-	 */
-	this.chart = chart;
+export default class jmLegend extends jmRect {
 
-	/**
-	 * 图例样式
-	 *
-	 * @property style
-	 * @type object
-	 */
-	this.style = chart.style.legend;
+	constructor(options) {
+		super(options);
 
-	/**
-	 * 图例容器
-	 *
-	 * @property area
-	 * @type jmControl
-	 */
-	this.area = chart.graph.createShape('rect',{style:this.style});
-
-	//添加至画布中
-	chart.graph.children.add(this.area);
-
-	//当前图例位置偏移量
-	this.currentPosition = {x:0,y:0};
+		//当前图例位置偏移量
+		this.currentPosition = {
+			x: 0,
+			y: 0
+		};
+	}
 }
 
 /**
@@ -49,7 +31,7 @@ function jmLegend(chart) {
 jmLegend.prototype.append = function(series,shape,name,hover,leave,target) {
 	var panel = this.chart.graph.createShape('rect',{style: jmUtils.clone(this.style.item)});
 	panel.position(jmUtils.clone(this.currentPosition));		
-	this.area.children.add(panel);		
+	this.children.add(panel);		
 	panel.children.add(shape);
 
 	shape.width(panel.style.shape.width);
@@ -115,9 +97,8 @@ jmLegend.prototype.append = function(series,shape,name,hover,leave,target) {
 jmLegend.prototype.init = function() {
 	this.currentPosition.x = 0;
 	this.currentPosition.y = 0;
-	this.area.visible = this.visible;//设置是否可视
-	this.area.style.lineWidth = 0;
-	this.area.children.clear();
+	this.style.lineWidth = 0;
+	this.children.clear();
 }
 
 /**
@@ -155,37 +136,4 @@ jmLegend.prototype.reset = function() {
 			}
 		}	
 	}	
-}
-
-/**
- * 获取或设置位置
- *
- * @method location
- * @param {point} p 位置坐标
- * @return {point} 当前位置
- */
-jmLegend.prototype.location = function(p) {
-	return this.area.position(p);
-}
-
-/**
- * 获取或设置宽度
- *
- * @method width
- * @param {number} w 宽度
- * @return {number} 当前宽度
- */
-jmLegend.prototype.width = function(w) {
-	return this.area.width(w);
-}
-
-/**
- * 获取或设置高度
- *
- * @method height
- * @param {number} h 高度
- * @return {number} 当前高度
- */
-jmLegend.prototype.height = function(h) {
-	return this.area.height(h);
 }

@@ -1,3 +1,5 @@
+import jmSeries from './series.js';
+
 /**
  * 图形基类
  *
@@ -9,11 +11,11 @@
  */
 
 //构造函数
-function jmLineSeries(chart,mappings,style) {
-	this.init(chart,mappings,style || chart.style.line);//初始化
+export default class jmLineSeries extends jmSeries {
+	constructor(options) {
+		super(options);
+	}
 }
-//继承自jmseries
-jmUtils.extend(jmLineSeries,jmSeries);
 
 /**
  * 绘制当前图形
@@ -136,11 +138,11 @@ jmLineSeries.prototype.createLegend = function() {
  */
 
 //构造函数
-function jmSplineSeries(chart,mappings,style) {
-	this.init(chart,mappings,style || chart.style.line);//初始化
+class jmSplineSeries extends jmLineSeries {
+	constructor(options) {
+		super(options);
+	}
 }
-//继承自jmseries
-jmUtils.extend(jmSplineSeries,jmLineSeries);
 
 /**
  * 绘制当前图形
@@ -234,4 +236,9 @@ jmSplineSeries.prototype.draw = function() {
 			shape.points = shapePoints;
 		}	
 	}
+}
+
+export {
+	jmLineSeries,
+	jmSplineSeries
 }

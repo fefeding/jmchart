@@ -3,8 +3,7 @@
 	<head>
 		<meta content="text/html; charset=UTF-8" http-equiv="content-type" />
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<!--[if lt IE 9]><script type="text/javascript" src="../../jmgraph/src/lib/excanvas.js"></script><![endif]-->
-		<script type="text/javascript" src="../src/jmchart.debug.js" id="jmgraph" ></script>
+		<!--<script type="text/javascript" src="../src/jmchart.debug.js" id="jmgraph" ></script>-->
 
 		<style>
 		html,body {
@@ -25,19 +24,20 @@
 			border-radius: 6px;
 		}*/
 		</style>
-		<script type="text/javascript">
-			function load() {
+		<script type="module">
+			import jmChart from '../src/jmChart.js';
+			(function load() {
 				var w = (window.innerWidth || window.document.body.clientWidth) * 0.8;
 				var h = Math.min((window.innerHeight || window.document.body.clientHeight) * 0.4,400);			
 				inichart(w,h);
-			}
+			})();
 			
 
-			function inichart(w,h) {
-					var style = jmUtils.clone(jmChartStyle);
-					style.axis.xLabel.count = 50;
-					//style.axis.xLabel.rotate = 0.2;//设定旋转弧度
-					var chart = new jmChart('mycanvas',w,h,style);
+			function inichart(w, h) {
+					var chart = new jmChart('mycanvas', {
+						width: w,
+						height: h
+					});
 					chart.legend.position = 'top';
 					chart.legend.visible = true;
 					chart.enableAnimate = false;
@@ -77,7 +77,7 @@
 					chart.series.add(line7);	
 					line7.enableAnimate = true;	
 */
-					var datacount = 50;
+					var datacount = 10;
 					function animate() {
 						if(true) {
 							chart2.source = chart.source = [];
@@ -123,7 +123,10 @@
 
 					
 
-					var chart2 = new jmChart('mycanvas2',w,Math.max(h,500),style);
+					var chart2 = new jmChart('mycanvas2',{
+						width: w,
+						height: Math.max(h, 500)
+					});
 					chart2.legendPosition = 'top';
 					chart2.legend.visible = true;
 					chart2.enableAnimate = false;
@@ -162,7 +165,7 @@
 				}
 		</script>
 	</head>
-	<body onload="load()">
+	<body>
 		<div id="mycanvas">
 			</div>	
 		<div id="mycanvas2">

@@ -1,0 +1,29 @@
+{
+  "name": "jmchart",
+  "version": "1.0.0",
+  "description": "chart",
+  "main": "index.js",
+  "directories": {
+    "example": "example"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jiamao/jmchart.git"
+  },
+  "keywords": [
+    "chart",
+    "jmgraph"
+  ],
+  "author": "jiamao",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jiamao/jmchart/issues"
+  },
+  "homepage": "https://github.com/jiamao/jmchart#readme",
+  "dependencies": {
+    "jmgraph": "^3.1.8"
+  }
+}

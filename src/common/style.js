@@ -6,7 +6,7 @@
  * @module jmChart
  * @static
  */
-var jmChartStyle = {	
+export default {	
 	margin:{
 		left:60,
 		top:20,

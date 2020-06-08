@@ -1,3 +1,5 @@
+import jmSeries from './series.js';
+
 /**
  * 饼图
  *
@@ -9,11 +11,11 @@
  */
 
 //构造函数
-function jmPieSeries(chart,mappings,style) {
-	this.init(chart,mappings,style || chart.style.pie);//初始化
+export default class jmPieSeries extends jmSeries {
+	constructor(options) {
+		super(options);
+	}
 }
-//继承自jmseries
-jmUtils.extend(jmPieSeries,jmSeries);
 
 /**
  * 重置属性

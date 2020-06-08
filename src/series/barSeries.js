@@ -1,3 +1,5 @@
+import jmSeries from './series.js';
+
 /**
  * 柱图
  *
@@ -9,11 +11,12 @@
  */
 
 //构造函数
-function jmBarSeries(chart,mappings,style) {
-	this.init(chart,mappings,style || chart.style.bar);//初始化
+export default class jmBarSeries extends jmSeries {
+	constructor(options) {
+		super(options);
+	}
+	
 }
-//继承自jmseries
-jmUtils.extend(jmBarSeries,jmSeries);
 
 /**
  * 绘制当前图形

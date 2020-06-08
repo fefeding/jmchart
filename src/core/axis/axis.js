@@ -1,3 +1,4 @@
+import { jmPath } from '../../node_modules/jmgraph/src/core/jmGraph.js';
 
 /**
  * 轴
@@ -10,14 +11,21 @@
  * @param {object} [style] 样式
  */
 
-function jmAxis(chart,type,dataType,style) {
+export default class jmAxis extends jmPath {
+	constructor(options) {
+		super(options);
+		
+		//初始化
+		this._init();
+	}
+
 	/**
 	 * 轴类型(x/y/radar),默认为x
 	 *
 	 * @property type
 	 * @type string
 	 */
-	this.type = type || 'x';
+	type = 'x';
 
 	/**
 	 * 当前轴的数据类型(number/date/string),默认为 number
@@ -25,24 +33,7 @@ function jmAxis(chart,type,dataType,style) {
 	 * @property type
 	 * @type string
 	 */
-	this.dataType = dataType || 'number';
-
-
-	/**
-	 * 轴样式，默认为jmChartStyle中的配置
-	 *
-	 * @property type
-	 * @type object
-	 */
-	this.style = style || chart.style.axis;
-
-	/**
-	 * 当前轴所在的图表
-	 *
-	 * @property chart
-	 * @type jmChart
-	 */
-	this.chart = chart;
+	dataType = 'number';
 
 	/**
 	 * 轴的起始坐标
@@ -50,7 +41,7 @@ function jmAxis(chart,type,dataType,style) {
 	 * @property start
 	 * @type point
 	 */
-	this.start = {x:0,y:0};
+	start = { x: 0, y: 0 };
 
 	/**
 	 * 轴标签起始坐标
@@ -58,7 +49,7 @@ function jmAxis(chart,type,dataType,style) {
 	 * @property labelStart
 	 * @type number
 	 */
-	this.labelStart = 0;
+	labelStart = 0;
 
 	/**
 	 * 轴的结束坐标
@@ -66,16 +57,16 @@ function jmAxis(chart,type,dataType,style) {
 	 * @property end
 	 * @type point
 	 */
-	this.end = {x:0,y:0};
+	end = { x: 0, y: 0 };
 
 	/**
-	 * 是否从0开始
+	 * 否从0开始
 	 *
 	 * @property type
 	 * @type bool
 	 * @for jmAxis
 	 */
-	this.zeroBase = false;
+	zeroBase = false;
 
 	/**
 	 * 显示标签个数
@@ -84,7 +75,7 @@ function jmAxis(chart,type,dataType,style) {
 	 * @type number
 	 * @for jmAxis
 	 */
-	this.labelCount = 1;
+	labelCount = 1;
 
 	/**
 	 * 当前轴所关联的分类数据
@@ -94,14 +85,14 @@ function jmAxis(chart,type,dataType,style) {
 	 * @type array
 	 * @for jmAxis
 	 */
-	this.values = [];
+	values = [];
 
 	/**
 	 * 初始化轴图形
 	 *
 	 * @method init
 	 */
-	this._init = function() {
+	_init() {
 		if(!this.shape) {
 			this.shape = this.chart.graph.createShape('path',this);
 			this.arraw(false);
@@ -114,7 +105,7 @@ function jmAxis(chart,type,dataType,style) {
 	 * 
 	 * @method reset
 	 */
-	this.reset = function() {		
+	reset() {		
 		switch(this.type) {
 			case 'x' : {	
 				//初始化显示标签个数
@@ -189,7 +180,7 @@ function jmAxis(chart,type,dataType,style) {
 	 *
 	 * @method createLabel
 	 */
-	this.createLabel = function() {
+	createLabel() {
 		if(this.labels) {			
 			//移除原有的标签 
 			var len = this.labels.length;
@@ -213,7 +204,7 @@ function jmAxis(chart,type,dataType,style) {
 	 * @method createXLabel
 	 * @private
 	 */
-	this.createXLabel = function() {
+	createXLabel() {
 		var max = this.max();
 		var min = this.min();
 		var step = this.step();
@@ -329,7 +320,7 @@ function jmAxis(chart,type,dataType,style) {
 	 * @method createYLabel
 	 * @private
 	 */
-	this.createYLabel = function() {
+	createYLabel() {
 		var max = this.max();
 		var min = this.min();
 		var step = this.step();
@@ -473,7 +464,7 @@ function jmAxis(chart,type,dataType,style) {
 	 *
 	 * @method draw
 	 */
-	this.draw = function() {			
+	draw() {			
 		this.shape.style = this.style;
 		this.shape.points = [this.start,this.end];
 		//生成标签
@@ -485,7 +476,7 @@ function jmAxis(chart,type,dataType,style) {
 	 *
 	 * @method show
 	 */
-	this.show = function() {
+	show() {
 		this.shape.visible = true;
 	}
 
@@ -494,7 +485,7 @@ function jmAxis(chart,type,dataType,style) {
 	 *
 	 * @method hide
 	 */
-	this.hide = function() {
+	hide() {
 		this.shape.visible = false;
 	}
 
@@ -504,7 +495,7 @@ function jmAxis(chart,type,dataType,style) {
 	 * @method arraw
 	 * @param {bool} v 是否显示
 	 */
-	this.arraw = function(v) {			
+	arraw(v) {			
 		this.shape.arrawVisible = v;
 	}
 
@@ -513,7 +504,7 @@ function jmAxis(chart,type,dataType,style) {
 	*
 	* @method width
 	*/
-	this.width = function(w) {
+	width(w) {
 		if(w) {
 			this._width = w;
 		}
@@ -528,7 +519,7 @@ function jmAxis(chart,type,dataType,style) {
 	*
 	* @method height
 	*/
-	this.height = function() {
+	height() {
 		return Math.abs(this.end.y - this.start.y);
 	}
 
@@ -539,7 +530,7 @@ function jmAxis(chart,type,dataType,style) {
 	* @param {number/date/string} 当前轴的最大值
 	* @return 当前轴的最大值
 	*/
-	this.max = function(m) {
+	max(m) {
 		if(typeof m !== 'undefined') {
 			//如果为0为基线，则最小值不能大于0
 			if(this.dataType == 'number' && m < 0 && this.zeroBase) {
@@ -587,7 +578,7 @@ function jmAxis(chart,type,dataType,style) {
 	* @param {number/date/string} 当前轴的最小值
 	* @return 当前轴的最小值
 	*/
-	this.min = function(m) {
+	min(m) {
 		if(typeof m !== 'undefined') {
 			//如果为0为基线，则最小值不能大于0
 			if(this.dataType == 'number' && m > 0 && this.zeroBase) {
@@ -631,7 +622,7 @@ function jmAxis(chart,type,dataType,style) {
 	 *
 	 * @method clear
 	 */
-	this.clear = function() {
+	clear() {
 		this._min = null;
 		this._max = null;
 		this.values = [];
@@ -643,7 +634,7 @@ function jmAxis(chart,type,dataType,style) {
 	 * @method step
 	 * @return {number} 单位偏移量
 	 */
-	this.step = function() {
+	step() {
 		if(this.type == 'x') {
 			var w = this.width();
 			switch(this.dataType) {					
@@ -701,9 +692,6 @@ function jmAxis(chart,type,dataType,style) {
 			}
 		}
 	}
-
-	//初始化
-	this._init();
 }
 	
 

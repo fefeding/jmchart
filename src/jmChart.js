@@ -1,3 +1,13 @@
+import * as jmgraph from '../node_modules/jmgraph/src/core/jmGraph.js';
+import jmRect from '../node_modules/jmgraph/src/shapes/jmRect.js';
+import defaultStyle from './common/style.js';
+import jmLegend from './core/legend/legend.js';
+import jmBarSeries from './series/barSeries.js';
+import jmPieSeries from './series/pieSeries.js';
+import {
+	jmLineSeries,
+	jmSplineSeries
+} from './series/lineSeries.js';
 
 /**
  * jm图表组件
@@ -6,30 +16,18 @@
  * @class jmChart
  * @module jmChart
  * @param {element} container 图表容器
- * @param {number} w 宽度
- * @param {number} h 高度
- * @param {object} style 指定的样式
  */
-function jmChart(container,w,h,style) {
-	/**
-	 * 当前类型标识
-	 *
-	 * @property type
-	 * @type string
-	 * @for jmChart
-	 */
-	this.type = "jmChart";
+export default class jmChart extends jmgraph.jmGraph  {
 
-	/**
-	 * 当前画布容器
-	 *
-	 * @property container
-	 * @type element
-	 * @for jmChart
-	 */
-	this.container = container;
+	constructor(container, option) {
+		option = Object.assign({
+			style: defaultStyle
+		}, option||{});
 
-	this.style = style || jmChartStyle;
+		super(container, option);
+
+		this.init();
+	}
 
 	/**
 	 * 图序列集合
@@ -38,34 +36,7 @@ function jmChart(container,w,h,style) {
 	 * @type list
 	 * @for jmChart
 	 */
-	this.series = new jmUtils.list();	
-
-	/**
-	 * 绘图组件jmgraph
-	 *
-	 * @property graph
-	 * @type jmGraph
-	 * @for jmChart
-	 */
-	this.graph = new jmGraph(container,w,h);	
-
-	/**
-	 * 绘图区域
-	 *
-	 * @property chartArea
-	 * @type jmControl
-	 */
-	this.chartArea = this.graph.createShape('rect',{style:this.style.chartArea});
-	this.graph.children.add(this.chartArea);
-
-	/**
-	 * 图表提示控件
-	 *
-	 * @property tooltip
-	 * @type jmTooltip
-	 */
-	this.tooltip = this.graph.createShape('tooltip',{style:this.style.tooltip});
-	this.chartArea.children.add(this.tooltip);
+	series = new jmgraph.jmList();	
 
 	/**
 	 * 图例
@@ -73,7 +44,31 @@ function jmChart(container,w,h,style) {
 	 * @property legend
 	 * @type jmLegend
 	 */
-	this.legend = new jmLegend(this);
+	legend = new jmLegend(this);
+
+	// 初始化图表
+	init() {
+		/**
+		 * 绘图区域
+		 *
+		 * @property chartArea
+		 * @type jmControl
+		 */
+		this.chartArea = this.createShape(jmRect, {
+			style: this.style.chartArea,
+			position: { x: 0, y: 0}
+		});
+		this.graph.children.add(this.chartArea);
+
+		/**
+		 * 图表提示控件
+		 *
+		 * @property tooltip
+		 * @type jmTooltip
+		 */
+		//this.tooltip = this.graph.createShape('tooltip',{style:this.style.tooltip});
+		//this.chartArea.children.add(this.tooltip);
+	}
 }
 
 /**
@@ -118,22 +113,23 @@ jmChart.prototype.draw = function() {
 	//计算柱形图个数
 	this.barSeriesCount = 0;
 	//初始化图序列，并初始化轴值,生成图例项
-	this.series.each(function(i,series) {
+	this.series.each(function(i, serie) {
 		//设定边框颜色和数据项图示颜 色
-		series.style.color = series.chart.getColor(i);
+		serie.style.color = serie.graph.getColor(i);
 		//如果没有指定图排版方式，则如果有非线图，就表示默认为inside
-		if(!series.chart.layout) {
-			if(!jmUtils.isType(series,jmLineSeries) && !jmUtils.isType(series,jmSplineSeries)) {			
-				series.chart.layout = 'inside';
+		if(!serie.graph.layout) {
+			if(!serie.graph.utils.isType(serie, jmLineSeries) && 
+				!serie.graph.utils.isType(serie, jmSplineSeries)) {			
+					serie.graph.layout = 'inside';
 			}
 		}
 		
 		//对柱图计算,并标记为第几个柱图，用为排列
-		if(jmUtils.isType(series,jmBarSeries)) {
-			series.barIndex = series.chart.barSeriesCount;
-			series.chart.barSeriesCount ++;
+		if(serie.graph.utils.isType(serie, jmBarSeries)) {
+			serie.barIndex = serie.graph.barSeriesCount;
+			serie.graph.barSeriesCount ++;
 		}
-		series.reset();
+		serie.reset();
 	});	
 
 	//图例重置，它会更新画图区域属性
@@ -178,13 +174,13 @@ jmChart.prototype.draw = function() {
  * @method resetAreaPosition
  */
 jmChart.prototype.resetAreaPosition = function () {
-	this.chartArea.position().x = this.style.margin.left;
-	this.chartArea.position().y = this.style.margin.top;
-	var w = this.width() - this.style.margin.right - this.chartArea.position().x;
-	var h = this.height() - this.style.margin.bottom - this.chartArea.position().y;
+	this.chartArea.position.x = this.style.margin.left;
+	this.chartArea.position.y = this.style.margin.top;
+	var w = this.width - this.style.margin.right - this.chartArea.position.x;
+	var h = this.height - this.style.margin.bottom - this.chartArea.position.y;
 
-	this.chartArea.width(w);
-	this.chartArea.height(h);
+	this.chartArea.width = w;
+	this.chartArea.height = h;
 }
 
 /**
@@ -255,31 +251,6 @@ jmChart.prototype.createSeries = function (type,mappings,style) {
 		};		
 	}
 	//默认样式为类型对应的样式
-	style = style || jmUtils.clone(this.style[type]);
-	return new this.serieTypes[type](this,mappings,style);
+	style = style || this.graph.utils.clone(this.style[type]);
+	return new this.serieTypes[type](this, mappings, style);
 }
-
-/**
- * 设置或获取画布宽度
- *
- * @method width
- * @param {number} [w] 宽度
- * @return {number} 当前宽度
- */
- jmChart.prototype.width = function(w) {
- 	return this.graph.width(w);
- }
-
- /**
- * 设置或获取画布高度
- *
- * @method height
- * @param {number} [h] 宽度
- * @return {number} 当前高度
- */
- jmChart.prototype.height = function(h) {
- 	return this.graph.height(h);
- }
-
-
-
