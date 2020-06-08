@@ -29,8 +29,10 @@ export default class jmLegend extends jmRect {
  * @param {jmControl} shape 当前图例的图形对象
  */
 jmLegend.prototype.append = function(series,shape,name,hover,leave,target) {
-	var panel = this.chart.graph.createShape('rect',{style: jmUtils.clone(this.style.item)});
-	panel.position(jmUtils.clone(this.currentPosition));		
+	var panel = this.graph.createShape(jmRect,{
+		style: this.graph.utils.clone(this.style.item)
+	});
+	panel.position(this.graph.utils.clone(this.currentPosition));		
 	this.children.add(panel);		
 	panel.children.add(shape);
 
@@ -39,7 +41,7 @@ jmLegend.prototype.append = function(series,shape,name,hover,leave,target) {
 	
 	name = name || series.legendLabel;
 	//生成图例名称
-	var label = this.chart.graph.createShape('label',{style:panel.style.label,value:name});		
+	var label = this.graph.createShape('label',{style:panel.style.label,value:name});		
 	label.height(shape.height());
 	label.position({x:shape.width() + 4,y:0});
 	panel.children.add(label);
@@ -55,8 +57,8 @@ jmLegend.prototype.append = function(series,shape,name,hover,leave,target) {
 		});
 		
 		//jmUtils.apply(this.series.style.hover,this.series.style);
-		jmUtils.apply(this.style.hover,this.style);
-		this.series.chart.graph.refresh();
+		Object.assign(this.style, this.style.hover);
+		this.series.graph.refresh();
 	};
 	panel.bind('mouseover',hover);
 	//执行离开

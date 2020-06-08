@@ -36,15 +36,7 @@ export default class jmChart extends jmgraph.jmGraph  {
 	 * @type list
 	 * @for jmChart
 	 */
-	series = new jmgraph.jmList();	
-
-	/**
-	 * 图例
-	 *
-	 * @property legend
-	 * @type jmLegend
-	 */
-	legend = new jmLegend(this);
+	series = new jmgraph.jmList();		
 
 	// 初始化图表
 	init() {
@@ -59,6 +51,16 @@ export default class jmChart extends jmgraph.jmGraph  {
 			position: { x: 0, y: 0}
 		});
 		this.graph.children.add(this.chartArea);
+
+		/**
+		 * 图例
+		 *
+		 * @property legend
+		 * @type jmLegend
+		 */
+		this.legend = new jmLegend({
+			style: this.style.legend
+		});
 
 		/**
 		 * 图表提示控件

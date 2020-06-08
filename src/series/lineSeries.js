@@ -104,9 +104,9 @@ jmLineSeries.prototype.draw = function() {
 jmLineSeries.prototype.createLegend = function() {
 	
 	//生成图例前的图标
-	var style = jmUtils.clone(this.style);
+	var style = this.graph.utils.clone(this.style);
 	style.stroke = style.color;
-	var shape = this.chart.graph.createShape('path',{style:style});
+	var shape = this.graph.createShape('path',{style:style});
 	
 	if(this.curve || this.style.curve) {
 		var p1 = {x:0,y:this.chart.style.legend.item.shape.height};

@@ -1,5 +1,6 @@
 
 import { jmPath, jmList } from '../../node_modules/jmgraph/src/core/jmGraph.js';
+import jmRect from '../../node_modules/jmgraph/src/shapes/jmRect.js';
 
 /**
  * 图形基类
@@ -231,8 +232,10 @@ jmSeries.prototype.createLegend = function() {
 	var style = this.graph.utils.clone(this.style);
 	style.fill = style.color;	
 	//delete style.stroke;
-	var shape = this.graph.createShape('rect',{style:style});
-	this.legend.append(this,shape);
+	var shape = this.graph.createShape(jmRect,{
+		style
+	});
+	this.graph.legend.append(this, shape);
 }
 
 /**
@@ -274,13 +277,13 @@ jmSeries.prototype.bindTooltip = function(shape,item) {
 		this.graph.tooltip.setPosition(x,evt.position.y + 10);
 		this.graph.tooltip.show();
 		//应用动态样式
-		Object.assign(this.style.hover, this.style);
+		Object.assign(this.style, this.style.hover);
 		this.graph.refresh();
 		return false;
 	});
 	shape.bind('mouseleave',function(evt) {
 		this.graph.tooltip.hide();
-		Object.assign(this.style.normal, this.style);
+		Object.assign(this.style, this.style.normal);
 		this.graph.refresh();
 	});	
 }
