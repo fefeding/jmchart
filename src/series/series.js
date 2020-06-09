@@ -117,6 +117,10 @@ jmSeries.prototype.reset = function() {
 					}
 				}
 			}
+			// 如果有横坐标， 初始化其值标
+			if(xaxis) {
+
+			}
 		}
 		//如果为分类则计算为分类个数
 		if(ycatCount) {

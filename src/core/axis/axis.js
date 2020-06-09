@@ -96,7 +96,7 @@ export default class jmAxis extends jmArrawLine {
 			}
 			case 'y' : {
 				var index = this.index || 1;					
-				var xoffset = 0;
+				var xoffset = bounds.left;
 				
 				//多Y轴时，第二个为右边第一轴，其它的依此递推
 				if(index == 2) {
@@ -132,7 +132,7 @@ export default class jmAxis extends jmArrawLine {
 				//当X轴最小值为负数时，则移动第一个Y轴至0位置	
 				if(index == 1) {
 					var minX = this.graph.xAxis.min();
-					var maxX = this.graph.xAxis.max();
+					//var maxX = this.graph.xAxis.max();
 					if(this.graph.xAxis.dataType == 'number' && minX < 0) {
 						var stepX = this.graph.xAxis.step();
 						var ystepx = 0;//y轴x偏移量
@@ -252,7 +252,7 @@ export default class jmAxis extends jmArrawLine {
 			for(var i=0; i< this.values.length;i++) {	
 				var v = this.values[i]; 	
 				var w = (this.dataType == 'date'?(v - min):i) * step;
-				var label = this.graph.graph.createShape(jmLabel,{
+				var label = this.graph.graph.createShape(jmLabel, {
 					style: this.style.xLabel
 				});
 				label.value = this.dataType == 'date'?jmUtils.formatDate(v,this.format || 'yyyy-MM-dd HH:mm:ss'):v;
