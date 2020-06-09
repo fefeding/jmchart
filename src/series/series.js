@@ -87,6 +87,7 @@ jmSeries.prototype.reset = function() {
 		if(xmapping.format) {
 			xaxis.format = xmapping.format;
 		}
+		var xaxisDataEmpty = !xaxis.values || !xaxis.values.length; // 当前x轴数据是否为空
 	}
 	//创建Y轴
 	if(ymapping) {
@@ -118,8 +119,8 @@ jmSeries.prototype.reset = function() {
 				}
 			}
 			// 如果有横坐标， 初始化其值标
-			if(xaxis) {
-
+			if(xaxisDataEmpty && xaxis && xmapping && xaxis.values) {
+				xaxis.values.push(s[xmapping.field]);
 			}
 		}
 		//如果为分类则计算为分类个数
