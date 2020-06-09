@@ -26,7 +26,7 @@ export default class jmBarSeries extends jmSeries {
  */
 jmBarSeries.prototype.draw = function() {			
 	var chartinfo = this.chartInfo || this.reset();	
-	var source = this.source || this.chart.source;		
+	var source = this.source || this.graph.source;		
 	if(source) {
 		//生成描点位
 		this.createPoints(source);
@@ -49,30 +49,29 @@ jmBarSeries.prototype.draw = function() {
 
 		//计算每个柱子占宽
 		//每项柱子占宽除以柱子个数,默认最大宽度为30		
-		this.barTotalWidth = (this.chart.xAxis.width() / len * 0.8);
-		this.barWidth = this.barTotalWidth / this.chart.barSeriesCount;
-		var maxBarWidth = this.chart.barMaxWidth || 50;
+		this.barTotalWidth = (this.graph.xAxis.width / len * 0.8);
+		this.barWidth = this.barTotalWidth / this.graph.barSeriesCount;
+		var maxBarWidth = this.graph.barMaxWidth || 50;
 		if(this.barWidth > maxBarWidth) {
 			this.barWidth = maxBarWidth;
-			this.barTotalWidth = maxBarWidth * this.chart.barSeriesCount;
+			this.barTotalWidth = maxBarWidth * this.graph.barSeriesCount;
 		}
 		
 
 		var bezier;//圆滑线条使用的贝塞尔对象
 		//是否启用动画效果
-		var ani = typeof this.enableAnimate === 'undefined'?this.chart.enableAnimate:this.enableAnimate;
+		var ani = typeof this.enableAnimate === 'undefined'?this.graph.enableAnimate:this.enableAnimate;
 		
 		for(var i=0;i<len;i++) {
 			var p = this.points[i];
 			
 			//如果当前点无效，则跳致下一点
 			if(typeof p.y == 'undefined'  || p.y == null) {
-				prePoint = null;						
 				continue;
 			}
 		
-			var sp = this.shapes.add(this.chart.graph.createPath(null,jmUtils.clone(this.style)));
-			this.chart.chartArea.children.add(sp);
+			var sp = this.shapes.add(this.graph.createPath(null, this.graph.utils.clone(this.style)));
+			this.graph.chartArea.children.add(sp);
 			//绑定提示框
 			this.bindTooltip(sp,p);
 

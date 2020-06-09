@@ -57,7 +57,7 @@ export default {
 	},
 	axis: {
 		stroke:'#05468E',
-		lineWidth:2,
+		lineWidth:1,
 		zIndex:20,
 		xLabel : {
 			count: 10,

@@ -1,6 +1,7 @@
 import * as jmgraph from '../node_modules/jmgraph/src/core/jmGraph.js';
 import jmRect from '../node_modules/jmgraph/src/shapes/jmRect.js';
 import defaultStyle from './common/style.js';
+import jmAxis from './core/axis/axis.js';
 import jmLegend from './core/legend/legend.js';
 import jmBarSeries from './series/barSeries.js';
 import jmPieSeries from './series/pieSeries.js';
@@ -50,7 +51,7 @@ export default class jmChart extends jmgraph.jmGraph  {
 			style: this.style.chartArea,
 			position: { x: 0, y: 0}
 		});
-		this.graph.children.add(this.chartArea);
+		this.children.add(this.chartArea);
 
 		/**
 		 * 图例
@@ -58,7 +59,7 @@ export default class jmChart extends jmgraph.jmGraph  {
 		 * @property legend
 		 * @type jmLegend
 		 */
-		this.legend = new jmLegend({
+		this.legend = this.createShape(jmLegend, {
 			style: this.style.legend
 		});
 
@@ -91,9 +92,9 @@ jmChart.prototype.getColor = function(index) {
  * 绘制当前图表
  * 先绘制轴等基础信息
  *
- * @method draw 
+ * @method beginDraw 
  */
-jmChart.prototype.draw = function() {
+jmChart.prototype.beginDraw = function() {
 	//图排版//inside 起始点为一个单位，否则为原点
 	this.layout = this.style.layout;
 	//重置图例
@@ -147,27 +148,6 @@ jmChart.prototype.draw = function() {
 			this.yAxises[i].reset();
 		}
 	}
-	
-/*
-	this.series.each(function(i,series) {
-		series.createPoints();
-	});	*/
-
-	this.series.each(function(i,series) {
-		series.draw();
-	});	
-
-	if(this.xAxis) {
-		this.xAxis.draw();
-	}
-
-	//计算Y轴位置
-	if(this.yAxises) {
-		for(var i in this.yAxises) {
-			this.yAxises[i].draw();
-		}
-	}
-	this.graph.refresh();
 }
 
 /**
@@ -195,8 +175,14 @@ jmChart.prototype.resetAreaPosition = function () {
  * @param {object} [style] 样式
  * @return {axis} 轴
  */
-jmChart.prototype.createAxis = function (type,dataType,style) {
-	return new jmAxis(this,type,dataType);
+jmChart.prototype.createAxis = function (type, dataType, style = this.style.axis) {
+	const axis = this.createShape(jmAxis, {
+		type,
+		dataType,
+		style
+	});
+	this.children.add(axis);
+	return axis;
 }
 
 /**
@@ -206,9 +192,9 @@ jmChart.prototype.createAxis = function (type,dataType,style) {
  * @param {string} x轴的数据类型(string/number/date)
  * @param {bool} 是否从0开始
  */ 
-jmChart.prototype.createXAxis = function(type,zeroBase) {
+jmChart.prototype.createXAxis = function(type, zeroBase, style = this.style.axis) {
 	if(!this.xAxis) {
-		this.xAxis = this.createAxis('x',type);
+		this.xAxis = this.createAxis('x', type, style);
 	}
 	this.xAxis.zeroBase = this.xAxis.zeroBase || zeroBase;
 	return this.xAxis;
@@ -222,12 +208,12 @@ jmChart.prototype.createXAxis = function(type,zeroBase) {
  * @param {string} y轴的数据类型(string/number/date)
  * @param {bool} 是否从0开始
  */ 
-jmChart.prototype.createYAxis = function(index,type,zeroBase) {
+jmChart.prototype.createYAxis = function(index, dataType, zeroBase) {
 	index = index ||1;
 	if(!this.yAxises) {
 		this.yAxises = {};		
 	}
-	var yaxis = this.yAxises[index] || (this.yAxises[index] = this.createAxis('y',type));
+	var yaxis = this.yAxises[index] || (this.yAxises[index] = this.createAxis('y', dataType));
 	yaxis.zeroBase = yaxis.zeroBase || zeroBase;
 	yaxis.index = index;
 	return yaxis;
@@ -243,7 +229,7 @@ jmChart.prototype.createYAxis = function(index,type,zeroBase) {
  * @param {object} [style] 样式
  * @return {series} 图形
  */
-jmChart.prototype.createSeries = function (type,mappings,style) {
+jmChart.prototype.createSeries = function (type, mappings, style) {
 	if(!this.serieTypes) {
 		this.serieTypes = {
 			'line' : jmLineSeries,
@@ -252,7 +238,12 @@ jmChart.prototype.createSeries = function (type,mappings,style) {
 			'pie' : jmPieSeries
 		};		
 	}
+	if(typeof type == 'string') type = this.serieTypes[type];
+
 	//默认样式为类型对应的样式
-	style = style || this.graph.utils.clone(this.style[type]);
-	return new this.serieTypes[type](this, mappings, style);
+	style = style || this.utils.clone(this.style[type]);
+	return this.createShape(type, {
+		mappings, 
+		style
+	});
 }

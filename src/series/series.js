@@ -82,7 +82,7 @@ jmSeries.prototype.reset = function() {
 	
 	//创建X轴
 	if(xmapping) {
-		var xaxis = this.graph.createXAxis(xmapping.dataType,xmapping.zeroBase);
+		var xaxis = this.graph.createXAxis(xmapping.dataType, xmapping.zeroBase);
 		//格式化属性
 		if(xmapping.format) {
 			xaxis.format = xmapping.format;
@@ -98,26 +98,7 @@ jmSeries.prototype.reset = function() {
 		var ycatCount;		
 		for(var i=0;i<source.length;i++) {
 			var s = source[i];					
-			if(xaxis) {
-				var vx = s[xmapping.field];	
-				//如果为日期，则转为毫秒数
-				if(xmapping.dataType == 'date') {
-					vx = this.graph.utils.parseDate(vx);
-					vx = vx.getTime();
-				}
-				//如果为字符串或日期，则把每个分类加到X轴中					
-				if(xmapping.dataType !== 'number') {
-					if(this.graph.utils.indexOf(vx,xaxis.values) == -1) {
-						xaxis.values.push(vx);
-					}
-				}
-
-				//不为字符串时要收集最大值和最小值
-				if(xmapping.dataType !== 'string') {
-					xaxis.max(vx);
-					xaxis.min(vx);
-				}
-			}
+			
 			if(yaxis) {						
 				var vy = s[ymapping.field];
 				if(ymapping.dataType == 'number') {
@@ -189,22 +170,8 @@ jmSeries.prototype.createPoints = function(source) {
 			yLabel: yv
 		};
 
-		if(chartinfo.xMapping.dataType == 'date') {
-			xv = this.graph.utils.parseDate(xv);
-			xv = xv.getTime();
-			p.xLabel = this.graph.utils.formatDate(xv,chartinfo.xMapping.format);			
-		}
 		//字符串X轴起画点为它距左边一个单元(暂不右偏移一个单位)
-		else if(chartinfo.xMapping.dataType == 'string') {
-			xv = this.graph.utils.indexOf(xv,chartinfo.xAxis.values);
-		}
-		
-		if(chartinfo.yMapping.dataType == 'date') {
-			yv = this.graph.utils.parseDate(yv);
-			yv = yv.getTime();
-			p.yLabel = this.graph.utils.formatDate(yv,chartinfo.yMapping.format);		
-		}
-		
+		xv = chartinfo.xAxis.values.indexOf(xv);
 		
 		p.x = chartinfo.xAxis.start.x + chartinfo.xAxis.labelStart + (xv - chartinfo.xAxis.min()) * xstep;			
 
@@ -270,7 +237,7 @@ jmSeries.prototype.bindTooltip = function(shape,item) {
 	//显示提示信息	
 	shape.bind('mousemove',function(evt) {						
 		this.graph.tooltip.value(this.tooltip);
-		var x = evt.position.x - this.graph.tooltip.width();
+		var x = evt.position.x - this.graph.tooltip.width;
 		if(x < 0) {
 			x = evt.position.x;
 		}

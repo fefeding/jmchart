@@ -38,7 +38,7 @@
 						width: w,
 						height: h
 					});
-					chart.legend.position = 'top';
+					chart.legend.legendPosition = 'top';
 					chart.legend.visible = true;
 					chart.enableAnimate = false;
 					var xmapping = {field:'x',type:'x',dataType:'date',format:'HH:mm'};
@@ -80,11 +80,11 @@
 					var datacount = 10;
 					function animate() {
 						if(true) {
-							chart2.source = chart.source = [];
+							chart.source = [];
 							for(var i = 0;i<datacount;i++) {
 								var data = {
 									x : i * 1000000 + new Date().getTime(),
-									y :  Math.random() * 200 + 50,
+									y :  Math.random() * 200 - 100,
 									y2: Math.random() * 200 + 50,
 									y3: Math.random() * 200 + 50,
 									y4:Math.random() * 200 + 50,
@@ -104,7 +104,7 @@
 						else {
 							for(var i=datacount-1;i>0;i--) {
 								var x = chart.source[i].x;
-								chart.source[i] = jmUtils.clone(chart.source[i - 1]);
+								chart.source[i] = chart.utils.clone(chart.source[i - 1]);
 								chart.source[i].x = x;
 							}
 							
@@ -116,13 +116,12 @@
 						}
 						
 						//setTimeout(animate,500);
-						chart.draw();
-						chart2.draw();
+						chart.refresh();
+						//chart2.refresh();
 					}
 
 
-					
-
+					/*
 					var chart2 = new jmChart('mycanvas2',{
 						width: w,
 						height: Math.max(h, 500)
@@ -134,12 +133,12 @@
 					var ymapping3 = {field:'y6',type:'y',dataType:'number'};
 					var line3 = chart2.createSeries('pie',[ymapping3]);
 					line3.legendLabel = "{DATA.y8}";
-					chart2.series.add(line3);
+					chart2.series.add(line3);*/
 
 					
 					animate();
 
-					jmUtils.bindEvent(document.getElementById('btnRedraw'),'click',function() {
+					chart.utils.bindEvent(document.getElementById('btnRedraw'),'click',function() {
 							chart.source = [];
 							//datacount = Math.random() * 10 + 4;
 							for(var i = 0;i<datacount;i++) {
@@ -158,8 +157,8 @@
 								};
 								chart.source.push(data);
 							}
-							chart.draw();
-							chart2.draw();
+							chart.refresh();
+							chart2.refresh();
 						});
 					
 				}

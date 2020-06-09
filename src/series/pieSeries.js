@@ -1,3 +1,5 @@
+import jmRect from '../../node_modules/jmgraph/src/shapes/jmRect.js';
+import jmArc from '../../node_modules/jmgraph/src/shapes/jmArc.js';
 import jmSeries from './series.js';
 
 /**
@@ -33,7 +35,7 @@ jmPieSeries.prototype.reset = function() {
 		}
 	});	
 	
-	var source = this.source || this.chart.source;
+	var source = this.source || this.graph.source;
 	//总和
 	var totalValue = 0;
 	//计算最大值和最小值
@@ -47,8 +49,8 @@ jmPieSeries.prototype.reset = function() {
 		}		
 	}
 	var center = {x:0,y:0};
-	center.x = this.chart.chartArea.width() / 2;
-	center.y = this.chart.chartArea.height() / 2;
+	center.x = this.graph.chartArea.width / 2;
+	center.y = this.graph.chartArea.height / 2;
 	
 	this.chartInfo = {yMapping:ymapping,center:center,totalValue:totalValue};
 	//生成描点位
@@ -66,26 +68,24 @@ jmPieSeries.prototype.createLegend = function() {
 	for(var k in this.points) {
 		var p = this.points[k];
 		//生成图例前的图标
-		var style = jmUtils.clone(p.style);
+		var style = this.graph.utils.clone(p.style);
 		style.fill = style.color;	
 		//delete style.stroke;
-		var shape = this.chart.graph.createShape('rect',{style:style});
+		var shape = this.graph.createShape(jmRect,{style:style});
 		//shape.targetShape = p.shape;
 		//此处重写图例事件
 		var name = this.decodeInfo(this.legendLabel,p);
-		this.chart.legend.append(this,shape,name,function() {	
+		this.graph.legend.append(this,shape,name,function() {	
 			var sp = this.children.get(0);
 			//应用图的动态样式
-			jmUtils.apply(this.targetShape.style.hover,this.targetShape.style);	
-			jmUtils.apply(this.style.hover,this.style);
-			this.series.chart.graph.refresh();
+			Object.assign(this.targetShape.style, this.targetShape.style.hover);	
+			Object.assign(this.style, this.style.hover);
 		},function() {	
 			var sp = this.children.get(0);
 			//应用图的普通样式
-			jmUtils.apply(this.targetShape.style.normal,this.targetShape.style);			
-			jmUtils.apply(this.style.normal,this.style);
-			this.series.chart.graph.refresh();
-		},p.shape);
+			Object.assign(this.targetShape.style, this.targetShape.style.normal);			
+			Object.assign(this.style, this.style.normal);
+		}, p.shape);
 	}	
 }
 
@@ -95,7 +95,7 @@ jmPieSeries.prototype.createLegend = function() {
  * @method createPoints
  */
 jmPieSeries.prototype.createPoints = function(source) {
-	source = source || this.source || this.chart.source;		
+	source = source || this.source || this.graph.source;		
 	if(!source) return;
 
 	var shapecount = this.shapes.count();
@@ -126,16 +126,16 @@ jmPieSeries.prototype.createPoints = function(source) {
 				source: s,
 				yValue: yv,
 				yLabel: yv,
-				style: jmUtils.clone(this.style)
+				style: this.graph.utils.clone(this.style)
 			};
-			p.style.stroke = p.style.color = this.chart.getColor(index);
+			p.style.stroke = p.style.color = this.graph.getColor(index);
 			p.style.fill = p.style.color;
 			//计算占比
 			p.per = Math.abs(p.yValue / chartinfo.totalValue);
 			
-			p.shape = this.chart.graph.createPath([],p.style);
+			p.shape = this.graph.createPath([],p.style);
 			this.shapes.add(p.shape);
-			this.chart.chartArea.children.add(p.shape);
+			this.graph.chartArea.children.add(p.shape);
 
 			this.points.push(p);
 			index++;				
@@ -154,17 +154,17 @@ jmPieSeries.prototype.createPoints = function(source) {
 jmPieSeries.prototype.draw = function() {			
 	//var chartinfo = this.chartInfo || this.reset();		
 	//是否启用动画效果
-	var ani = typeof this.enableAnimate === 'undefined'?this.chart.enableAnimate:this.enableAnimate;
+	var ani = typeof this.enableAnimate === 'undefined'?this.graph.enableAnimate:this.enableAnimate;
 	
 	var startAni = 0;
 	var cm = Math.PI * 2;
 	var center = this.chartInfo.center;
-	center.x = this.chart.chartArea.width() / 2;
-	center.y = this.chart.chartArea.height() / 2;
+	center.x = this.graph.chartArea.width / 2;
+	center.y = this.graph.chartArea.height / 2;
 	
 	var radius = Math.min(center.x - this.style.margin.left - 
 		this.style.margin.right,center.y - this.style.margin.top - this.style.margin.bottom);
-	var arc = this.chart.graph.createShape('arc',{center:center,radius:radius,anticlockwise:true});
+	var arc = this.graph.createShape(jmArc,{center:center,radius:radius,anticlockwise:true});
 	
 	if(ani) {
 		var endAni = this.points[0].per * cm;
@@ -203,7 +203,7 @@ jmPieSeries.prototype.draw = function() {
 				return false;
 			}
 		}
-		this.chart.graph.animate(animate,50,this.points,startAni,endAni,cm,arc,0,this);
+		this.graph.animate(animate,50,this.points,startAni,endAni,cm,arc,0,this);
 	}
 	else {
 		var len = this.points.length;

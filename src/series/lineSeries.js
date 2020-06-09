@@ -1,3 +1,5 @@
+import jmBezier from '../../node_modules/jmgraph/src/shapes/jmBezier.js';
+import jmArc from '../../node_modules/jmgraph/src/shapes/jmArc.js';
 import jmSeries from './series.js';
 
 /**
@@ -13,6 +15,7 @@ import jmSeries from './series.js';
 //构造函数
 export default class jmLineSeries extends jmSeries {
 	constructor(options) {
+		options.style = options.style || options.graph.style.line;
 		super(options);
 	}
 }
@@ -25,7 +28,7 @@ export default class jmLineSeries extends jmSeries {
  */
 jmLineSeries.prototype.draw = function() {			
 	var chartinfo = this.chartInfo || this.reset();	
-	var source = this.source || this.chart.source;		
+	var source = this.source || this.graph.source;		
 	if(source) {
 		//生成描点位
 		this.createPoints(source);
@@ -47,13 +50,13 @@ jmLineSeries.prototype.draw = function() {
 		//if(!this.style.fill) this.style.fill = jmUtils.toColor(this.style.stroke,null,null,20);	
 		this.style.stroke = this.style.color;
 		//是否启用动画效果
-		var ani = typeof this.enableAnimate === 'undefined'?this.chart.enableAnimate:this.enableAnimate;
+		var ani = typeof this.enableAnimate === 'undefined'?this.graph.enableAnimate:this.enableAnimate;
 		this.style.item.stroke = this.style.color;
 		//var prePoint;
 		var shape = this.shapes.get(0);
 		if(!shape) {
-			shape = this.shapes.add(this.chart.graph.createPath(null,this.style))
-			this.chart.chartArea.children.add(shape);
+			shape = this.shapes.add(this.graph.createPath(null,this.style))
+			this.graph.chartArea.children.add(shape);
 		}
 		var shapePoints = [];
 		
@@ -65,9 +68,13 @@ jmLineSeries.prototype.draw = function() {
 				//prePoint = null;						
 				continue;
 			}
-			var pointShape = this.chart.graph.createShape('arc',{style:this.style.item,center:p,radius:this.style.radius || 3});
+			var pointShape = this.graph.createShape(jmArc,{
+				style: this.style.item,
+				center: p,
+				radius: this.style.radius || 3
+			});
 			pointShape.zIndex = (pointShape.style.zIndex || 1) + 1;	
-			this.chart.chartArea.children.add(pointShape);
+			this.graph.chartArea.children.add(pointShape);
 			this.shapes.add(pointShape);
 			this.bindTooltip(pointShape,p);				
 			shapePoints.push(p);
@@ -109,22 +116,25 @@ jmLineSeries.prototype.createLegend = function() {
 	var shape = this.graph.createShape('path',{style:style});
 	
 	if(this.curve || this.style.curve) {
-		var p1 = {x:0,y:this.chart.style.legend.item.shape.height};
-		var p2 = {x:this.chart.style.legend.item.shape.width / 3,y:this.chart.style.legend.item.shape.height/3};
-		var p3 = {x:this.chart.style.legend.item.shape.width / 3 * 2,y:this.chart.style.legend.item.shape.height/3*2};
-		var p4 = {x:this.chart.style.legend.item.shape.width,y:0};			
-		var bezier = this.chart.graph.createShape('bezier');
-		bezier.cpoints([p1,p2,p3,p4]);//设置控制点			
+		var p1 = {x:0,y: this.graph.style.legend.item.shape.height};
+		var p2 = {x:this.graph.style.legend.item.shape.width / 3,y:this.graph.style.legend.item.shape.height/3};
+		var p3 = {x:this.graph.style.legend.item.shape.width / 3 * 2,y:this.graph.style.legend.item.shape.height/3*2};
+		var p4 = {x:this.graph.style.legend.item.shape.width,y:0};			
+		var bezier = this.graph.createShape(jmBezier);
+		bezier.cpoints = [
+			p1,p2,p3,p4
+		];//设置控制点		
+
 		shape.points = bezier.initPoints();
 	}
 	else {
 		shape.points = [{
-			x:0,y:this.chart.style.legend.item.shape.height/2
+			x:0,y: this.graph.style.legend.item.shape.height/2
 		},{
-			x:this.chart.style.legend.item.shape.width,y:this.chart.style.legend.item.shape.height/2
+			x: this.graph.style.legend.item.shape.width,y: this.graph.style.legend.item.shape.height/2
 		}];
 	}
-	this.chart.legend.append(this,shape);
+	this.graph.legend.append(this,shape);
 }
 
 /**
@@ -152,7 +162,7 @@ class jmSplineSeries extends jmLineSeries {
  */
 jmSplineSeries.prototype.draw = function() {			
 	var chartinfo = this.chartInfo || this.reset();	
-	var source = this.source || this.chart.source;		
+	var source = this.source || this.graph.source;		
 	if(source) {
 		//生成描点位
 		this.createPoints(source);
@@ -176,13 +186,13 @@ jmSplineSeries.prototype.draw = function() {
 
 		var bezier;//圆滑线条使用的贝塞尔对象
 		//是否启用动画效果
-		var ani = typeof this.enableAnimate === 'undefined'?this.chart.enableAnimate:this.enableAnimate;
+		var ani = typeof this.enableAnimate === 'undefined'?this.graph.enableAnimate:this.enableAnimate;
 		this.style.item.stroke = this.style.color;
 		//var prePoint;
 		var shape = this.shapes.get(0);
 		if(!shape) {
-			shape = this.shapes.add(this.chart.graph.createPath(null,this.style))
-			this.chart.chartArea.children.add(shape);
+			shape = this.shapes.add(this.graph.createPath(null,this.style))
+			this.graph.chartArea.children.add(shape);
 		}
 		var shapePoints = [];
 		
@@ -195,9 +205,13 @@ jmSplineSeries.prototype.draw = function() {
 				continue;
 			}
 			
-			var pointShape = this.chart.graph.createShape('arc',{style:this.style.item,center:p,radius:this.style.radius || 3});
+			var pointShape = this.graph.graph.createShape(jmArc,{
+				style: this.style.item,
+				center: p,
+				radius: this.style.radius || 3
+			});
 			pointShape.zIndex = (pointShape.style.zIndex || 1) + 1;	
-			this.chart.chartArea.children.add(pointShape);
+			this.graph.chartArea.children.add(pointShape);
 			this.shapes.add(pointShape);
 			this.bindTooltip(pointShape,p);
 
@@ -207,8 +221,11 @@ jmSplineSeries.prototype.draw = function() {
 				var p1 = {x: startPoint.x + (p.x - startPoint.x) / 5, y: startPoint.y};
 				var p2 = {x: startPoint.x + (p.x - startPoint.x) / 2, y: p.y - (p.y - startPoint.y) / 2};
 				var p3 = {x: p.x - (p.x - startPoint.x) / 5, y: p.y};
-				bezier = bezier || this.chart.graph.createShape('bezier');
-				bezier.cpoints([startPoint,p1,p2,p3,p]);//设置控制点
+				bezier = bezier || this.graph.createShape(jmBezier);
+				bezier.cpoints = [
+					startPoint,p1,p2,p3,p
+				];//设置控制点
+
 				var bzpoints = bezier.initPoints();
 				shapePoints = shapePoints.concat(bzpoints);					
 			}									
