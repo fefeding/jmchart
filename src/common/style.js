@@ -8,10 +8,10 @@
  */
 export default {	
 	margin:{
-		left:60,
-		top:20,
-		right:40,
-		bottom:40
+		left: 60,
+		top: 20,
+		right: 40,
+		bottom: 60
 	},
 	legend: {		
 		stroke: 'transparent',		
@@ -64,12 +64,16 @@ export default {
 			length: 5,
 			fill: '#000',
 			stroke: 'red',
-			margin: {left:6,top:8,right:6,bottom:0},
+			margin: {left:0,top:10,right:6,bottom:0},
 			textAlign: 'center',
 			textBaseline: 'top',
 			font: '12px Arial',
 			zIndex:20,
-			rotate: 0
+			// 旋转角度
+			rotation: {
+				angle: 0,
+				point : { x: 0, y: 0 }
+			}
 		},
 		yLabel : {
 			count: 10,
@@ -80,7 +84,11 @@ export default {
 			textBaseline: 'middle',
 			font: '12px Arial',
 			zIndex:20,
-			rotate: 0
+			// 旋转角度
+			rotation: {
+				angle: 0,
+				point : { x: 0, y: 0 }
+			}
 		}
 	},
 	chartColors : ['#249FDA','#EA3B7C','#8EBC00','#309B46','#4B507E','#D8E404','#EB792A','#A00DA0'],

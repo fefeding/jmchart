@@ -18,39 +18,26 @@ export default class jmLineSeries extends jmSeries {
 		options.style = options.style || options.graph.style.line;
 		super(options);
 	}
-}
 
-/**
- * 绘制当前图形
- *
- * @method draw
- * @for jmLineSeries
- */
-jmLineSeries.prototype.draw = function() {			
-	var chartinfo = this.chartInfo || this.reset();	
-	var source = this.source || this.graph.source;		
-	if(source) {
+	/**
+	 * 绘制当前图形
+	 *
+	 * @method draw
+	 * @for jmLineSeries
+	 */
+	beginDraw() {
+		super.beginDraw();
 		//生成描点位
-		this.createPoints(source);
+		this.createPoints();
 		//去除多余的线条
 		//当数据源线条数比现有的少时，删除多余的线条
-		var len = this.points.length;
-		var shapecount = this.shapes.count();
-
-		//清除所有现有的图形			
-		for(var i=shapecount-1;i>=0;i--) {
-			var shape = this.shapes.get(i);
-			this.shapes.removeAt(i);
-			if(shape) {
-				shape.remove();
-			}
-		}
+		const len = this.points.length;
 
 		//设定其填充颜色
 		//if(!this.style.fill) this.style.fill = jmUtils.toColor(this.style.stroke,null,null,20);	
 		this.style.stroke = this.style.color;
 		//是否启用动画效果
-		var ani = typeof this.enableAnimate === 'undefined'?this.graph.enableAnimate:this.enableAnimate;
+		var ani = typeof this.enableAnimate === 'undefined'? this.graph.enableAnimate: this.enableAnimate;
 		this.style.item.stroke = this.style.color;
 		//var prePoint;
 		var shape = this.shapes.get(0);
@@ -64,7 +51,7 @@ jmLineSeries.prototype.draw = function() {
 			var p = this.points[i];
 			
 			//如果当前点无效，则跳致下一点
-			if(typeof p.y == 'undefined'  || p.y == null) {
+			if(typeof p.y === 'undefined'  || p.y === null) {
 				//prePoint = null;						
 				continue;
 			}
@@ -99,43 +86,44 @@ jmLineSeries.prototype.draw = function() {
 		}
 		else {
 			shape.points = shapePoints;
-		}	
+		}
+	}
+
+	/**
+	 * 生成图例
+	 *
+	 * @method createLegend	 
+	 */
+	createLegend() {
+		
+		//生成图例前的图标
+		var style = this.graph.utils.clone(this.style);
+		style.stroke = style.color;
+		var shape = this.graph.createShape('path',{style:style});
+		
+		if(this.curve || this.style.curve) {
+			var p1 = {x:0,y: this.graph.style.legend.item.shape.height};
+			var p2 = {x:this.graph.style.legend.item.shape.width / 3,y:this.graph.style.legend.item.shape.height/3};
+			var p3 = {x:this.graph.style.legend.item.shape.width / 3 * 2,y:this.graph.style.legend.item.shape.height/3*2};
+			var p4 = {x:this.graph.style.legend.item.shape.width,y:0};			
+			var bezier = this.graph.createShape(jmBezier);
+			bezier.cpoints = [
+				p1,p2,p3,p4
+			];//设置控制点		
+
+			shape.points = bezier.initPoints();
+		}
+		else {
+			shape.points = [{
+				x:0,y: this.graph.style.legend.item.shape.height/2
+			},{
+				x: this.graph.style.legend.item.shape.width,y: this.graph.style.legend.item.shape.height/2
+			}];
+		}
+		this.graph.legend.append(this,shape);
 	}
 }
 
-/**
- * 生成图例
- *
- * @method createLegend	 
- */
-jmLineSeries.prototype.createLegend = function() {
-	
-	//生成图例前的图标
-	var style = this.graph.utils.clone(this.style);
-	style.stroke = style.color;
-	var shape = this.graph.createShape('path',{style:style});
-	
-	if(this.curve || this.style.curve) {
-		var p1 = {x:0,y: this.graph.style.legend.item.shape.height};
-		var p2 = {x:this.graph.style.legend.item.shape.width / 3,y:this.graph.style.legend.item.shape.height/3};
-		var p3 = {x:this.graph.style.legend.item.shape.width / 3 * 2,y:this.graph.style.legend.item.shape.height/3*2};
-		var p4 = {x:this.graph.style.legend.item.shape.width,y:0};			
-		var bezier = this.graph.createShape(jmBezier);
-		bezier.cpoints = [
-			p1,p2,p3,p4
-		];//设置控制点		
-
-		shape.points = bezier.initPoints();
-	}
-	else {
-		shape.points = [{
-			x:0,y: this.graph.style.legend.item.shape.height/2
-		},{
-			x: this.graph.style.legend.item.shape.width,y: this.graph.style.legend.item.shape.height/2
-		}];
-	}
-	this.graph.legend.append(this,shape);
-}
 
 /**
  * 圆滑的曲线

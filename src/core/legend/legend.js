@@ -2,7 +2,7 @@ import jmRect from '../../../node_modules/jmgraph/src/shapes/jmRect.js';
 import jmLabel from '../../../node_modules/jmgraph/src/shapes/jmLabel.js';
 
 /**
- * 图例
+ * 图例的容器
  *
  * @class jmLegend
  * @module jmChart
@@ -33,68 +33,67 @@ export default class jmLegend extends jmRect {
  * @param {jmSeries} series 当前图序列
  * @param {jmControl} shape 当前图例的图形对象
  */
-jmLegend.prototype.append = function(series,shape,name,hover,leave,target) {
-	var panel = this.graph.createShape(jmRect,{
-		style: this.graph.utils.clone(this.style.item)
+jmLegend.prototype.append = function(series, shape, options = {}) {
+	const panel = this.graph.createShape(jmRect,{
+		style: this.graph.utils.clone(this.style.item),
+		position: {
+			x: 0,
+			y: 0
+		}
 	});
-	panel.position = this.graph.utils.clone(this.position);		
+			
 	this.children.add(panel);		
 	panel.children.add(shape);
 
 	shape.width = panel.style.shape.width;
 	shape.height = panel.style.shape.height;
 	
-	name = name || series.legendLabel;
+	name = options.name || series.legendLabel;
 	//生成图例名称
-	var label = this.graph.createShape(jmLabel, {
+	const label = this.graph.createShape(jmLabel, {
 		style: panel.style.label,
-		value: name
+		text: name
 	});		
 	label.height = shape.height;
 	label.position = {x: shape.width + 4, y: 0};
-	panel.children.add(label);
-	panel.series = series;//设置序列
-	panel.targetShape = target;
+	panel.children.add(label);	
 
 	//执行进入事件
 	//触动图例后加粗显示图
-	hover = hover || function() {	
-		//应用图的动态样式
-		this.series.shapes.each(function(i,sp) {
-			Object.assign(sp.style, sp.style.hover);
-		});
-		
-		//jmUtils.apply(this.series.style.hover,this.series.style);
-		Object.assign(this.style, this.style.hover);
-		this.series.graph.refresh();
+	const hover = options.hover || function() {	
+		//应用图的动态样式		
+		Object.assign(series.style, series.style.hover);
+
+		Object.assign(this.style, this.style.hover || {});
+
+		series.graph.refresh();
 	};
-	panel.bind('mouseover',hover);
+	panel.bind('mouseover', hover);
 	//执行离开
-	leave = leave || function() {	
-		//应用图的普通样式
-		this.series.shapes.each(function(i,sp) {
-			jmUtils.apply(sp.style.normal,sp.style);
-		});
-		jmUtils.apply(this.style.normal,this.style);
+	const leave = options.leave || function() {	
+		//应用图的普通样式		
+		Object.assign(series.style, series.style.normal);
+
+		Object.assign(this.style, this.style.normal || {});
 		//jmUtils.apply(this.series.style.normal,this.series.style);
-		this.series.chart.graph.refresh();
+		series.graph.refresh();
 	};
-	panel.bind('mouseleave',leave);
+	panel.bind('mouseleave', leave);
 	
-	panel.width = label.position.x + label.width;
+	panel.width = shape.width + label.testSize().width;
 	panel.height = shape.height;
 
 	var legendPosition = this.legendPosition || this.style.legendPosition;
 	if(legendPosition == 'top' || legendPosition == 'bottom') {
 		//顶部和底部图例横排，每次右移位一个单位图例
-		this.position.x += panel.width + 15;
-		this.width = this.position.x;
-		this.height = panel.height;
+		panel.position.x = this.width + 15;
+		this.width = panel.position.x + panel.width; // 把容器宽指定为所有图例宽和
+		this.height = Math.max(panel.height, this.height);
 	}
 	else {
 		//右边和左边图例竖排
-		this.position.y += panel.height + 5;
-		this.height = this.position.y;
+		panel.position.y += this.height + 5;
+		this.height = panel.position.y + panel.height;
 		this.width = Math.max(panel.width, this.width);
 	}
 }

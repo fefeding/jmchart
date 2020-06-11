@@ -36,22 +36,26 @@
 			function inichart(w, h) {
 					var chart = new jmChart('mycanvas', {
 						width: w,
-						height: h
+						height: h,
+						xField: 'x'
 					});
-					chart.legend.legendPosition = 'top';
+					chart.legend.legendPosition = 'right';
 					chart.legend.visible = true;
 					chart.enableAnimate = false;
-					var xmapping = {field:'x',type:'x',dataType:'date',format:'HH:mm'};
-					var ymapping = {field:'y',type:'y',dataType:'number'};
-					var line1 = chart.createSeries('bar',[xmapping,ymapping]);
-					//line1.curve = true;//画曲线
-					chart.series.add(line1);
-					line1.legendLabel = "测试图例";
+					
+					
+					var line1 = chart.createSeries('bar', {
+						field: 'y1',
+						legendLabel: '图例1'
+					});
+					//line1.curve = true;//画曲线					
 
-					//var ymapping2 = {field:'y2',type:'y',dataType:'number',index:2};
-					//var line2 = chart.createSeries('line',[xmapping,ymapping2]);
-					//line2.curve = true;//画曲线
-					//line2.enableAnimate = true;
+					var line2 = chart.createSeries('line', {
+						field: 'y2',
+						legendLabel: '图例2'
+					});
+					line2.curve = true;//画曲线
+					line2.enableAnimate = true;
 
 					//line2.enableAnimate = true;
 					//chart.series.add(line2);	
@@ -80,11 +84,11 @@
 					var datacount = 10;
 					function animate() {
 						if(true) {
-							chart.source = [];
+							chart.data = [];
 							for(var i = 0;i<datacount;i++) {
 								var data = {
-									x : i * 1000000 + new Date().getTime(),
-									y :  Math.random() * 200 - 100,
+									x : i,
+									y1 :  Math.random() * 200 - 100,
 									y2: Math.random() * 200 + 50,
 									y3: Math.random() * 200 + 50,
 									y4:Math.random() * 200 + 50,
@@ -98,18 +102,18 @@
 								if(i == 3) {
 									data.y = null;
 								}
-								chart.source.push(data);
+								chart.data.push(data);
 							}
 						}
 						else {
 							for(var i=datacount-1;i>0;i--) {
-								var x = chart.source[i].x;
-								chart.source[i] = chart.utils.clone(chart.source[i - 1]);
-								chart.source[i].x = x;
+								var x = chart.data[i].x;
+								chart.data[i] = chart.utils.clone(chart.data[i - 1]);
+								chart.data[i].x = x;
 							}
 							
 								chart.source[0] = {
-									x : chart.source[0].x,
+									x : chart.data[0].x,
 									y : Math.random() * 200 - 100
 								};
 								

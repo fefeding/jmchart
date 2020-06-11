@@ -17,31 +17,20 @@ export default class jmSeries extends jmPath {
 	constructor(options) {
 		super(options);
 
-		this.init(options);
-	}
-};
-
-
-/**
- * 初始化
- *
- * @method init
- * @param {jmChart} chart 当前图表
- * @param {array} mappings 图形字段映射
- * @param {style} style 样式
- */
-jmSeries.prototype.init = function(options) {
-	if(!this.shapes) {
-		this.shapes = new jmList();
+		this.field = options.field || '';
+		this.index = options.index || 1;
+		this.legendLabel = options.legendLabel || '';
 	}
 
 	/**
-	 * 当前图形字段映射
-	 *
-	 * @property mappings
-	 * @type array
+	 * 关联访问的是chart的数据源
 	 */
-	this.mappings = new jmList(options.mappings || {});
+	get data() {
+		return this.graph.data;
+	}
+	set data(d) {
+		this.graph.data = d;
+	}
 
 	/**
 	 * 图例名称
@@ -49,16 +38,8 @@ jmSeries.prototype.init = function(options) {
 	 * @property legendLabel
 	 * @type string
 	 */
-	this.legendLabel = '';
-
-	/**
-	 * 当前图形数据源，默认使用chart的源，除非需要单独设置此数据源
-	 *
-	 * @property source
-	 * @type array
-	 */
-	this.source = options.source;
-}
+	legendLabel = '';
+};
 
 /**
  * 重置属性
@@ -66,72 +47,32 @@ jmSeries.prototype.init = function(options) {
  *
  * @method reset
  */
-jmSeries.prototype.reset = function() {
-	var xmapping;
-	var ymapping;
-	this.mappings.each(function(i,m) {
-		if(m.type == 'x') {
-			xmapping = m;
-		}
-		else if(m.type == 'y') {
-			ymapping = m;
-		}
-		//如果都已确定则退出循 环
-		if(xmapping && ymapping) return false;
+jmSeries.prototype.reset = function() {	
+	
+	this.xAxis = this.graph.createXAxis();
+	
+	this.yAxis = this.yAxis || this.graph.createYAxis({
+		field: this.field,
+		index: this.index
 	});
 	
-	//创建X轴
-	if(xmapping) {
-		var xaxis = this.graph.createXAxis(xmapping.dataType, xmapping.zeroBase);
-		//格式化属性
-		if(xmapping.format) {
-			xaxis.format = xmapping.format;
-		}
-		var xaxisDataEmpty = !xaxis.values || !xaxis.values.length; // 当前x轴数据是否为空
-	}
-	//创建Y轴
-	if(ymapping) {
-		var yaxis = this.graph.createYAxis(ymapping.index,ymapping.dataType,ymapping.zeroBase);
-	}
-	var source = this.source || this.graph.source;
+	var source = this.data;
 	//计算最大值和最小值
-	if(source) {
-		var ycatCount;		
+	if(source && this.yAxis) {	
 		for(var i=0;i<source.length;i++) {
 			var s = source[i];					
-			
-			if(yaxis) {						
-				var vy = s[ymapping.field];
-				if(ymapping.dataType == 'number') {
-					yaxis.max(vy);
-					yaxis.min(vy);
-				}
-				//如果y轴为字符串或日期，则计算分类个数
-				else {
-					if(!ycatCount) ycatCount = {'__count':0};
-					if(!ycatCount[vy]) {
-						ycatCount[vy] = 1;
-						ycatCount.__count++;
-						if(this.graph.utils.indexOf(vy,yaxis.values) == -1) {
-							yaxis.values.push(vy);
-						}
-					}
-				}
-			}
-			// 如果有横坐标， 初始化其值标
-			if(xaxisDataEmpty && xaxis && xmapping && xaxis.values) {
-				xaxis.values.push(s[xmapping.field]);
-			}
-		}
-		//如果为分类则计算为分类个数
-		if(ycatCount) {
-			yaxis.max(ycatCount.__count);
-			yaxis.min(0);
+								
+			const vy = s[this.field];
+			this.yAxis.max(vy);
+			this.yAxis.min(vy);	
 		}
 	}
 	//生成图例
 	this.createLegend();
-	return this.chartInfo = {xMapping:xmapping,yMapping:ymapping,xAxis:xaxis,yAxis:yaxis};
+	return this.chartInfo = {
+		xAxis: this.xAxis,
+		yAxis: this.yAxis
+	};
 }
 
 /**
@@ -140,35 +81,21 @@ jmSeries.prototype.reset = function() {
  * @method createPoints
  */
 jmSeries.prototype.createPoints = function(source) {
-	source = source || this.source || this.graph.source;		
+	source = source || this.data || this.graph.data;		
 	if(!source) return;
 
-	var chartinfo = this.chartInfo;
-	var xstep = chartinfo.xAxis.step();
-	var ystep = chartinfo.yAxis.step();
-	
-	//按X轴大小排序
-	if(chartinfo.xMapping && chartinfo.xMapping.datType != 'string') {
-		source.sort(function(s1,s2) {
-			var x1 = s1[chartinfo.xMapping.field];
-			var x2 = s2[chartinfo.xMapping.field];
-			return x1>x2?1:-1;
-		});
-	}
-
-	//初始化格式串
-	chartinfo.xMapping.format = chartinfo.xMapping.format || 'yyyy-MM-dd HH:mm:ss';
-	chartinfo.yMapping.format = chartinfo.yMapping.format || 'yyyy-MM-dd HH:mm:ss';
+	var xstep = this.xAxis.step();
+	var ystep = this.yAxis.step();	
 
 	this.points = [];
 	for(var i=0;i<source.length;i++) {
 		var s = source[i];
 		
-		var xv = s[chartinfo.xMapping.field];
-		var yv = s[chartinfo.yMapping.field];
+		var xv = s[this.xAxis.field];
+		var yv = s[this.yAxis.field];
 
 		var p = {				
-			source: s,
+			data: s,
 			xValue: xv,
 			xLabel: xv,
 			yValue: yv,
@@ -176,19 +103,19 @@ jmSeries.prototype.createPoints = function(source) {
 		};
 
 		//字符串X轴起画点为它距左边一个单元(暂不右偏移一个单位)
-		xv = chartinfo.xAxis.values.indexOf(xv);
+		xv = this.xAxis.values.indexOf(xv);
 		
-		p.x = chartinfo.xAxis.start.x + chartinfo.xAxis.labelStart + (xv - chartinfo.xAxis.min()) * xstep;			
+		p.x = this.xAxis.start.x + this.xAxis.labelStart + (xv - this.xAxis.min()) * xstep;			
 
 		//如果Y值不存在。则此点无效，不画图
 		if(yv == null || typeof yv == 'undefined') {
 			p.m = true;
 		}
 		else {
-			if(chartinfo.yMapping.dataType == 'string') {
-				yv = this.graph.utils.indexOf(yv,chartinfo.yAxis.values);
+			if(this.yAxis.dataType != 'number') {
+				yv = i;
 			}
-			p.y = chartinfo.yAxis.start.y - (yv - chartinfo.yAxis.min()) * ystep;
+			p.y = this.yAxis.start.y - (yv - this.yAxis.min()) * ystep;
 		}			
 		this.points.push(p);							
 	}
@@ -201,10 +128,10 @@ jmSeries.prototype.createPoints = function(source) {
  */
 jmSeries.prototype.createLegend = function() {
 	//生成图例前的图标
-	var style = this.graph.utils.clone(this.style);
+	const style = this.graph.utils.clone(this.style);
 	style.fill = style.color;	
 	//delete style.stroke;
-	var shape = this.graph.createShape(jmRect,{
+	const shape = this.graph.createShape(jmRect,{
 		style
 	});
 	this.graph.legend.append(this, shape);

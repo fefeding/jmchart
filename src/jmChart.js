@@ -27,20 +27,26 @@ export default class jmChart extends jmgraph.jmGraph  {
 
 		super(container, option);
 
+		this.data = option.data || [];
+		// x轴绑定的字段名
+		this.xField = option.xField || '';
+
 		this.init();
 	}
 
 	/**
-	 * 图序列集合
-	 *
-	 * @property series
-	 * @type list
-	 * @for jmChart
+	 * 绑定的数据源
 	 */
-	series = new jmgraph.jmList();		
+	data = [];	
+
+	/**
+	 * 当前所有图
+	 */
+	series = new jmgraph.jmList();
 
 	// 初始化图表
 	init() {
+
 		/**
 		 * 绘图区域
 		 *
@@ -62,6 +68,7 @@ export default class jmChart extends jmgraph.jmGraph  {
 		this.legend = this.createShape(jmLegend, {
 			style: this.style.legend
 		});
+		this.children.add(this.legend);
 
 		/**
 		 * 图表提示控件
@@ -118,7 +125,7 @@ jmChart.prototype.beginDraw = function() {
 	//初始化图序列，并初始化轴值,生成图例项
 	this.series.each(function(i, serie) {
 		//设定边框颜色和数据项图示颜 色
-		serie.style.color = serie.graph.getColor(i);
+		serie.style.color = serie.style.color || serie.graph.getColor(i);
 		//如果没有指定图排版方式，则如果有非线图，就表示默认为inside
 		if(!serie.graph.layout) {
 			if(!serie.graph.utils.isType(serie, jmLineSeries) && 
@@ -156,8 +163,8 @@ jmChart.prototype.beginDraw = function() {
  * @method resetAreaPosition
  */
 jmChart.prototype.resetAreaPosition = function () {
-	this.chartArea.position.x = this.style.margin.left;
-	this.chartArea.position.y = this.style.margin.top;
+	this.chartArea.position.x = this.style.margin.left || 0;
+	this.chartArea.position.y = this.style.margin.top || 0;
 	var w = this.width - this.style.margin.right - this.chartArea.position.x;
 	var h = this.height - this.style.margin.bottom - this.chartArea.position.y;
 
@@ -175,12 +182,9 @@ jmChart.prototype.resetAreaPosition = function () {
  * @param {object} [style] 样式
  * @return {axis} 轴
  */
-jmChart.prototype.createAxis = function (type, dataType, style = this.style.axis) {
-	const axis = this.createShape(jmAxis, {
-		type,
-		dataType,
-		style
-	});
+jmChart.prototype.createAxis = function (options) {
+	options.style = options.style || this.style.axis;
+	const axis = this.createShape(jmAxis, options);
 	this.children.add(axis);
 	return axis;
 }
@@ -192,11 +196,14 @@ jmChart.prototype.createAxis = function (type, dataType, style = this.style.axis
  * @param {string} x轴的数据类型(string/number/date)
  * @param {bool} 是否从0开始
  */ 
-jmChart.prototype.createXAxis = function(type, zeroBase, style = this.style.axis) {
+jmChart.prototype.createXAxis = function(options) {
 	if(!this.xAxis) {
-		this.xAxis = this.createAxis('x', type, style);
+		options = Object.assign({
+			field: this.xField,
+			type: 'x'
+		}, options);
+		this.xAxis = this.createAxis(options);
 	}
-	this.xAxis.zeroBase = this.xAxis.zeroBase || zeroBase;
 	return this.xAxis;
 }
 
@@ -208,14 +215,14 @@ jmChart.prototype.createXAxis = function(type, zeroBase, style = this.style.axis
  * @param {string} y轴的数据类型(string/number/date)
  * @param {bool} 是否从0开始
  */ 
-jmChart.prototype.createYAxis = function(index, dataType, zeroBase) {
-	index = index ||1;
+jmChart.prototype.createYAxis = function(options) {
+	options.index = options.index ||1;
+	options.type = 'y';
+
 	if(!this.yAxises) {
 		this.yAxises = {};		
 	}
-	var yaxis = this.yAxises[index] || (this.yAxises[index] = this.createAxis('y', dataType));
-	yaxis.zeroBase = yaxis.zeroBase || zeroBase;
-	yaxis.index = index;
+	var yaxis = this.yAxises[options.index] || (this.yAxises[options.index] = this.createAxis(options));
 	return yaxis;
 }
 
@@ -225,11 +232,10 @@ jmChart.prototype.createYAxis = function(index, dataType, zeroBase) {
  * @method createSeries
  * @for jmChart
  * @param {string} [type] 图类型，（line/bar/pie/radar）
- * @param {array} [mappings] 字段映射对象
- * @param {object} [style] 样式
+ * @param {object} [options] 生成图表选项 {xField, yField, index}
  * @return {series} 图形
  */
-jmChart.prototype.createSeries = function (type, mappings, style) {
+jmChart.prototype.createSeries = function (type, options = {}) {
 	if(!this.serieTypes) {
 		this.serieTypes = {
 			'line' : jmLineSeries,
@@ -238,12 +244,16 @@ jmChart.prototype.createSeries = function (type, mappings, style) {
 			'pie' : jmPieSeries
 		};		
 	}
-	if(typeof type == 'string') type = this.serieTypes[type];
 
 	//默认样式为类型对应的样式
-	style = style || this.utils.clone(this.style[type]);
-	return this.createShape(type, {
-		mappings, 
-		style
-	});
+	options.style = Object.assign(this.utils.clone(this.style[type]), options.style || {});
+
+	if(typeof type == 'string') type = this.serieTypes[type];
+	
+	const serie = this.createShape(type, options);
+	if(serie) {
+		this.series.add(serie);
+		this.children.add(serie);
+	}
+	return serie;
 }

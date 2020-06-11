@@ -17,11 +17,20 @@ export default class jmAxis extends jmArrawLine {
 		super(options);
 		
 		//初始化不显示箭头
-		this.arrawVisible = false;
+		this.arrawVisible = !!options.arrawVisible;
 		this.zeroBase = options.zeroBase || false;
 		this.labelCount = options.labelCount || 1;
 		this.type = options.type || 'x';// 为横轴x或纵轴y
-		this.values = options.data || [];
+
+		if(this.type == 'x') {
+			this.dataType = options.dataType || 'string';
+		}
+		else {
+			this.dataType = options.dataType || 'number';
+		}
+
+		this.field = options.field || '';
+		this.index = options.index || 0;
 	}
 
 	/**
@@ -31,14 +40,11 @@ export default class jmAxis extends jmArrawLine {
 	 * @type string
 	 */
 	type = 'x';
-
+	
 	/**
-	 * 当前轴的数据类型(number/date/string),默认为 number
-	 *
-	 * @property type
-	 * @type string
+	 * 对应的字段
 	 */
-	dataType = 'number';
+	field = '';
 
 	/**
 	 * 轴标签起始坐标
@@ -67,14 +73,19 @@ export default class jmAxis extends jmArrawLine {
 	labelCount = 1;
 
 	/**
-	 * 当前轴所关联的分类数据
-	 * 主要用于字符串分类
-	 *
-	 * @property values
-	 * @type array
-	 * @for jmAxis
+	 * 轴上的刻度，由动态计算出
 	 */
-	values = [];
+	scalePoints = [];
+
+	/**
+	 * 关联访问的是chart的数据源
+	 */
+	get data() {
+		return this.graph.data;
+	}
+	set data(d) {
+		this.graph.data = d;
+	}
 
 
 	/**
@@ -128,29 +139,24 @@ export default class jmAxis extends jmArrawLine {
 					}
 					this.graph.xAxis.start.y = this.graph.xAxis.end.y = xstepy;
 				}
-
-				//当X轴最小值为负数时，则移动第一个Y轴至0位置	
-				if(index == 1) {
-					var minX = this.graph.xAxis.min();
-					//var maxX = this.graph.xAxis.max();
-					if(this.graph.xAxis.dataType == 'number' && minX < 0) {
-						var stepX = this.graph.xAxis.step();
-						var ystepx = 0;//y轴x偏移量
-						if(max <= 0) {
-							this.value = max;
-							ystepx = this.graph.xAxis.end.x;
-						}
-						//当X轴最大值大于0，但最小值小于0时，Y轴位于中间位
-						else {
-							this.value = min;
-							ystepx = -stepX * minX;
-						}
-						this.start.x = this.end.x = ystepx;
-					}
-				}
 				break;
 			}
 		}
+
+		// 计算最大最小值
+		for(var i=0; i< this.data.length;i++) {	
+			const v = this.data[i][this.field]; 
+			this.max(v);
+			this.min(v);
+		}
+
+		this.createLabel();
+	}
+
+	// 绘制完成后，生成label标签
+	draw() {
+		this.points.push(...this.scalePoints);// 把刻度也画出来
+		super.draw();
 	}
 
 	/**
@@ -183,116 +189,66 @@ export default class jmAxis extends jmArrawLine {
 	 * @private
 	 */
 	createXLabel() {
-		var max = this.max();
-		var min = this.min();
+		//var max = this.max();
+		//var min = this.min();
 		var step = this.step();
-		if(this.dataType == 'number') {	
-			var mm = max - min;
-			if(mm <= 10) {
-				this.labelCount = mm;
+		this.scalePoints = [];// 刻度点集合
+		//最多显示标签个数
+		//var count = this.style.xLabel.count || this.data.length;	
+		//字符串轴。则显示每个标签	
+		var top = this.style.xLabel.margin.top || 0;		
+		for(var i=0; i< this.data.length;i++) {	
+			var v = this.data[i][this.field]; 	
+			
+			var w = i * step;
+			var label = this.graph.createShape(jmLabel, {
+				style: this.style.xLabel
+			});
+
+			if(typeof v === 'undefined') {
+				label.visible = false;
 			}
 
-			//计算每个刻度点数值
-			var pervalue = (mm / this.labelCount) || 1;
-			if(pervalue > 1 || pervalue < -1) pervalue = Math.floor(pervalue);
-			else pervalue = Number(pervalue.toFixed(2));
+			label.text = v + '';
+			this.labels.push(label);
+			this.children.add(label);
+			label.width = label.width + 2;
+			label.height = 15;
+			var pos = {
+				x: this.labelStart + w,
+				y: top
+			};
 
-			var top = this.start.y + this.style.xLabel.margin.top;
-			for(var p =min;p <= max;p += pervalue) {
-				var v = p;
-				var w = (v - min) * step;
-				var label = this.graph.graph.createShape(jmLabel,{
-					style: this.style.xLabel
+			//上一个标签位
+			var preLabel = this.labels.length>1?this.labels[this.labels.length - 2]:null;
+			//如果当前标签跟上一个标签重合，则不显示当前标签
+			if(!preLabel || !preLabel.visible || preLabel.position.x + preLabel.width < pos.x - 2) {
+				//在轴上画小标记m表示移至当前点开画
+				this.scalePoints.push({
+					x: pos.x + this.start.x,
+					y: this.start.y,
+					m: true
 				});
-				label.value = v;					
-				this.labels.push(label);
-				this.graph.chartArea.children.add(label);
-				label.width = label.width;
-				label.height = 15;
-				var pos = {x: this.start.x + this.labelStart + w , y: top};
-
-				//上一个标签位
-				var preLabel = this.labels.length>1?this.labels[this.labels.length - 2]:null;
-				//如果当前标签跟上一个标签重合，则不显示当前标签
-				if(!preLabel || !preLabel.visible || preLabel.position.x + preLabel.width < pos.x - 2) {
-					//在轴上画小标记m表示移至当前点开画
-					this.points.push({
-						x:pos.x,
-						y:this.start.y,
-						m:true
-					});
-					this.points.push({
-						x:pos.x,
-						y:this.start.y + (this.style.length || 5)
-					});					
-				}
-				else {
-					label.visible = false;
-				}
-
-				//如果进行了旋转，则处理位移
-				var rotate = label.rotate || label.style.rotate;
-				if(rotate) {	
-					//设定旋转原点为label左上角					
-					label.rotatePosition = pos;
-					//当旋转后，其原点位移至左上角，所有当前控件必须反向移位其父容器位置
-					label.position = {x: -this.graph.chartArea.position.x,y: -this.graph.chartArea.position.y };
-				}
-				else {	
-					pos.x -=  label.width / 2;//向左偏移半个label宽度
-					label.position = pos;
-				}											
-			}				
-		}
-		else {				
-			//最多显示标签个数
-			//var count = this.style.xLabel.count || this.values.length;	
-			//字符串轴。则显示每个标签	
-			var top = this.start.y + this.style.xLabel.margin.top;		
-			for(var i=0; i< this.values.length;i++) {	
-				var v = this.values[i]; 	
-				var w = (this.dataType == 'date'?(v - min):i) * step;
-				var label = this.graph.graph.createShape(jmLabel, {
-					style: this.style.xLabel
+				this.scalePoints.push({
+					x: pos.x + this.start.x,
+					y: this.start.y + (this.style.length || 5)
 				});
-				label.value = this.dataType == 'date'?jmUtils.formatDate(v,this.format || 'yyyy-MM-dd HH:mm:ss'):v;
-				this.labels.push(label);
-				this.graph.chartArea.children.add(label);
-				label.width = label.width + 2;
-				label.height = 15;
-				var pos = {x:this.start.x + this.labelStart + w,y:top};
-
-				//上一个标签位
-				var preLabel = this.labels.length>1?this.labels[this.labels.length - 2]:null;
-				//如果当前标签跟上一个标签重合，则不显示当前标签
-				if(!preLabel || !preLabel.visible || preLabel.position.x + preLabel.width < pos.x - 2) {
-					//在轴上画小标记m表示移至当前点开画
-					this.shape.points.push({
-						x:pos.x,
-						y:this.start.y,
-						m:true
-					});
-					this.shape.points.push({
-						x:pos.x,
-						y:this.start.y + (this.style.length || 5)
-					});
-				}
-				else {
-					label.visible = false;
-				}
-				//如果进行了旋转，则处理位移
-				var rotate = label.rotate || label.style.rotate;
-				if(rotate) {
-					//设定旋转原点为label左上角					
-					label.rotatePosition = pos;
-					//当旋转后，其原点位移至左上角，所有当前控件必须反向移位其父容器位置
-					label.position = {x:-this.graph.chartArea.position.x,y:-this.graph.chartArea.position.y};
-				}
-				else {
-					pos.x -=  label.width / 2;//向左偏移半个label宽度
-					label.position = pos;
-				}
-			}						
+			}
+			else {
+				label.visible = false;
+			}
+			//如果进行了旋转，则处理位移
+			var rotation = label.style.rotation;
+			if(rotation && rotation.angle) {
+				//设定旋转原点为label左上角					
+				rotation.point = pos;
+				//当旋转后，其原点位移至左上角，所有当前控件必须反向移位其父容器位置
+				label.position = {x:-this.graph.chartArea.position.x,y:-this.graph.chartArea.position.y};
+			}
+			else {
+				pos.x -=  label.width / 2;//向左偏移半个label宽度
+				label.position = pos;
+			}
 		}
 	}
 
@@ -307,137 +263,81 @@ export default class jmAxis extends jmArrawLine {
 		var min = this.min();
 		var step = this.step();
 		var index = this.index || 1;
+		this.scalePoints = [];// 刻度点集合
 
-		if(this.dataType == 'number') {
-			var count = this.style.yLabel.count || 10;
-			var mm = max - min;
-			if(mm <= 10) {
-				count = mm;
-			}
-			var pervalue = (mm / count) || 1;
-			if(pervalue > 1 || pervalue < -1) pervalue = Math.floor(pervalue);
-			else pervalue = Number(pervalue.toFixed(2));
-
-			for(var p =min;p <= max;p += pervalue) {
-				var v = p;
-				var h = (v - min) * step;
-				var label = this.graph.graph.createShape(jmLabel,{style:this.style.yLabel});
-				label.value = v;
-				this.labels.push(label);
-				this.graph.chartArea.children.add(label);
-
-				var w = label.testSize().width;
-
-				//计算标签位置
-				if(index <= 1) {
-					//轴的宽度
-					var axiswidth = this.style.yLabel.margin.right + w + label.style.length;
-					this.width = Math.max(axiswidth, this.width);
-
-					var pos = {x:this.start.x - axiswidth,
-								y:this.start.y - h};
-					//在轴上画小标记m表示移至当前点开画
-					this.shape.points.push({
-						x: this.start.x,
-						y: pos.y,
-						m: true
-					});
-					this.shape.points.push({
-						x:this.start.x - label.style.length,
-						y:pos.y
-					});
-				}
-				else {
-					//轴的宽度
-					var axiswidth = this.style.yLabel.margin.left + w + label.style.length;
-					this.width = Math.max(axiswidth, this.width);
-
-					var pos = {x:this.start.x + this.style.yLabel.margin.left + label.style.length,
-								y:this.start.y - h};
-					//在轴上画小标记m表示移至当前点开画
-					this.shape.points.push({
-						x: this.start.x,
-						y: pos.y,
-						m: true
-					});
-					this.shape.points.push({
-						x:this.start.x + label.style.length,
-						y:pos.y
-					});
-				}
-				
-				//如果进行了旋转，则处理位移
-				var rotate = label.rotate || label.style.rotate;
-				if(rotate && label.mode == 'canvas') {
-					label.translate = pos;//先位移再旋转
-					label.position = {x: -w / 2, y: 0};
-				}
-				else {							
-					label.position = pos;
-				}						
-			}				
+		var count = this.style.yLabel.count || 10;
+		var mm = max - min;
+		if(mm <= 10) {
+			count = mm;
 		}
-		else {				
-			//最多显示标签个数
-			//var count = this.style.xLabel.count || this.values.length;	
-			//字符串轴。则显示每个标签
-			//var pstep = Math.ceil(max / 10) || 1;			
-			for(var p =1;p <= max;p += 1) {				
-				var h = (p - min) * step;
-				var label = this.graph.graph.createShape(jmLabel,{style:this.style.yLabel});
-				label.value = this.values[p];
-				this.labels.push(label);
-				this.graph.chartArea.children.add(label);
+		var pervalue = (mm / count) || 1;
+		if(pervalue > 1 || pervalue < -1) pervalue = Math.floor(pervalue);
+		else pervalue = Number(pervalue.toFixed(2));
 
-				var w = label.testSize().width;
-				//计算标签位置
-				if(index <= 1) {
-					//轴的宽度
-					var axiswidth = this.style.yLabel.margin.right + w + label.style.length;
-					this.width = Math.max(axiswidth, this.width);
+		for(var p =min;p <= max;p += pervalue) {
+			var v = p;
+			var h = (v - min) * step;
+			var label = this.graph.graph.createShape(jmLabel, {
+				style: this.style.yLabel
+			});
+			label.text = v;
+			this.labels.push(label);
+			this.children.add(label);
 
-					var pos = {x:this.start.x - axiswidth,
-								y:this.start.y - h};
-					//在轴上画小标记m表示移至当前点开画
-					this.shape.points.push({
-						x: this.start.x,
-						y: pos.y,
-						m: true
-					});
-					this.shape.points.push({
-						x:this.start.x - label.style.length,
-						y:pos.y
-					});
-				}
-				else {
-					//轴的宽度
-					var axiswidth = this.style.yLabel.margin.left + w + label.style.length;
-					this.width = Math.max(axiswidth, this.width);
+			var w = label.testSize().width;
+			const offy = this.height - h; // 刻度的偏移量
 
-					var pos = {x:this.start.x + this.style.yLabel.margin.left + label.style.length,
-								y:this.start.y - h};
-					//在轴上画小标记m表示移至当前点开画
-					this.shape.points.push({
-						x: this.start.x,
-						y: pos.y,
-						m: true
-					});
-					this.shape.points.push({
-						x:this.start.x + label.style.length,
-						y:pos.y
-					});
-				}
+			//计算标签位置
+			if(index <= 1) {
+				//轴的宽度
+				var axiswidth = this.style.yLabel.margin.right + w + label.style.length;
+				this.width = Math.max(axiswidth, this.width);
+				
+				var pos = {
+					x: -axiswidth,
+					y: offy - label.height / 2
+				};
+				//在轴上画小标记m表示移至当前点开画
+				this.scalePoints.push({
+					x: this.start.x,
+					y: offy + this.end.y ,
+					m: true
+				});
+				this.scalePoints.push({
+					x:this.start.x - label.style.length,
+					y: offy + this.end.y
+				});
+			}
+			else {
+				//轴的宽度
+				var axiswidth = this.style.yLabel.margin.left + w + label.style.length;
+				this.width = Math.max(axiswidth, this.width);
 
-				//如果进行了旋转，则处理位移
-				var rotate = label.rotate || label.style.rotate;
-				if(rotate && label.mode == 'canvas') {
-					label.translate = pos;//先位移再旋转
-					label.position = {x: -w / 2,y: 0};
-				}
-				else {							
-					label.position = pos;
-				}						
-			}				
+				var pos = {
+					x: this.style.yLabel.margin.left + label.style.length,
+					y: offy - label.height / 2
+				};
+				//在轴上画小标记m表示移至当前点开画
+				this.scalePoints.push({
+					x: this.start.x,
+					y: offy + this.end.y,
+					m: true
+				});
+				this.scalePoints.push({
+					x: this.start.x + label.style.length,
+					y: offy + this.end.y
+				});
+			}
+			
+			//如果进行了旋转，则处理位移
+			var rotation = label.style.rotation;
+			if(rotation && rotation.angle) {
+				label.translate = pos;//先位移再旋转
+				label.position = {x: -w / 2, y: 0};
+			}
+			else {							
+				label.position = pos;
+			}	
 		}
 	}
 
@@ -483,8 +383,8 @@ export default class jmAxis extends jmArrawLine {
 			this._max = this._max != null && typeof(this._max) != 'undefined'?Math.max(m,this._max):m;						
 		}	
 		//如果为字符串，则返回分类个数
-		if(this.dataType == 'string' && this.values) {
-			return this.values.length;
+		if(this.dataType == 'string' && this.data) {
+			return this.data.length;
 		}	
 
 		//如果是数字类型，则在最大值基础上加一定的值
@@ -569,7 +469,6 @@ export default class jmAxis extends jmArrawLine {
 	clear() {
 		this._min = null;
 		this._max = null;
-		this.values = [];
 	}
 
 	/**
@@ -581,44 +480,16 @@ export default class jmAxis extends jmArrawLine {
 	step() {
 		if(this.type == 'x') {
 			var w = this.width;
-			switch(this.dataType) {					
-				case 'string': {
-					//如果排版为内联，则单位占宽减少一个单位,
-					//也就是起始位从一个单位开始
-					if(this.graph.layout == 'inside') {
-						var sp =  w / this.max();	
-						this.labelStart = sp / 2;
-						return sp;
-					}			
-					return w / (this.max() - 1);					
-				}	
-				case 'date': {
-					var min = this.min();	
-					var tmp = this.max() - min;					
-					tmp = tmp || 1;	
-					//如果排版为内联，则单位占宽减少一个单位,
-					//也就是起始位从一个单位开始
-					if(this.graph.layout == 'inside') {
-						this.labelStart = w / this.labelCount / 2;
-						w = w - w / this.labelCount;
-					}						
-					return w / tmp;
-				}
 
-				case 'number': 
-				default: {
-					var min = this.min();
-					var tmp = Math.abs((this.max() - min));
-					tmp = tmp || 1;	
-					//如果排版为内联，则单位占宽减少一个单位,
-					//也就是起始位从一个单位开始
-					if(this.graph.layout == 'inside') {
-						this.labelStart = w / this.labelCount / 2;
-						w = w - w / this.labelCount;
-					}					
-					return w / tmp;
-				}					
-			}
+			//如果排版为内联，则单位占宽减少一个单位,
+			//也就是起始位从一个单位开始
+			if(this.graph.layout == 'inside') {
+				var sp =  w / this.max();	
+				this.labelStart = sp / 2;
+				return sp;
+			}			
+			return w / (this.max() - 1);					
+				
 		}		
 		else if(this.type == 'y') {
 			var h = this.height;
