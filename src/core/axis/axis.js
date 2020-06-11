@@ -94,6 +94,15 @@ export default class jmAxis extends jmArrawLine {
 	 * @method reset
 	 */
 	reset() {		
+		this.clear();
+
+		// 计算最大最小值
+		for(var i=0; i< this.data.length;i++) {	
+			const v = this.data[i][this.field]; 
+			this.max(v);
+			this.min(v);
+		}
+
 		const bounds = this.graph.chartArea.getBounds();// 获取画图区域
 		switch(this.type) {
 			case 'x' : {	
@@ -141,13 +150,6 @@ export default class jmAxis extends jmArrawLine {
 				}
 				break;
 			}
-		}
-
-		// 计算最大最小值
-		for(var i=0; i< this.data.length;i++) {	
-			const v = this.data[i][this.field]; 
-			this.max(v);
-			this.min(v);
 		}
 
 		this.createLabel();
@@ -198,12 +200,14 @@ export default class jmAxis extends jmArrawLine {
 		//字符串轴。则显示每个标签	
 		var top = this.style.xLabel.margin.top || 0;		
 		for(var i=0; i< this.data.length;i++) {	
-			var v = this.data[i][this.field]; 	
+			const d = this.data[i];
+			const v = d[this.field]; 	
 			
 			var w = i * step;
 			var label = this.graph.createShape(jmLabel, {
 				style: this.style.xLabel
 			});
+			label.data = d; // 当前点的数据结构值
 
 			if(typeof v === 'undefined') {
 				label.visible = false;
@@ -214,7 +218,7 @@ export default class jmAxis extends jmArrawLine {
 			this.children.add(label);
 			label.width = label.width + 2;
 			label.height = 15;
-			var pos = {
+			const pos = {
 				x: this.labelStart + w,
 				y: top
 			};

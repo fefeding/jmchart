@@ -104,8 +104,12 @@ jmChart.prototype.getColor = function(index) {
 jmChart.prototype.beginDraw = function() {
 	//图排版//inside 起始点为一个单位，否则为原点
 	this.layout = this.style.layout;
+	
 	//重置图例
 	this.legend.init();
+
+	//先定位图例等信息，确定画图区域
+	this.resetAreaPosition();
 
 	if(this.xAxis) {
 		this.xAxis.clear();
@@ -118,8 +122,7 @@ jmChart.prototype.beginDraw = function() {
 		}
 	}
 
-	//先定位图例等信息，确定画图区域
-	this.resetAreaPosition();
+	
 	//计算柱形图个数
 	this.barSeriesCount = 0;
 	//初始化图序列，并初始化轴值,生成图例项
@@ -141,14 +144,14 @@ jmChart.prototype.beginDraw = function() {
 		}
 		serie.reset();
 	});	
+	
+	//重置图例
+	this.legend.reset();	
 
-	//图例重置，它会更新画图区域属性
-	this.legend.reset();
-
-	//计算轴信息
 	if(this.xAxis) {
 		this.xAxis.reset();
 	}
+
 	//计算Y轴位置
 	if(this.yAxises) {
 		for(var i in this.yAxises) {
@@ -253,7 +256,7 @@ jmChart.prototype.createSeries = function (type, options = {}) {
 	const serie = this.createShape(type, options);
 	if(serie) {
 		this.series.add(serie);
-		this.children.add(serie);
+		this.chartArea.children.add(serie);
 	}
 	return serie;
 }

@@ -106,6 +106,8 @@ jmLegend.prototype.append = function(series, shape, options = {}) {
 jmLegend.prototype.init = function() {
 	this.position.x = 0;
 	this.position.y = 0;
+	this.width = 0;
+	this.height = 0;
 	this.style.lineWidth = 0;
 	this.children.clear();
 }
@@ -116,6 +118,7 @@ jmLegend.prototype.init = function() {
  * @method reset
  */
 jmLegend.prototype.reset = function() {
+	
 	if(this.visible !== false) {
 		this.position.x = this.graph.chartArea.position.x;
 		this.position.y = this.graph.chartArea.position.y;

@@ -28,7 +28,7 @@ export default class jmLineSeries extends jmSeries {
 	beginDraw() {
 		super.beginDraw();
 		//生成描点位
-		this.createPoints();
+		this.points = this.createPoints();
 		//去除多余的线条
 		//当数据源线条数比现有的少时，删除多余的线条
 		const len = this.points.length;
@@ -37,16 +37,9 @@ export default class jmLineSeries extends jmSeries {
 		//if(!this.style.fill) this.style.fill = jmUtils.toColor(this.style.stroke,null,null,20);	
 		this.style.stroke = this.style.color;
 		//是否启用动画效果
-		var ani = typeof this.enableAnimate === 'undefined'? this.graph.enableAnimate: this.enableAnimate;
+		//var ani = typeof this.enableAnimate === 'undefined'? this.graph.enableAnimate: this.enableAnimate;
 		this.style.item.stroke = this.style.color;
-		//var prePoint;
-		var shape = this.shapes.get(0);
-		if(!shape) {
-			shape = this.shapes.add(this.graph.createPath(null,this.style))
-			this.graph.chartArea.children.add(shape);
-		}
-		var shapePoints = [];
-		
+				
 		for(var i=0;i<len;i++) {
 			var p = this.points[i];
 			
@@ -55,7 +48,7 @@ export default class jmLineSeries extends jmSeries {
 				//prePoint = null;						
 				continue;
 			}
-			var pointShape = this.graph.createShape(jmArc,{
+			const pointShape = this.graph.createShape(jmArc,{
 				style: this.style.item,
 				center: p,
 				radius: this.style.radius || 3
@@ -63,29 +56,7 @@ export default class jmLineSeries extends jmSeries {
 			pointShape.zIndex = (pointShape.style.zIndex || 1) + 1;	
 			this.graph.chartArea.children.add(pointShape);
 			this.shapes.add(pointShape);
-			this.bindTooltip(pointShape,p);				
-			shapePoints.push(p);
-		}	
-
-		//如果有动画，则分批加入坐标点
-		if(ani) {
-			shape.points = [];
-			shape.animate(function(sp,ps,t) {
-				for(var i=0;i<t;i++) {
-					var index = sp.points.length;
-					if(index < ps.length) {
-						sp.points.push(ps[index]);	
-					}
-					else {
-						break;
-					}			
-				}
-				return sp.points.length < ps.length;
-
-			},50,shape,shapePoints,Math.ceil(shapePoints.length / 20));
-		}
-		else {
-			shape.points = shapePoints;
+			this.bindTooltip(pointShape, p);	
 		}
 	}
 
