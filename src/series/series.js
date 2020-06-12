@@ -52,6 +52,9 @@ export default class jmSeries extends jmPath {
 	 * 当前图形下的所有子图
 	 */
 	shapes = new jmList();
+
+	// 图绑定的属性名
+	field = '';
 };
 
 /**
@@ -69,6 +72,18 @@ jmSeries.prototype.reset = function() {
 	var shape;
 	while(shape = this.shapes.shift()) {
 		shape && shape.remove();
+	}
+
+	// 计算最大最小值
+	// 当前需要先更新axis的边界值，轴好画图
+	for(var i=0; i< this.data.length;i++) {	
+		const v = this.data[i][this.field]; 
+		this.yAxis.max(v);
+		this.yAxis.min(v);
+
+		const xv = this.data[i][this.xAxis.field]; 
+		this.xAxis.max(xv);
+		this.xAxis.min(xv);
 	}
 
 	return this.chartInfo = {
@@ -94,7 +109,7 @@ jmSeries.prototype.createPoints = function(data) {
 		var s = data[i];
 		
 		var xv = s[this.xAxis.field];
-		var yv = s[this.yAxis.field];
+		var yv = s[this.field];
 
 		var p = {				
 			data: s,
@@ -165,11 +180,11 @@ jmSeries.prototype.decodeInfo = function(info,item) {
  * @param {jmControl} shape 被绑定提示的控件
  * @param {object} item 当前点数据源 
  */
-jmSeries.prototype.bindTooltip = function(shape,item) {	
+jmSeries.prototype.bindTooltip = function(shape, item) {	
 	shape.itemPoint = item;
-	shape.tooltip = this.decodeInfo(this.tooltip,item);	
+	shape.tooltip = this.decodeInfo(this.tooltip, item);	
 	//显示提示信息	
-	shape.bind('mousemove',function(evt) {						
+	shape.bind('mousemove touchmove', (evt) => {						
 		/*this.graph.tooltip.value(this.tooltip);
 		var x = evt.position.x - this.graph.tooltip.width;
 		if(x < 0) {
@@ -180,9 +195,10 @@ jmSeries.prototype.bindTooltip = function(shape,item) {
 		//应用动态样式
 		Object.assign(this.style, this.style.hover);
 		this.graph.refresh();*/
+		console.log(item, this);
 		return false;
 	});
-	shape.bind('mouseleave',function(evt) {
+	shape.bind('mouseleave',(evt) => {
 		/*this.graph.tooltip.hide();
 		Object.assign(this.style, this.style.normal);
 		this.graph.refresh();*/

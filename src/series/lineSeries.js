@@ -2,6 +2,8 @@ import jmBezier from '../../node_modules/jmgraph/src/shapes/jmBezier.js';
 import jmArc from '../../node_modules/jmgraph/src/shapes/jmArc.js';
 import jmSeries from './series.js';
 
+const PreDrawKey = Symbol('lineSeries#preDraw');
+
 /**
  * 图形基类
  *
@@ -17,16 +19,17 @@ export default class jmLineSeries extends jmSeries {
 	constructor(options) {
 		options.style = options.style || options.graph.style.line;
 		super(options);
+
+		//this.on('beginDraw', this[PreDrawKey]);
 	}
 
 	/**
-	 * 绘制当前图形
+	 * 绘制图形前 初始化线条
 	 *
-	 * @method draw
+	 * @method preDraw
 	 * @for jmLineSeries
 	 */
-	beginDraw() {
-		super.beginDraw();
+	init() {
 		//生成描点位
 		this.points = this.createPoints();
 		//去除多余的线条
@@ -110,53 +113,30 @@ export default class jmLineSeries extends jmSeries {
 class jmSplineSeries extends jmLineSeries {
 	constructor(options) {
 		super(options);
-	}
-}
 
-/**
- * 绘制当前图形
- *
- * @method draw
- * @for jmSplineSeries
- */
-jmSplineSeries.prototype.draw = function() {			
-	var chartinfo = this.chartInfo || this.reset();	
-	var source = this.source || this.graph.source;		
-	if(source) {
+		this.curve = true;// 标记为圆滑的线
+	}
+
+	// 初始化图形
+	init() {
 		//生成描点位
-		this.createPoints(source);
+		const points = this.createPoints();
 		//去除多余的线条
 		//当数据源线条数比现有的少时，删除多余的线条
-		var len = this.points.length;
-		var shapecount = this.shapes.count();
-
-		//清除所有现有的图形			
-		for(var i=shapecount-1;i>=0;i--) {
-			var shape = this.shapes.get(i);
-			this.shapes.removeAt(i);
-			if(shape) {
-				shape.remove();
-			}
-		}
+		const len = points.length;
 
 		//设定其填充颜色
 		//if(!this.style.fill) this.style.fill = jmUtils.toColor(this.style.stroke,null,null,20);	
 		this.style.stroke = this.style.color;		
 
-		var bezier;//圆滑线条使用的贝塞尔对象
+		let bezier;//圆滑线条使用的贝塞尔对象
 		//是否启用动画效果
 		var ani = typeof this.enableAnimate === 'undefined'?this.graph.enableAnimate:this.enableAnimate;
-		this.style.item.stroke = this.style.color;
-		//var prePoint;
-		var shape = this.shapes.get(0);
-		if(!shape) {
-			shape = this.shapes.add(this.graph.createPath(null,this.style))
-			this.graph.chartArea.children.add(shape);
-		}
-		var shapePoints = [];
-		
+		this.style.item.stroke = this.style.color;		
+		let shapePoints = []; // 计算出来的曲线点集合
+
 		for(var i=0;i<len;i++) {
-			var p = this.points[i];
+			var p = points[i];
 			
 			//如果当前点无效，则跳致下一点
 			if(typeof p.y == 'undefined'  || p.y == null) {
@@ -164,7 +144,7 @@ jmSplineSeries.prototype.draw = function() {
 				continue;
 			}
 			
-			var pointShape = this.graph.graph.createShape(jmArc,{
+			const pointShape = this.graph.createShape(jmArc,{
 				style: this.style.item,
 				center: p,
 				radius: this.style.radius || 3
@@ -172,7 +152,7 @@ jmSplineSeries.prototype.draw = function() {
 			pointShape.zIndex = (pointShape.style.zIndex || 1) + 1;	
 			this.graph.chartArea.children.add(pointShape);
 			this.shapes.add(pointShape);
-			this.bindTooltip(pointShape,p);
+			this.bindTooltip(pointShape, p);
 
 			var startPoint = shapePoints[shapePoints.length - 1];
 			if(startPoint && startPoint.y != undefined && startPoint.y != null) {
@@ -193,23 +173,23 @@ jmSplineSeries.prototype.draw = function() {
 
 		//如果有动画，则分批加入坐标点
 		if(ani) {
-			shape.points = [];
-			shape.animate(function(sp,ps,t) {
+			this.points = [];
+			this.animate(function(sp,ps,t) {
 				for(var i=0;i<t;i++) {
 					var index = sp.points.length;
 					if(index < ps.length) {
-						sp.points.push(ps[index]);	
+						this.points.push(ps[index]);	
 					}
 					else {
 						break;
 					}			
 				}
-				return sp.points.length < ps.length;
+				return this.points.length < ps.length;
 
-			},50,shape,shapePoints,Math.ceil(shapePoints.length / 20));
+			},50,this,shapePoints,Math.ceil(shapePoints.length / 20));
 		}
 		else {
-			shape.points = shapePoints;
+			this.points = shapePoints;
 		}	
 	}
 }

@@ -27,7 +27,7 @@
 		<script type="module">
 			import jmChart from '../src/jmChart.js';
 			(function load() {
-				var w = (window.innerWidth || window.document.body.clientWidth) * 0.8;
+				var w = (window.innerWidth || window.document.body.clientWidth) * 0.9;
 				var h = Math.min((window.innerHeight || window.document.body.clientHeight) * 0.4,400);			
 				inichart(w,h);
 			})();
@@ -39,7 +39,7 @@
 						height: h,
 						xField: 'x'
 					});
-					chart.legend.legendPosition = 'right';
+					chart.legend.legendPosition = 'top';
 					chart.legend.visible = true;
 					chart.enableAnimate = false;
 					
@@ -52,9 +52,9 @@
 
 					var line2 = chart.createSeries('line', {
 						field: 'y2',
+						//index: 2, // 指定Y轴索引，如是档指定就会共用左边的Y轴，  
 						legendLabel: '图例2'
 					});
-					line2.curve = true;//画曲线
 					//line2.enableAnimate = true;
 
 					//line2.enableAnimate = true;
@@ -62,11 +62,10 @@
 					//line2.legendLabel = "测试图例2afasdf";
 
 
-	
-					//var ymapping4 = {field:'y4',type:'y',dataType:'number',index:2};
-					//var line4 = chart.createSeries('spline',[xmapping,ymapping4]);
-					//line4.legendLabel = "测试图二";
-					//chart.series.add(line4);							
+					var line3 = chart.createSeries('spline', {
+						field: 'y3',
+						legendLabel: '图例3'
+					});						
 		/*		
 					var ymapping5 = {field:'y5',type:'y',dataType:'number'};
 					var line5 = chart.createSeries('line',[xmapping,ymapping5]);
@@ -81,7 +80,7 @@
 					chart.series.add(line7);	
 					line7.enableAnimate = true;	
 */
-					var datacount = 10;
+					const datacount = 6;
 					function animate() {
 						if(true) {
 							chart.data = [];
@@ -144,12 +143,12 @@
 					animate();
 
 					chart.utils.bindEvent(document.getElementById('btnRedraw'),'click',function() {
-							chart.source = [];
+							chart.data = [];
 							//datacount = Math.random() * 10 + 4;
 							for(var i = 0;i<datacount;i++) {
 								var data = {
-									x : Math.random() * 10000 + (new Date).getTime(),
-									y : Math.random() * 200 + 100,
+									x : i,
+									y1 : Math.random() * 200 + 100,
 									y2:Math.random() * 200,
 									y3:Math.random() * 200 + 50,
 									y4:Math.random() * 200 + 50,
@@ -160,7 +159,7 @@
 									y9:Math.random() * 200 - 50,
 									y10:Math.random() * 200 - 50
 								};
-								chart.source.push(data);
+								chart.data.push(data);
 							}
 							chart.refresh();
 							//chart2.refresh();
