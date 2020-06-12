@@ -25,8 +25,13 @@ export default class jmSeries extends jmPath {
 		
 		// 生成当前Y轴
 		this.yAxis = this.yAxis || this.graph.createYAxis({
-			field: this.field,
 			index: this.index
+		});
+		// 初始化一些参数， 因为这里有多个Y轴的可能，所以每次都需要重调一次init
+		this.yAxis.init({
+			field: this.field,
+			minYValue: options.minYValue,
+			maxYValue: options.maxYValue
 		});
 	}
 
@@ -161,7 +166,7 @@ jmSeries.prototype.createLegend = function() {
  * @param {string} tip 需要被替换的字符串
  * @param {object} item 当前点数据源 
  */
-jmSeries.prototype.decodeInfo = function(info,item) {
+jmSeries.prototype.decodeInfo = function(info, item) {
 	if(!info) info = '#X<br />#LEGENDLABEL:#Y';
 	info = info.replace('#LEGENDLABEL',this.legendLabel?this.legendLabel:'')//替换图例说明关健词
 			 .replace('#X',item.xLabel?item.xLabel:'')//替换X值
@@ -191,17 +196,17 @@ jmSeries.prototype.bindTooltip = function(shape, item) {
 			x = evt.position.x;
 		}
 		this.graph.tooltip.setPosition(x,evt.position.y + 10);
-		this.graph.tooltip.show();
+		this.graph.tooltip.show();*/
 		//应用动态样式
-		Object.assign(this.style, this.style.hover);
-		this.graph.refresh();*/
+		//this.style.hover && Object.assign(this.style, this.style.hover);
+		//.graph.refresh();
 		console.log(item, this);
 		return false;
 	});
-	shape.bind('mouseleave',(evt) => {
-		/*this.graph.tooltip.hide();
-		Object.assign(this.style, this.style.normal);
-		this.graph.refresh();*/
+	shape.bind('mouseleave touchend touchcancel',(evt) => {
+		/*this.graph.tooltip.hide();*/
+		//this.style.normal && Object.assign(this.style, this.style.normal);
+		//this.graph.refresh();
 	});	
 }
 

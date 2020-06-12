@@ -20,18 +20,18 @@ import {
  */
 export default class jmChart extends jmgraph.jmGraph  {
 
-	constructor(container, option) {
-		option = Object.assign({
+	constructor(container, options) {
+		options = Object.assign({
 			style: defaultStyle
-		}, option||{});
+		}, options||{});
 
-		super(container, option);
+		super(container, options);
 
-		this.data = option.data || [];
+		this.data = options.data || [];
 		// x轴绑定的字段名
-		this.xField = option.xField || '';
+		this.xField = options.xField || '';		
 
-		this.init();
+		this.init(options);
 	}
 
 	/**
@@ -45,7 +45,7 @@ export default class jmChart extends jmgraph.jmGraph  {
 	series = new jmgraph.jmList();
 
 	// 初始化图表
-	init() {
+	init(options) {
 
 		/**
 		 * 绘图区域
@@ -78,6 +78,11 @@ export default class jmChart extends jmgraph.jmGraph  {
 		 */
 		//this.tooltip = this.graph.createShape('tooltip',{style:this.style.tooltip});
 		//this.chartArea.children.add(this.tooltip);
+
+		this.createXAxis({
+			minXValue: options.minXValue,
+			maxXValue: options.maxXValue
+		});// 生成X轴
 	}
 }
 
@@ -102,8 +107,6 @@ jmChart.prototype.getColor = function(index) {
  * @method beginDraw 
  */
 jmChart.prototype.beginDraw = function() {
-	//图排版//inside 起始点为一个单位，否则为原点
-	this.layout = this.style.layout;
 	
 	//重置图例
 	this.legend.init();
@@ -129,11 +132,10 @@ jmChart.prototype.beginDraw = function() {
 	this.series.each(function(i, serie) {
 		//设定边框颜色和数据项图示颜 色
 		serie.style.color = serie.style.color || serie.graph.getColor(i);
-		//如果没有指定图排版方式，则如果有非线图，就表示默认为inside
-		if(!serie.graph.layout) {
-			if(!serie.graph.utils.isType(serie, jmLineSeries) && 
-				!serie.graph.utils.isType(serie, jmSplineSeries)) {			
-					serie.graph.layout = 'inside';
+		//如果排版指定非内缩的方式，但出现了柱图，还是会采用内缩一个刻度的方式
+		if(serie.graph.style.layout != 'inside') {
+			if(serie.graph.utils.isType(serie, jmBarSeries)) {			
+					serie.graph.style.layout = 'inside';
 			}
 		}
 		

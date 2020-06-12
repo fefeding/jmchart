@@ -6,7 +6,8 @@
  * @module jmChart
  * @static
  */
-export default {	
+export default {
+	layout: 'normal',	// inside 二边不对齐Y轴，内缩一个刻度 | normal
 	margin:{
 		left: 60,
 		top: 20,
@@ -45,8 +46,7 @@ export default {
 			}
 		}
 	},
-	chartArea: {
-		layout: 'normal',		
+	chartArea: {		
 		stroke: 'rgb(229,229,229)',
 		margin:{
 			left:60,
@@ -174,8 +174,8 @@ export default {
 		shadow: {
 			x: 1,
 			y: 1,
-			blur: 5,
-			color: '#000'
+			blur: 2,
+			color: '#ccc'
 		}
 	}
 }

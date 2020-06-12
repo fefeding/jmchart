@@ -15,10 +15,11 @@ import  jmLabel from '../../../node_modules/jmgraph/src/shapes/jmLabel.js';
 export default class jmAxis extends jmArrawLine {
 	constructor(options) {
 		super(options);
-		
+
 		//初始化不显示箭头
 		this.arrawVisible = !!options.arrawVisible;
 		this.zeroBase = options.zeroBase || false;
+
 		this.labelCount = options.labelCount || 1;
 		this.type = options.type || 'x';// 为横轴x或纵轴y
 
@@ -30,7 +31,24 @@ export default class jmAxis extends jmArrawLine {
 		}
 
 		this.field = options.field || '';
-		this.index = options.index || 0;
+		this.index = options.index || 0;		
+
+		this.init(options);
+	}
+
+	// 初始化一些参数
+	// 这个函数可能会重入。
+	init(options) {
+		options = options || {};
+
+		if(this.type == 'x') {
+			if(typeof options.maxXValue !== 'undefined') this.maxValue = options.maxXValue; // 最大的值，如果指定了，则如果有数值比它大才会修改上限，否则以它为上限
+			if(typeof options.minXValue !== 'undefined') this.minValue = options.minXValue;// 最小值，如果指定了，则轴的最小值为它或更小的值
+		}
+		else {
+			if(typeof options.maxYValue !== 'undefined') this.maxValue = options.maxYValue; // 最大的值，如果指定了，则如果有数值比它大才会修改上限，否则以它为上限
+			if(typeof options.minYValue !== 'undefined') this.minValue = options.minYValue;// 最小值，如果指定了，则轴的最小值为它或更小的值
+		}
 	}
 
 	/**
@@ -376,7 +394,9 @@ export default class jmAxis extends jmArrawLine {
 			if(this.dataType == 'number' && m < 0 && this.zeroBase) {
 				m = 0;
 			}
-			this._max = this._max != null && typeof(this._max) != 'undefined'?Math.max(m,this._max):m;						
+			this._max = this._max != null && typeof(this._max) != 'undefined'? Math.max(m, this._max) : m;	
+			// 如果有指定默认最大值，则不超过它就采用它
+			if(typeof this.maxValue != 'undefined') this._max = Math.max(this.maxValue, this._max);					
 		}	
 		//如果为字符串，则返回分类个数
 		if(this.dataType == 'string' && this.data) {
@@ -405,6 +425,10 @@ export default class jmAxis extends jmArrawLine {
 			else {
 				m = Math.floor(m) + 1;
 			}
+			// 如果有指定默认最大值，则不超过它就采用它
+			if(typeof this.maxValue != 'undefined')  {
+				return Math.max(this.maxValue, m);
+			}
 			return m;
 		}	
 
@@ -424,7 +448,9 @@ export default class jmAxis extends jmArrawLine {
 			if(this.dataType == 'number' && m > 0 && this.zeroBase) {
 				m = 0;
 			}
-			this._min = this._min != null && typeof(this._min) != 'undefined'?Math.min(m,this._min):m;						
+			this._min = this._min != null && typeof(this._min) != 'undefined'? Math.min(m, this._min) : m;	
+			// 如果有指定默认最小值，则不小于它就采用它
+			if(typeof this.minValue != 'undefined') this._min = Math.min(this.minValue, this._min);						
 		}
 
 		//如果是数字类型，则在最小值基础上减去一定的值
@@ -450,6 +476,10 @@ export default class jmAxis extends jmArrawLine {
 			}
 			else {
 				m = Math.floor(m) - 1;
+			}
+			// 如果有指定默认最小值，则不小于它就采用它
+			if(typeof this.minValue != 'undefined')  {
+				return Math.min(this.minValue, m);
 			}
 			return m;
 		}
@@ -479,7 +509,7 @@ export default class jmAxis extends jmArrawLine {
 
 			//如果排版为内联，则单位占宽减少一个单位,
 			//也就是起始位从一个单位开始
-			if(this.graph.layout == 'inside') {
+			if(this.graph.style.layout == 'inside') {
 				var sp =  w / this.max();	
 				this.labelStart = sp / 2;
 				return sp;
