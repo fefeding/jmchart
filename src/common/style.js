@@ -17,7 +17,7 @@ export default {
 		stroke: 'transparent',		
 		lineWidth: 0,
 		margin: {
-			left:20,
+			left:10,
 			top:10,
 			right:20,
 			bottom:20
@@ -91,6 +91,7 @@ export default {
 			}
 		}
 	},
+	// 图形样式集
 	chartColors : ['#249FDA','#EA3B7C','#8EBC00','#309B46','#4B507E','#D8E404','#EB792A','#A00DA0'],
 	tooltip: {
 		'background-color': 'rgb(255,255,255)',
@@ -135,6 +136,8 @@ export default {
 			cursor: 'pointer'
 		},
 		lineWidth:1.5,
+		// 柱子宽占比，决定了柱子相对于总宽度
+		perWidth: 0.5,
 		zIndex: 17,
 		cursor: 'default',
 		close : true,

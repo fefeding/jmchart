@@ -93,16 +93,8 @@ export default class jmAxis extends jmArrawLine {
 	 * 
 	 * @method reset
 	 */
-	reset() {		
-		this.clear();
-
-		// 计算最大最小值
-		for(var i=0; i< this.data.length;i++) {	
-			const v = this.data[i][this.field]; 
-			this.max(v);
-			this.min(v);
-		}
-
+	reset() {	
+		
 		const bounds = this.graph.chartArea.getBounds();// 获取画图区域
 		switch(this.type) {
 			case 'x' : {	

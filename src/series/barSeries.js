@@ -36,7 +36,7 @@ export default class jmBarSeries extends jmSeries {
 
 			//计算每个柱子占宽
 			//每项柱子占宽除以柱子个数,默认最大宽度为30		
-			this.barTotalWidth = (this.xAxis.width / len * 0.8);
+			this.barTotalWidth = (this.xAxis.width / len * (this.style.perWidth||0.4));
 			this.barWidth = this.barTotalWidth / this.graph.barSeriesCount;
 			var maxBarWidth = this.graph.barMaxWidth || 50;
 			if(this.barWidth > maxBarWidth) {

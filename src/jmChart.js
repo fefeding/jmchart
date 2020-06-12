@@ -158,6 +158,11 @@ jmChart.prototype.beginDraw = function() {
 			this.yAxises[i].reset();
 		}
 	}
+
+	//最后再来初始化图形，这个必须在轴初始化完后才能执行
+	this.series.each(function(i, serie) {		
+		serie.init && serie.init();
+	});	
 }
 
 /**
@@ -249,7 +254,8 @@ jmChart.prototype.createSeries = function (type, options = {}) {
 	}
 
 	//默认样式为类型对应的样式
-	options.style = Object.assign(this.utils.clone(this.style[type]), options.style || {});
+	const style = this.style[type] || this.style['line'];
+	options.style = Object.assign(this.utils.clone(style), options.style || {});
 
 	if(typeof type == 'string') type = this.serieTypes[type];
 	
