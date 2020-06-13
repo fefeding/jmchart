@@ -21,9 +21,10 @@ import {
 export default class jmChart extends jmgraph.jmGraph  {
 
 	constructor(container, options) {
-		options = Object.assign({
-			style: defaultStyle
-		}, options||{});
+		options = options||{};
+
+		 // 深度复制默认样式，以免被改
+		options.style = jmgraph.jmUtils.clone(defaultStyle, options.style, true);
 
 		super(container, options);
 
@@ -81,7 +82,8 @@ export default class jmChart extends jmgraph.jmGraph  {
 
 		this.createXAxis({
 			minXValue: options.minXValue,
-			maxXValue: options.maxXValue
+			maxXValue: options.maxXValue,
+			format: options.xLabelFormat
 		});// 生成X轴
 	}
 }
@@ -193,7 +195,9 @@ jmChart.prototype.resetAreaPosition = function () {
  * @return {axis} 轴
  */
 jmChart.prototype.createAxis = function (options) {
-	options.style = options.style || this.style.axis;
+	// 深度组件默认样式
+	options.style = this.utils.clone(this.style.axis, options.style, true);
+
 	const axis = this.createShape(jmAxis, options);
 	this.children.add(axis);
 	return axis;
@@ -257,7 +261,8 @@ jmChart.prototype.createSeries = function (type, options = {}) {
 
 	//默认样式为类型对应的样式
 	const style = this.style[type] || this.style['line'];
-	options.style = Object.assign(this.utils.clone(style), options.style || {});
+	// 深度组件默认样式
+	options.style = this.utils.clone(style, options.style, true);
 
 	if(typeof type == 'string') type = this.serieTypes[type];
 	

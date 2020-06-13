@@ -27,7 +27,7 @@
 		<script type="module">
 			import jmChart from '../src/jmChart.js';
 			(function load() {
-				var w = (window.innerWidth || window.document.body.clientWidth) * 0.8;
+				var w = Math.max((window.innerWidth || window.document.body.clientWidth) * 0.8, 600);
 				var h = Math.max((window.innerHeight || window.document.body.clientHeight) * 0.5, 400);			
 				inichart(w,h);
 			})();

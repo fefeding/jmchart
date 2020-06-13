@@ -31,7 +31,9 @@ export default class jmAxis extends jmArrawLine {
 		}
 
 		this.field = options.field || '';
-		this.index = options.index || 0;		
+		this.index = options.index || 0;
+		
+		this.format = options.format || this.format;// 可以重写格式化label参数
 
 		this.init(options);
 	}
@@ -223,7 +225,8 @@ export default class jmAxis extends jmArrawLine {
 				label.visible = false;
 			}
 
-			label.text = v + '';
+			label.text = this.format(v, d, i); // 格式化label
+
 			this.labels.push(label);
 			this.children.add(label);
 			label.width = label.width + 2;
@@ -294,7 +297,7 @@ export default class jmAxis extends jmArrawLine {
 			var label = this.graph.graph.createShape(jmLabel, {
 				style: this.style.yLabel
 			});
-			label.text = v;
+			label.text = this.format(v, label); // 格式化label
 			this.labels.push(label);
 			this.children.add(label);
 
@@ -532,6 +535,10 @@ export default class jmAxis extends jmArrawLine {
 				}
 			}
 		}
+	}
+	// 格式化标签值
+	format(v, item) {
+		return v + '';
 	}
 }
 	

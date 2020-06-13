@@ -92,7 +92,9 @@ export default {
 		}
 	},
 	// 图形样式集
-	chartColors : ['#249FDA','#EA3B7C','#8EBC00','#309B46','#4B507E','#D8E404','#EB792A','#A00DA0'],
+	chartColors : [
+		'#C79156', '#249FDA','#EA3B7C','#8EBC00','#309B46','#4B507E','#D8E404','#EB792A','#A00DA0'
+	],
 	tooltip: {
 		'background-color': 'rgb(255,255,255)',
 		'padding':'4px',
