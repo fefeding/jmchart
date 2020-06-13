@@ -34,6 +34,9 @@ export default class jmLegend extends jmRect {
  * @param {jmControl} shape 当前图例的图形对象
  */
 jmLegend.prototype.append = function(series, shape, options = {}) {
+	// 如果不显示图例，就不处理
+	if(this.visible === false) return;
+
 	const panel = this.graph.createShape(jmRect,{
 		style: this.graph.utils.clone(this.style.item),
 		position: {

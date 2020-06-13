@@ -161,25 +161,6 @@ jmSeries.prototype.createLegend = function() {
 }
 
 /**
- * 按规则替换说明文字，把其它的特殊标记换成当前对象的值
- *
- * @method decodeTooltip
- * @param {string} tip 需要被替换的字符串
- * @param {object} item 当前点数据源 
- */
-jmSeries.prototype.decodeInfo = function(info, item) {
-	if(!info) info = '#X<br />#LEGENDLABEL:#Y';
-	info = info.replace('#LEGENDLABEL',this.legendLabel?this.legendLabel:'')//替换图例说明关健词
-			 .replace('#X',item.xLabel?item.xLabel:'')//替换X值
-			 .replace('#Y',item.yLabel?item.yLabel:'');//替换Y值
-	//替换掉当前点数据源的属性关健词
-	for(var k in item.source) {
-		info = info.replace('#DATAITEM.' + k,item.source[k]).replace('{DATA.' + k + '}',item.source[k]);
-	}
-	return info;
-}
-
-/**
  * 对当前图形绑定提示信息框
  *
  * @method bindTooltip
@@ -188,7 +169,7 @@ jmSeries.prototype.decodeInfo = function(info, item) {
  */
 jmSeries.prototype.bindTooltip = function(shape, item) {	
 	shape.itemPoint = item;
-	shape.tooltip = this.decodeInfo(this.tooltip, item);	
+	//shape.tooltip = this.decodeInfo(this.tooltip, item);	
 	//显示提示信息	
 	shape.bind('mousemove touchmove', (evt) => {						
 		/*this.graph.tooltip.value(this.tooltip);

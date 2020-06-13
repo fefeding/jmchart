@@ -1,6 +1,7 @@
 import jmBezier from '../../node_modules/jmgraph/src/shapes/jmBezier.js';
 import jmArc from '../../node_modules/jmgraph/src/shapes/jmArc.js';
 import jmSeries from './series.js';
+import jmPath from 'jmgraph/src/core/jmPath';
 
 const PreDrawKey = Symbol('lineSeries#preDraw');
 
@@ -42,24 +43,28 @@ export default class jmLineSeries extends jmSeries {
 		//是否启用动画效果
 		//var ani = typeof this.enableAnimate === 'undefined'? this.graph.enableAnimate: this.enableAnimate;
 		this.style.item.stroke = this.style.color;
-				
-		for(var i=0;i<len;i++) {
-			var p = this.points[i];
 			
-			//如果当前点无效，则跳致下一点
-			if(typeof p.y === 'undefined'  || p.y === null) {
-				//prePoint = null;						
-				continue;
+		// 是否显示数值点圆
+		if(this.style.showItem) {
+			for(var i=0; i< len;i++) {
+				var p = this.points[i];
+				
+				//如果当前点无效，则跳致下一点
+				if(typeof p.y === 'undefined'  || p.y === null) {
+					//prePoint = null;						
+					continue;
+				}
+				
+				const pointShape = this.graph.createShape(jmArc,{
+					style: this.style.item,
+					center: p,
+					radius: this.style.radius || 3
+				});
+				pointShape.zIndex = (pointShape.style.zIndex || 1) + 1;	
+				this.graph.chartArea.children.add(pointShape);
+				this.shapes.add(pointShape);
+				this.bindTooltip(pointShape, p);	
 			}
-			const pointShape = this.graph.createShape(jmArc,{
-				style: this.style.item,
-				center: p,
-				radius: this.style.radius || 3
-			});
-			pointShape.zIndex = (pointShape.style.zIndex || 1) + 1;	
-			this.graph.chartArea.children.add(pointShape);
-			this.shapes.add(pointShape);
-			this.bindTooltip(pointShape, p);	
 		}
 	}
 
@@ -95,6 +100,26 @@ export default class jmLineSeries extends jmSeries {
 			}];
 		}
 		this.graph.legend.append(this,shape);
+	}
+
+	// 生成布效果
+	createArea(points) {
+		// 有指定绘制区域效果才展示
+		if(!this.style.area || points.length < 2) return;
+
+		const start = points[0];
+		const end = points[points.length - 1];
+
+		const style = this.graph.utils.clone(this.style.area);
+		if(!style.fill) {
+			style.fill = `linear-gradient(50% 0 50% 100%, color1 step, color2 step, ...)`;
+		}
+		const area = this.graph.createShape(jmPath, {
+			points: this.graph.utils.clone(points, true)
+		});
+
+		this.graph.chartArea.children.add(area);
+		this.shapes.add(area);
 	}
 }
 
@@ -144,15 +169,18 @@ class jmSplineSeries extends jmLineSeries {
 				continue;
 			}
 			
-			const pointShape = this.graph.createShape(jmArc,{
-				style: this.style.item,
-				center: p,
-				radius: this.style.radius || 3
-			});
-			pointShape.zIndex = (pointShape.style.zIndex || 1) + 1;	
-			this.graph.chartArea.children.add(pointShape);
-			this.shapes.add(pointShape);
-			this.bindTooltip(pointShape, p);
+			// 是否显示数值点圆
+			if(this.style.showItem) {
+				const pointShape = this.graph.createShape(jmArc,{
+					style: this.style.item,
+					center: p,
+					radius: this.style.radius || 3
+				});
+				pointShape.zIndex = (pointShape.style.zIndex || 1) + 1;	
+				this.graph.chartArea.children.add(pointShape);
+				this.shapes.add(pointShape);
+				this.bindTooltip(pointShape, p);
+			}
 
 			var startPoint = shapePoints[shapePoints.length - 1];
 			if(startPoint && startPoint.y != undefined && startPoint.y != null) {

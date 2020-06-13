@@ -54,7 +54,7 @@ export default class jmChart extends jmgraph.jmGraph  {
 		 * @property chartArea
 		 * @type jmControl
 		 */
-		this.chartArea = this.createShape(jmRect, {
+		this.chartArea = this.chartArea || this.createShape(jmRect, {
 			style: this.style.chartArea,
 			position: { x: 0, y: 0}
 		});
@@ -66,10 +66,14 @@ export default class jmChart extends jmgraph.jmGraph  {
 		 * @property legend
 		 * @type jmLegend
 		 */
-		this.legend = this.createShape(jmLegend, {
+		this.legend = this.legend || this.createShape(jmLegend, {
 			style: this.style.legend
 		});
 		this.children.add(this.legend);
+		// 不显示图例
+		if(options.legendVisible === false) {
+			this.legend.visible = false;
+		}
 
 		/**
 		 * 图表提示控件
@@ -111,7 +115,7 @@ jmChart.prototype.getColor = function(index) {
 jmChart.prototype.beginDraw = function() {
 	
 	//重置图例
-	this.legend.init();
+	this.legend && this.legend.init();
 
 	//先定位图例等信息，确定画图区域
 	this.resetAreaPosition();
@@ -150,7 +154,7 @@ jmChart.prototype.beginDraw = function() {
 	});	
 	
 	//重置图例
-	this.legend.reset();	
+	this.legend && this.legend.reset();	
 
 	if(this.xAxis) {
 		this.xAxis.reset();

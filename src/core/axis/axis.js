@@ -1,5 +1,6 @@
 import  jmArrawLine from '../../../node_modules/jmgraph/src/shapes/jmArrawLine.js';
 import  jmLabel from '../../../node_modules/jmgraph/src/shapes/jmLabel.js';
+import  jmLine from '../../../node_modules/jmgraph/src/shapes/jmLine.js';
 
 /**
  * 轴
@@ -42,6 +43,8 @@ export default class jmAxis extends jmArrawLine {
 	// 这个函数可能会重入。
 	init(options) {
 		options = options || {};
+		// 深度组件默认样式
+		if(options.style) this.graph.utils.clone(options.style, this.style, true);
 
 		if(this.type == 'x') {
 			if(typeof options.maxXValue !== 'undefined') this.maxValue = options.maxXValue; // 最大的值，如果指定了，则如果有数值比它大才会修改上限，否则以它为上限
@@ -178,14 +181,12 @@ export default class jmAxis extends jmArrawLine {
 	 *
 	 * @method createLabel
 	 */
-	createLabel() {
-		if(this.labels) {			
-			//移除原有的标签 
-			var len = this.labels.length;
-			for(var i=0;i<len;i++) {
-				this.labels[i].remove();
-			}
-		}
+	createLabel() {		
+		//移除原有的标签 
+		this.children.each(function(i, c) {
+			c.remove();
+		}, true);
+		
 		this.labels = [];
 		//如果是？X轴则执行X轴标签生成
 		if(this.type == 'x') {
@@ -235,6 +236,23 @@ export default class jmAxis extends jmArrawLine {
 				x: this.labelStart + w,
 				y: top
 			};
+
+			// 指定要显示网格
+			if(this.style.grid && this.style.grid.x) {
+				// 它的坐标是相对于轴的，所以Y轴会用负的区域高度
+				const line = this.graph.createShape(jmLine, {
+					start: {
+						x: pos.x,
+						y: 0
+					},
+					end: {
+						x: pos.x,
+						y: -this.graph.chartArea.height
+					},
+					style: this.style.grid
+				});
+				this.children.add(line);
+			}
 
 			//上一个标签位
 			var preLabel = this.labels.length>1?this.labels[this.labels.length - 2]:null;
@@ -324,6 +342,23 @@ export default class jmAxis extends jmArrawLine {
 					x:this.start.x - label.style.length,
 					y: offy + this.end.y
 				});
+
+				// 指定要显示网格
+				if(this.style.grid && this.style.grid.y) {
+					// 它的坐标是相对于轴的，所以Y轴会用负的区域高度
+					const line = this.graph.createShape(jmLine, {
+						start: {
+							x: 0,
+							y: offy
+						},
+						end: {
+							x: this.graph.chartArea.width,
+							y: offy
+						},
+						style: this.style.grid
+					});
+					this.children.add(line);
+				}
 			}
 			else {
 				//轴的宽度
@@ -414,19 +449,19 @@ export default class jmAxis extends jmArrawLine {
 				else m = -10;
 			}
 			else if(m > 500) {
-				m = Math.floor(m / 100);
+				m = Math.ceil(m / 100);
 				m = m * 100 + 100;
 			}
 			else if(m > 100) {
-				m = Math.floor(m / 50);
+				m = Math.ceil(m / 50);
 				m = m * 50 + 50;
 			}
 			else if(m > 10) {
-				m = Math.floor(m / 10);
+				m = Math.ceil(m / 10);
 				m = m * 10 + 10;
 			}
 			else {
-				m = Math.floor(m) + 1;
+				m = Math.ceil(m);
 			}
 			// 如果有指定默认最大值，则不超过它就采用它
 			if(typeof this.maxValue != 'undefined')  {
@@ -478,7 +513,7 @@ export default class jmAxis extends jmArrawLine {
 				m = m * 10 - 10;
 			}
 			else {
-				m = Math.floor(m) - 1;
+				m = Math.floor(m);
 			}
 			// 如果有指定默认最小值，则不小于它就采用它
 			if(typeof this.minValue != 'undefined')  {

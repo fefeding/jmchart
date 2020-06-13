@@ -12,6 +12,10 @@
 			width:100%;
 			height:100%;
 		}
+        #mycanvas {
+            text-align: center;
+            margin-top: 10px;
+        }
 		#mycanvas canvas, #mycanvas div{
 			background-color:#fff;
 			margin:0 auto;		
@@ -27,8 +31,8 @@
 		<script type="module">
 			import jmChart from '../src/jmChart.js';
 			(function load() {
-				var w = Math.max((window.innerWidth || window.document.body.clientWidth) * 0.8, 600);
-				var h = Math.max((window.innerHeight || window.document.body.clientHeight) * 0.5, 400);			
+				var w = Math.max((window.innerWidth || window.document.body.clientWidth) * 0.8, 400);
+				var h = Math.min((window.innerHeight || window.document.body.clientHeight) * 0.5, 280);			
 				inichart(w,h);
 			})();
 			
@@ -43,6 +47,7 @@
                         xField: 'x',
                         enableAnimate: false,
                         legendPosition: 'top',
+                        legendVisible: false, // 不显示图例
 						// 最大和最小X值，  这里一般不用指定，除非硬是需要
 						minXValue : 0,
 						maxXValue : 10,
@@ -53,6 +58,26 @@
                                 return v + '';
                             }
                             return '';
+                        },
+                        style: {
+                            // x轴 Y轴隐藏
+                            axis: {
+                                stroke: 'transparent',
+                                grid: {
+                                    x: false,  // 不显示X轴网格
+                                    y: true     // 显示Y轴网格
+                                }
+                            },
+                            // 隐藏边框
+                            chartArea: {
+                                stroke: 'transparent'
+                            },
+                            margin: {
+                                top: 10,
+                                left: 30,
+                                right: 10,
+                                bottom: 30
+                            }
                         }
 					});				
 
@@ -62,11 +87,15 @@
 						legendLabel: '图例2',
 						// 最大值和最小值，如果不指定会自动计算，
 						// 如果指定了也只是指定了最大或最小边界，如果有数值超过它，依然以事实数值为准
-						//minYValue: 0,
-                        //maxYValue: 500 ,
+						minYValue: 1,
+                        maxYValue: 5 ,
                         // 格式化x轴标签值
                         yLabelFormat: (v) => {
-                            return v.toFixed? (v.toFixed(2) + '%') : v;
+                            return v.toFixed? (v.toFixed(0) + '%') : v;
+                        },
+                        style: {
+                            // 不显示小圆点
+                            showItem: false
                         }
 					});
 					

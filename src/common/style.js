@@ -9,10 +9,10 @@
 export default {
 	layout: 'normal',	// inside 二边不对齐Y轴，内缩一个刻度 | normal
 	margin:{
-		left: 60,
+		left: 40,
 		top: 20,
-		right: 40,
-		bottom: 60
+		right: 20,
+		bottom: 40
 	},
 	legend: {		
 		stroke: 'transparent',		
@@ -48,17 +48,20 @@ export default {
 	},
 	chartArea: {		
 		stroke: 'rgb(229,229,229)',
-		margin:{
-			left:60,
-			top:20,
-			right:40,
-			bottom:40
-		}
+		zIndex: 5
 	},
 	axis: {
 		stroke:'#05468E',
 		lineWidth:1,
-		zIndex:20,
+		zIndex: 1 ,
+		// 显示网格
+		grid: {
+			x: true, // 是否显示网格
+			y: true,
+			stroke: 'rgb(229,229,229)',
+			lineWidth: 1,
+			zIndex: 0
+		},
 		xLabel : {
 			count: 10,
 			length: 5,
@@ -77,9 +80,14 @@ export default {
 		},
 		yLabel : {
 			count: 10,
-			length: 5,
+			length: 1,
 			fill: '#000',			
-			margin: {left:6,top:6,right:6,bottom:0},
+			margin: {
+				left: 1,
+				top: 6,
+				right: 8,
+				bottom: 0
+			},
 			textAlign: 'center',
 			textBaseline: 'middle',
 			font: '12px Arial',
@@ -118,10 +126,15 @@ export default {
 		zIndex: 18,
 		cursor: 'default',
 		radius: 3,
-		fill: null,		
+		fill: null,	
+		showItem: true,	// 是否展示圆点
 		item: {
 			fill: '#fff',
 			zIndex: 19
+		},
+		area: {
+			fill: '',
+			stroke: ''
 		}
 	},
 	bar : {
