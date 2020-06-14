@@ -3,7 +3,7 @@ const app = express()
 
 app.use(express.static("."));
 
-const port = 8800;
+const port = process.env.PORT || 8800;
 
 app.listen(port)
 
