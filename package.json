@@ -25,9 +25,9 @@
   },
   "homepage": "https://github.com/jiamao/jmchart#readme",
   "dependencies": {
-    "jmgraph": "^3.1.20"
+    "jmgraph": "^3.1.20",
+    "express": "^4.17.1"
   },
   "devDependencies": {
-    "express": "^4.17.1"
   }
 }
