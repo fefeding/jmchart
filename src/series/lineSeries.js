@@ -1,7 +1,7 @@
 import jmBezier from '../../node_modules/jmgraph/src/shapes/jmBezier.js';
 import jmArc from '../../node_modules/jmgraph/src/shapes/jmArc.js';
 import jmSeries from './series.js';
-import jmPath from 'jmgraph/src/core/jmPath';
+import jmPath from '../../node_modules/jmgraph/src/core/jmPath';
 
 const PreDrawKey = Symbol('lineSeries#preDraw');
 
