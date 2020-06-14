@@ -1,6 +1,8 @@
 const express = require('express')
 const app = express()
 
+console.log(process.env);
+
 app.use(express.static("."));
 
 const port = process.env.HTTP_PORT || 8800;
