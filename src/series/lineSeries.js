@@ -66,6 +66,8 @@ export default class jmLineSeries extends jmSeries {
 				this.bindTooltip(pointShape, p);	
 			}
 		}
+
+		this.createArea(this.points);// 仓建区域效果
 	}
 
 	/**
@@ -110,12 +112,33 @@ export default class jmLineSeries extends jmSeries {
 		const start = points[0];
 		const end = points[points.length - 1];
 
-		const style = this.graph.utils.clone(this.style.area);
+		const style = this.graph.utils.clone(this.style.area, {}, true);
+		// 连框颜色如果没指定，就透明
+		style.stroke = style.stroke || 'transparent';
+
 		if(!style.fill) {
-			style.fill = `linear-gradient(50% 0 50% 100%, color1 step, color2 step, ...)`;
+			const color = this.graph.utils.hexToRGBA(this.style.stroke);
+			style.fill = `linear-gradient(50% 0 50% 100%, 
+				rgba(${color.r},${color.g},${color.b}, 0) 1, 
+				rgba(${color.r},${color.g},${color.b}, 0.1) 0.5, 
+				rgba(${color.r},${color.g},${color.b}, 0.3) 0.2, 
+				rgba(${color.r},${color.g},${color.b}, 0.4) 0)`;
 		}
 		const area = this.graph.createShape(jmPath, {
-			points: this.graph.utils.clone(points, true)
+			points: this.graph.utils.clone(points, true),
+			style,
+			width: this.graph.chartArea.width,
+			height: this.graph.chartArea.height
+		});
+
+		// 在点集合前后加上落地到X轴的点就可以组成一个封闭的图形area
+		area.points.unshift({
+			x: start.x,
+			y: this.graph.chartArea.height
+		});
+		area.points.push({
+			x: end.x,
+			y: this.graph.chartArea.height
 		});
 
 		this.graph.chartArea.children.add(area);
