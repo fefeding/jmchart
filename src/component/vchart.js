@@ -8,11 +8,11 @@ export default {
         chartOptions: Object,
         chartSeries: Array,
         width: {
-            type: Number,
+            type: String,
             default: 200
         },
         height: {
-            type: Number,
+            type: String,
             default: 200
         }
     },
@@ -34,7 +34,7 @@ export default {
             height: this.height        
         }, this.chartOptions);
 
-        this.chartInstance = new jmChart(this.$refs.jmChartCanvas, this.options);
+        this.chartInstance = new jmChart(this.$refs.jmChartContainer, this.options);
 
         // 生成图
         if(this.chartSeries.length) {
@@ -57,12 +57,17 @@ export default {
             this.chartInstance.refresh();
         },
         width: function(newWidth, oldWidth) {
-            this.chartInstance.width = newWidth;
-            this.chartInstance.refresh();
+            
+            this.$nextTick(()=>{
+                this.chartInstance.width = this.$refs.jmChartContainer.clientWidth||this.$refs.jmChartContainer.offsetWidth;
+                this.chartInstance.refresh();
+            });
         },
         height: function(newHeight, oldHeight) {
-            this.chartInstance.height = newHeight;
-            this.chartInstance.refresh();
+            this.$nextTick(()=>{
+                this.chartInstance.height = this.$refs.jmChartContainer.clientHeight||this.$refs.jmChartContainer.offsetHeight;
+                this.chartInstance.refresh();
+            });
         }
     },
 
@@ -70,5 +75,5 @@ export default {
         
     },
 
-    template: `<canvas ref="jmChartCanvas"></canvas>`
+    template: `<div ref="jmChartContainer" :style="{width: width, height: height}"></div>`
 }
