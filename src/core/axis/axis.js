@@ -1,6 +1,6 @@
-import  jmArrawLine from '../../../node_modules/jmgraph/src/shapes/jmArrawLine.js';
-import  jmLabel from '../../../node_modules/jmgraph/src/shapes/jmLabel.js';
-import  jmLine from '../../../node_modules/jmgraph/src/shapes/jmLine.js';
+import  jmArrawLine from 'jmgraph/src/shapes/jmArrawLine.js';
+import  jmLabel from 'jmgraph/src/shapes/jmLabel.js';
+import  jmLine from 'jmgraph/src/shapes/jmLine.js';
 
 /**
  * 轴

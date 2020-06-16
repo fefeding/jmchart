@@ -1,5 +1,5 @@
-import jmRect from '../../../node_modules/jmgraph/src/shapes/jmRect.js';
-import jmLabel from '../../../node_modules/jmgraph/src/shapes/jmLabel.js';
+import jmRect from 'jmgraph/src/shapes/jmRect.js';
+import jmLabel from 'jmgraph/src/shapes/jmLabel.js';
 
 /**
  * 图例的容器

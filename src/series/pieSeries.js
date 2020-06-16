@@ -1,5 +1,5 @@
-import jmRect from '../../node_modules/jmgraph/src/shapes/jmRect.js';
-import jmArc from '../../node_modules/jmgraph/src/shapes/jmArc.js';
+import jmRect from 'jmgraph/src/shapes/jmRect.js';
+import jmArc from 'jmgraph/src/shapes/jmArc.js';
 import jmSeries from './series.js';
 
 /**

@@ -1,6 +1,6 @@
 
-import { jmPath, jmList } from '../../node_modules/jmgraph/src/core/jmGraph.js';
-import jmRect from '../../node_modules/jmgraph/src/shapes/jmRect.js';
+import { jmPath, jmList } from 'jmgraph/src/core/jmGraph.js';
+import jmRect from 'jmgraph/src/shapes/jmRect.js';
 
 /**
  * 图形基类

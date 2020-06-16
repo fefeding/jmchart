@@ -1,5 +1,5 @@
-import * as jmgraph from '../node_modules/jmgraph/src/core/jmGraph.js';
-import jmRect from '../node_modules/jmgraph/src/shapes/jmRect.js';
+import * as jmgraph from 'jmgraph/src/core/jmGraph.js';
+import jmRect from 'jmgraph/src/shapes/jmRect.js';
 import defaultStyle from './common/style.js';
 import jmAxis from './core/axis/axis.js';
 import jmLegend from './core/legend/legend.js';
