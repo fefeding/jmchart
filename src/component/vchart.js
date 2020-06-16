@@ -44,7 +44,9 @@ export default {
     watch: {
         // 数据发生改变，刷新
         chartData: function(newData, oldData) {
-            if(!this.chartInstance) return;
+
+            this.initChart();
+            
             this.chartInstance.data = newData;
             this.chartInstance.refresh();
         },
