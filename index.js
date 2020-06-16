@@ -4,5 +4,6 @@ import vChart from './src/component/vchart.js';
 export default jmChart;
 
 export {
+    jmChart,
     vChart
 }
