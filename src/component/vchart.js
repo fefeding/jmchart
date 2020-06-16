@@ -32,7 +32,9 @@ export default {
             legendVisible: true, // 不显示图例    
             width: this.width,
             height: this.height        
-        }, this.chartOptions);        
+        }, this.chartOptions);   
+        
+        this.initChart();
     },
     // DOM更新
     updated() {

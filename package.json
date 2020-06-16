@@ -1,6 +1,6 @@
 {
   "name": "jmchart",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "chart",
   "main": "index.js",
   "directories": {
