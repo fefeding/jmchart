@@ -107,17 +107,17 @@ jmSeries.prototype.createPoints = function(data) {
 	data = data || this.data;		
 	if(!data) return;
 
-	//var xstep = this.xAxis.step();
-	var ystep = this.yAxis.step();	
+	const xstep = this.xAxis.step();
+	const ystep = this.yAxis.step();	
 
 	const points = [];
 	for(var i=0;i < data.length; i++) {
-		var s = data[i];
+		const s = data[i];
 		
-		var xv = s[this.xAxis.field];
-		var yv = s[this.field];
+		const xv = s[this.xAxis.field];
+		const yv = s[this.field];
 
-		var p = {				
+		const p = {				
 			data: s,
 			xValue: xv,
 			xLabel: xv,
@@ -126,8 +126,7 @@ jmSeries.prototype.createPoints = function(data) {
 		};
 		
 		// 这里的点应相对于chartArea
-		const xpoint = this.xAxis.labels[i];
-		p.x = xpoint.position.x + xpoint.width / 2;			
+		p.x = xstep * i;			
 
 		//如果Y值不存在。则此点无效，不画图
 		if(yv == null || typeof yv == 'undefined') {

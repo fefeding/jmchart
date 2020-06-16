@@ -230,8 +230,9 @@ export default class jmAxis extends jmArrawLine {
 
 			this.labels.push(label);
 			this.children.add(label);
-			label.width = label.width + 2;
+			label.width =  label.testSize().width + 2;
 			label.height = 15;
+
 			const pos = {
 				x: this.labelStart + w,
 				y: top
@@ -254,24 +255,17 @@ export default class jmAxis extends jmArrawLine {
 				this.children.add(line);
 			}
 
-			//上一个标签位
-			var preLabel = this.labels.length>1?this.labels[this.labels.length - 2]:null;
-			//如果当前标签跟上一个标签重合，则不显示当前标签
-			if(!preLabel || !preLabel.visible || preLabel.position.x + preLabel.width < pos.x - 2) {
-				//在轴上画小标记m表示移至当前点开画
-				this.scalePoints.push({
-					x: pos.x + this.start.x,
-					y: this.start.y,
-					m: true
-				});
-				this.scalePoints.push({
-					x: pos.x + this.start.x,
-					y: this.start.y + (this.style.length || 5)
-				});
-			}
-			else {
-				label.visible = false;
-			}
+			//在轴上画小标记m表示移至当前点开画
+			this.scalePoints.push({
+				x: pos.x + this.start.x,
+				y: this.start.y,
+				m: true
+			});
+			this.scalePoints.push({
+				x: pos.x + this.start.x,
+				y: this.start.y + (this.style.length || 5)
+			});
+			
 			//如果进行了旋转，则处理位移
 			var rotation = label.style.rotation;
 			if(rotation && rotation.angle) {
@@ -281,7 +275,17 @@ export default class jmAxis extends jmArrawLine {
 				label.position = {x:-this.graph.chartArea.position.x,y:-this.graph.chartArea.position.y};
 			}
 			else {
-				pos.x -=  label.width / 2;//向左偏移半个label宽度
+				// 如果标签居中，则把二头的标签左边的左对齐，右边的右对齐
+				if(this.style.align === 'center' && (
+					i === 0 || (i === this.data.length - 1 && this.data.length > 1)
+				)) {
+					if(i === this.data.length - 1) {
+						pos.x -= label.width;
+					}
+				}
+				else {
+					pos.x -=  label.width / 2;//向左偏移半个label宽度
+				}
 				label.position = pos;
 			}
 		}
@@ -319,7 +323,7 @@ export default class jmAxis extends jmArrawLine {
 			this.labels.push(label);
 			this.children.add(label);
 
-			var w = label.testSize().width;
+			const w = label.testSize().width;
 			const offy = this.height - h; // 刻度的偏移量
 
 			//计算标签位置
@@ -551,7 +555,10 @@ export default class jmAxis extends jmArrawLine {
 				var sp =  w / this.max();	
 				this.labelStart = sp / 2;
 				return sp;
-			}			
+			}	
+			else {
+				this.labelStart = 0;
+			}		
 			return w / (this.max() - 1);					
 				
 		}		

@@ -1,8 +1,10 @@
 const resolve = require('rollup-plugin-node-resolve');
 const babel = require('rollup-plugin-babel');
+const sourcemaps = require('rollup-plugin-sourcemaps');
 
 module.exports = {
     input: './index.js',
+    sourcemap: true,
     output: {
       file: 'dist/bundle.cjs.js',
       /**
@@ -16,6 +18,7 @@ system - SystemJS 加载器格式
       format: 'cjs'
     },
     plugins: [
+      sourcemaps(),
       resolve(),
       babel({
         "plugins": ["@babel/plugin-proposal-class-properties"],

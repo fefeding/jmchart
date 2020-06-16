@@ -29,7 +29,7 @@
 		}*/
 		</style>
 		<script type="module">
-			import jmChart from '../src/jmChart.js';
+			import jmChart from '../dist/bundle.cjs.js';
 			(function load() {
 				var w = Math.max((window.innerWidth || window.document.body.clientWidth) * 0.8, 400);
 				var h = Math.min((window.innerHeight || window.document.body.clientHeight) * 0.5, 280);			
@@ -57,12 +57,13 @@
                             if(index == 0 || index == datacount - 1) {
                                 return v + '';
                             }
-                            return '';
+                            return v+'';
                         },
                         style: {
                             // x轴 Y轴隐藏
                             axis: {
-                                stroke: 'transparent',
+								stroke: 'transparent',
+								align: 'center', // label居中对齐
                                 grid: {
                                     x: false,  // 不显示X轴网格
                                     y: true     // 显示Y轴网格
@@ -107,7 +108,7 @@
                         chart.data = [];
                         for(var i = 0;i<datacount;i++) {
                             const d = {
-                                x : i,
+                                x : '0909' + i,
                                 y1 :  Math.random() * 6,
                                 y2:  Math.random() * 200 + 50,
                             };

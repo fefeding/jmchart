@@ -1,7 +1,3 @@
-'use strict';
-
-Object.defineProperty(exports, '__esModule', { value: true });
-
 function _defineProperty(obj, key, value) {
   if (key in obj) {
     Object.defineProperty(obj, key, {
@@ -3574,6 +3570,8 @@ var defaultStyle = {
       lineWidth: 1,
       zIndex: 0
     },
+    // 如果标签居中 center，则把二头的标签左边的左对齐，右边的右对齐
+    align: 'normal',
     xLabel: {
       count: 10,
       length: 5,
@@ -4420,7 +4418,7 @@ class jmAxis extends jmArrawLine {
 
       this.labels.push(label);
       this.children.add(label);
-      label.width = label.width + 2;
+      label.width = label.testSize().width + 2;
       label.height = 15;
       const pos = {
         x: this.labelStart + w,
@@ -4441,26 +4439,18 @@ class jmAxis extends jmArrawLine {
           style: this.style.grid
         });
         this.children.add(line);
-      } //上一个标签位
+      } //在轴上画小标记m表示移至当前点开画
 
 
-      var preLabel = this.labels.length > 1 ? this.labels[this.labels.length - 2] : null; //如果当前标签跟上一个标签重合，则不显示当前标签
-
-      if (!preLabel || !preLabel.visible || preLabel.position.x + preLabel.width < pos.x - 2) {
-        //在轴上画小标记m表示移至当前点开画
-        this.scalePoints.push({
-          x: pos.x + this.start.x,
-          y: this.start.y,
-          m: true
-        });
-        this.scalePoints.push({
-          x: pos.x + this.start.x,
-          y: this.start.y + (this.style.length || 5)
-        });
-      } else {
-        label.visible = false;
-      } //如果进行了旋转，则处理位移
-
+      this.scalePoints.push({
+        x: pos.x + this.start.x,
+        y: this.start.y,
+        m: true
+      });
+      this.scalePoints.push({
+        x: pos.x + this.start.x,
+        y: this.start.y + (this.style.length || 5)
+      }); //如果进行了旋转，则处理位移
 
       var rotation = label.style.rotation;
 
@@ -4473,7 +4463,14 @@ class jmAxis extends jmArrawLine {
           y: -this.graph.chartArea.position.y
         };
       } else {
-        pos.x -= label.width / 2; //向左偏移半个label宽度
+        // 如果标签居中，则把二头的标签左边的左对齐，右边的右对齐
+        if (this.style.align === 'center' && (i === 0 || i === this.data.length - 1 && this.data.length > 1)) {
+          if (i === this.data.length - 1) {
+            pos.x -= label.width;
+          }
+        } else {
+          pos.x -= label.width / 2; //向左偏移半个label宽度
+        }
 
         label.position = pos;
       }
@@ -4514,7 +4511,7 @@ class jmAxis extends jmArrawLine {
 
       this.labels.push(label);
       this.children.add(label);
-      var w = label.testSize().width;
+      const w = label.testSize().width;
       const offy = this.height - h; // 刻度的偏移量
       //计算标签位置
 
@@ -4754,6 +4751,8 @@ class jmAxis extends jmArrawLine {
         var sp = w / this.max();
         this.labelStart = sp / 2;
         return sp;
+      } else {
+        this.labelStart = 0;
       }
 
       return w / (this.max() - 1);
@@ -5046,16 +5045,16 @@ jmSeries.prototype.reset = function () {
 
 jmSeries.prototype.createPoints = function (data) {
   data = data || this.data;
-  if (!data) return; //var xstep = this.xAxis.step();
-
-  var ystep = this.yAxis.step();
+  if (!data) return;
+  const xstep = this.xAxis.step();
+  const ystep = this.yAxis.step();
   const points = [];
 
   for (var i = 0; i < data.length; i++) {
-    var s = data[i];
-    var xv = s[this.xAxis.field];
-    var yv = s[this.field];
-    var p = {
+    const s = data[i];
+    const xv = s[this.xAxis.field];
+    const yv = s[this.field];
+    const p = {
       data: s,
       xValue: xv,
       xLabel: xv,
@@ -5063,8 +5062,7 @@ jmSeries.prototype.createPoints = function (data) {
       yLabel: yv
     }; // 这里的点应相对于chartArea
 
-    const xpoint = this.xAxis.labels[i];
-    p.x = xpoint.position.x + xpoint.width / 2; //如果Y值不存在。则此点无效，不画图
+    p.x = xstep * i; //如果Y值不存在。则此点无效，不画图
 
     if (yv == null || typeof yv == 'undefined') {
       p.m = true;
@@ -6303,6 +6301,5 @@ var vchart = {
   template: `<div ref="jmChartContainer" :style="{width: width, height: height}"></div>`
 };
 
-exports.default = jmChart;
-exports.jmChart = jmChart;
-exports.vChart = vchart;
+export default jmChart;
+export { jmChart, vchart as vChart };

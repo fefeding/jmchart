@@ -62,6 +62,8 @@ export default {
 			lineWidth: 1,
 			zIndex: 0
 		},
+		// 如果标签居中 center，则把二头的标签左边的左对齐，右边的右对齐
+		align: 'normal',
 		xLabel : {
 			count: 10,
 			length: 5,
