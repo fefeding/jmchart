@@ -100,7 +100,7 @@ export default class jmChart extends jmgraph.jmGraph  {
 				type: 'x',
 				style: this.style.markLine
 			});
-			this.children.add(this.xMarkLine);
+			this.chartArea.children.add(this.xMarkLine);
 		}
 
 		if(this.style.markLine && this.style.markLine.y) {
@@ -108,7 +108,7 @@ export default class jmChart extends jmgraph.jmGraph  {
 				type: 'y',
 				style: this.style.markLine
 			});
-			this.children.add(this.yMarkLine);
+			this.chartArea.children.add(this.yMarkLine);
 		}
 
 		this.on('mousedown touchstart', function(args) {

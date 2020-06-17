@@ -61,6 +61,33 @@ export default class jmSeries extends jmPath {
 
 	// 图绑定的属性名
 	field = '';
+
+	/**
+	 * 根据X轴坐标，获取它最近的数据描点
+	 * 离点最近的一个描点
+	 * @param {number} x  X轴坐标
+	 */
+	getDataPointByX(x) {
+		if(!this.dataPoints) return null;
+		// 获取最近的那个
+		let prePoint = undefined, nextPoint = undefined; // 跟上一个点和下一个点的距离，哪个近用哪个
+		for(let p of this.dataPoints) {
+			if(p.x == x) return p;
+
+			// 上一个点
+			if(p.x < x) {
+				prePoint = p;
+			}
+
+			// 下一个点
+			if(typeof nextPoint === 'undefined' && p.x > x) {
+				// 没有上一个，只能返回这个了
+				if(prePoint && x - prePoint.x < p.x - x) return prePoint;
+				else return p
+			}
+		}
+		return null;
+	}
 };
 
 /**
@@ -110,7 +137,7 @@ jmSeries.prototype.createPoints = function(data) {
 	const xstep = this.xAxis.step();
 	const ystep = this.yAxis.step();	
 
-	const points = [];
+	this.dataPoints = [];
 	for(var i=0;i < data.length; i++) {
 		const s = data[i];
 		
@@ -138,9 +165,9 @@ jmSeries.prototype.createPoints = function(data) {
 			}
 			p.y = this.graph.chartArea.height - (yv - this.yAxis.min()) * ystep;
 		}			
-		points.push(p);							
+		this.dataPoints.push(p);							
 	}
-	return points;
+	return this.dataPoints;
 }
 
 /**

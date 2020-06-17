@@ -38,12 +38,29 @@ export default class jmMarkLine extends jmLine {
                 shape && shape.remove();
             }
 
-            this.markArc = this.graph.createShape(jmArc, {
-                style: this.style,
-                radius: this.style.radius || 5
-            });
-            this.children.add(this.markArc);
-            this.shapes.add(this.markArc);
+            // 根据线条数生成标点个数
+            for(let serie of this.graph.series) {
+                // 得有数据描点的才展示圆
+                if(!serie.getDataPointByX) continue; 
+
+                const point = serie.getDataPointByX(this.start.x); // 找到最近的数据点
+                if(!point) continue;
+
+                const style = this.graph.utils.clone(this.style, {
+                    stroke: serie.style.color || serie.style.stroke                    
+                }, true);
+                this.markArc = this.graph.createShape(jmArc, {
+                    style,
+                    radius: this.style.radius || 5
+                });
+
+                this.markArc.center.y = point.y;
+
+                this.children.add(this.markArc);
+                this.shapes.add(this.markArc);
+
+                this.start.x = this.end.x = point.x;
+            }
         }
     }
 

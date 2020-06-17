@@ -3631,8 +3631,9 @@ var defaultStyle = {
     // 显示Y标线
     stroke: '#EB792A',
     lineWidth: 1,
-    radius: 5 // 中间小圆圈大小
-
+    radius: 5,
+    // 中间小圆圈大小
+    zIndex: 20
   },
   legend: {
     stroke: 'transparent',
@@ -5033,6 +5034,34 @@ class jmSeries extends jmPath {
    */
 
 
+  /**
+   * 根据X轴坐标，获取它最近的数据描点
+   * 离点最近的一个描点
+   * @param {number} x  X轴坐标
+   */
+  getDataPointByX(x) {
+    if (!this.dataPoints) return null; // 获取最近的那个
+
+    let prePoint = undefined;
+ // 跟上一个点和下一个点的距离，哪个近用哪个
+
+    for (let p of this.dataPoints) {
+      if (p.x == x) return p; // 上一个点
+
+      if (p.x < x) {
+        prePoint = p;
+      } // 下一个点
+
+
+      if ( p.x > x) {
+        // 没有上一个，只能返回这个了
+        if (prePoint && x - prePoint.x < p.x - x) return prePoint;else return p;
+      }
+    }
+
+    return null;
+  }
+
 }
 /**
  * 重置属性
@@ -5079,7 +5108,7 @@ jmSeries.prototype.createPoints = function (data) {
   if (!data) return;
   const xstep = this.xAxis.step();
   const ystep = this.yAxis.step();
-  const points = [];
+  this.dataPoints = [];
 
   for (var i = 0; i < data.length; i++) {
     const s = data[i];
@@ -5105,10 +5134,10 @@ jmSeries.prototype.createPoints = function (data) {
       p.y = this.graph.chartArea.height - (yv - this.yAxis.min()) * ystep;
     }
 
-    points.push(p);
+    this.dataPoints.push(p);
   }
 
-  return points;
+  return this.dataPoints;
 };
 /**
  * 生成图例
@@ -5976,14 +6005,27 @@ class jmMarkLine extends jmLine {
 
       while (shape = this.shapes.shift()) {
         shape && shape.remove();
-      }
+      } // 根据线条数生成标点个数
 
-      this.markArc = this.graph.createShape(jmArc, {
-        style: this.style,
-        radius: this.style.radius || 5
-      });
-      this.children.add(this.markArc);
-      this.shapes.add(this.markArc);
+
+      for (let serie of this.graph.series) {
+        // 得有数据描点的才展示圆
+        if (!serie.getDataPointByX) continue;
+        const point = serie.getDataPointByX(this.start.x); // 找到最近的数据点
+
+        if (!point) continue;
+        const style = this.graph.utils.clone(this.style, {
+          stroke: serie.style.color || serie.style.stroke
+        }, true);
+        this.markArc = this.graph.createShape(jmArc, {
+          style,
+          radius: this.style.radius || 5
+        });
+        this.markArc.center.y = point.y;
+        this.children.add(this.markArc);
+        this.shapes.add(this.markArc);
+        this.start.x = this.end.x = point.x;
+      }
     }
   }
   /**
@@ -6119,7 +6161,7 @@ class jmChart extends jmGraph {
         type: 'x',
         style: this.style.markLine
       });
-      this.children.add(this.xMarkLine);
+      this.chartArea.children.add(this.xMarkLine);
     }
 
     if (this.style.markLine && this.style.markLine.y) {
@@ -6127,7 +6169,7 @@ class jmChart extends jmGraph {
         type: 'y',
         style: this.style.markLine
       });
-      this.children.add(this.yMarkLine);
+      this.chartArea.children.add(this.yMarkLine);
     }
 
     this.on('mousedown touchstart', function (args) {

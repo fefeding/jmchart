@@ -20,7 +20,8 @@ export default {
 		y: true, // 显示Y标线
 		stroke: '#EB792A',
 		lineWidth: 1,
-		radius: 5 // 中间小圆圈大小
+		radius: 5, // 中间小圆圈大小
+		zIndex: 20
 	},
 	legend: {		
 		stroke: 'transparent',		
