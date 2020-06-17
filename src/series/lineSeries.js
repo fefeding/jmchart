@@ -184,7 +184,7 @@ class jmSplineSeries extends jmLineSeries {
 		let shapePoints = []; // 计算出来的曲线点集合
 
 		for(var i=0;i<len;i++) {
-			var p = points[i];
+			const p = points[i];
 			
 			//如果当前点无效，则跳致下一点
 			if(typeof p.y == 'undefined'  || p.y == null) {
@@ -205,18 +205,18 @@ class jmSplineSeries extends jmLineSeries {
 				this.bindTooltip(pointShape, p);
 			}
 
-			var startPoint = shapePoints[shapePoints.length - 1];
+			const startPoint = shapePoints[shapePoints.length - 1];
 			if(startPoint && startPoint.y != undefined && startPoint.y != null) {
 				//如果需要画曲线，则计算贝塞尔曲线坐标				
-				var p1 = {x: startPoint.x + (p.x - startPoint.x) / 5, y: startPoint.y};
-				var p2 = {x: startPoint.x + (p.x - startPoint.x) / 2, y: p.y - (p.y - startPoint.y) / 2};
-				var p3 = {x: p.x - (p.x - startPoint.x) / 5, y: p.y};
+				const p1 = {x: startPoint.x + (p.x - startPoint.x) / 5, y: startPoint.y};
+				const p2 = {x: startPoint.x + (p.x - startPoint.x) / 2, y: p.y - (p.y - startPoint.y) / 2};
+				const p3 = {x: p.x - (p.x - startPoint.x) / 5, y: p.y};
 				bezier = bezier || this.graph.createShape(jmBezier);
 				bezier.cpoints = [
 					startPoint,p1,p2,p3,p
 				];//设置控制点
 
-				var bzpoints = bezier.initPoints();
+				const bzpoints = bezier.initPoints();
 				shapePoints = shapePoints.concat(bzpoints);					
 			}									
 			shapePoints.push(p);

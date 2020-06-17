@@ -3629,8 +3629,10 @@ var defaultStyle = {
     // 显示X标线
     y: true,
     // 显示Y标线
-    stroke: 'red',
-    lineWidth: 1
+    stroke: '#EB792A',
+    lineWidth: 1,
+    radius: 5 // 中间小圆圈大小
+
   },
   legend: {
     stroke: 'transparent',
@@ -5125,39 +5127,6 @@ jmSeries.prototype.createLegend = function () {
   });
   this.graph.legend.append(this, shape);
 };
-/**
- * 对当前图形绑定提示信息框
- *
- * @method bindTooltip
- * @param {jmControl} shape 被绑定提示的控件
- * @param {object} item 当前点数据源 
- */
-
-
-jmSeries.prototype.bindTooltip = function (shape, item) {
-  shape.itemPoint = item; //shape.tooltip = this.decodeInfo(this.tooltip, item);	
-  //显示提示信息	
-
-  shape.bind('mousemove touchmove', evt => {
-    /*this.graph.tooltip.value(this.tooltip);
-    var x = evt.position.x - this.graph.tooltip.width;
-    if(x < 0) {
-    	x = evt.position.x;
-    }
-    this.graph.tooltip.setPosition(x,evt.position.y + 10);
-    this.graph.tooltip.show();*/
-    //应用动态样式
-    //this.style.hover && Object.assign(this.style, this.style.hover);
-    //.graph.refresh();
-    console.log(item, this);
-    return false;
-  });
-  shape.bind('mouseleave touchend touchcancel', evt => {
-    /*this.graph.tooltip.hide();*/
-    //this.style.normal && Object.assign(this.style, this.style.normal);
-    //this.graph.refresh();
-  });
-};
 
 /**
  * 柱图
@@ -5904,7 +5873,7 @@ class jmSplineSeries extends jmLineSeries {
     let shapePoints = []; // 计算出来的曲线点集合
 
     for (var i = 0; i < len; i++) {
-      var p = points[i]; //如果当前点无效，则跳致下一点
+      const p = points[i]; //如果当前点无效，则跳致下一点
 
       if (typeof p.y == 'undefined' || p.y == null) {
         //prePoint = null;						
@@ -5924,26 +5893,26 @@ class jmSplineSeries extends jmLineSeries {
         this.bindTooltip(pointShape, p);
       }
 
-      var startPoint = shapePoints[shapePoints.length - 1];
+      const startPoint = shapePoints[shapePoints.length - 1];
 
       if (startPoint && startPoint.y != undefined && startPoint.y != null) {
         //如果需要画曲线，则计算贝塞尔曲线坐标				
-        var p1 = {
+        const p1 = {
           x: startPoint.x + (p.x - startPoint.x) / 5,
           y: startPoint.y
         };
-        var p2 = {
+        const p2 = {
           x: startPoint.x + (p.x - startPoint.x) / 2,
           y: p.y - (p.y - startPoint.y) / 2
         };
-        var p3 = {
+        const p3 = {
           x: p.x - (p.x - startPoint.x) / 5,
           y: p.y
         };
         bezier = bezier || this.graph.createShape(jmBezier);
         bezier.cpoints = [startPoint, p1, p2, p3, p]; //设置控制点
 
-        var bzpoints = bezier.initPoints();
+        const bzpoints = bezier.initPoints();
         shapePoints = shapePoints.concat(bzpoints);
       }
 
@@ -5974,7 +5943,99 @@ class jmSplineSeries extends jmLineSeries {
 
 }
 
-const MARKLINEMOVE = Symbol('jmchart#marklinemove');
+/**
+ * 轴
+ *
+ * @class jmAxis
+ * @module jmChart
+ * @param {jmChart} chart 当前图表
+ * @param {string} [type] 轴类型(x/y/radar),默认为x
+ * @param {string} [dataType] 当前轴的数据类型(number/date/string),默认为 number
+ * @param {object} [style] 样式
+ */
+
+class jmMarkLine extends jmLine {
+  constructor(options) {
+    super(options);
+    this.visible = false;
+    this.markLineType = options.type || 'x'; // 为横轴x或纵轴y  
+
+    /**
+    * 当前图形下的所有子图
+    */
+
+    this.shapes = new jmList();
+  } // 初始化轴
+
+
+  init() {
+    // 纵标线，中间标小圆圈
+    if (this.markLineType === 'y') {
+      // 重置所有图形
+      var shape;
+
+      while (shape = this.shapes.shift()) {
+        shape && shape.remove();
+      }
+
+      this.markArc = this.graph.createShape(jmArc, {
+        style: this.style,
+        radius: this.style.radius || 5
+      });
+      this.children.add(this.markArc);
+      this.shapes.add(this.markArc);
+    }
+  }
+  /**
+  * 移动标线
+  * @param { object } args 移动事件参数
+  */
+
+
+  move(args) {
+    const maxY = this.graph.chartArea.height + this.graph.chartArea.position.y;
+    const maxX = this.graph.chartArea.position.x + this.graph.chartArea.width;
+
+    if (this.visible && this.markLineType === 'x') {
+      if (args.position.y < this.graph.chartArea.position.y) {
+        this.start.y = this.end.y = this.graph.chartArea.position.y;
+      } else if (args.position.y > maxY) {
+        this.start.y = this.end.y = maxY;
+      } else {
+        this.start.y = this.end.y = args.position.y;
+      }
+
+      this.start.x = this.graph.chartArea.position.x;
+      this.end.x = this.graph.chartArea.position.x + this.graph.chartArea.width;
+      this.needUpdate = true;
+    }
+
+    if (this.visible && this.markLineType === 'y') {
+      if (args.position.x < this.graph.chartArea.position.x) {
+        this.start.x = this.end.x = this.graph.chartArea.position.x;
+      } else if (args.position.x > maxX) {
+        this.start.x = this.end.x = maxX;
+      } else {
+        this.start.x = this.end.x = args.position.x;
+      }
+
+      this.start.y = this.graph.chartArea.position.y;
+      this.end.y = this.graph.chartArea.position.y + this.graph.chartArea.height;
+      this.needUpdate = true;
+    }
+  }
+  /**
+   * 中止
+   */
+
+
+  cancel() {
+    this.visible = false;
+    this.needUpdate = true;
+  }
+
+}
+
 /**
  * jm图表组件
  * option参数:graph=jmgraph
@@ -6054,74 +6115,52 @@ class jmChart extends jmGraph {
     // 生成标线，可以跟随鼠标或手指滑动
 
     if (this.style.markLine && this.style.markLine.x) {
-      this.xMarkLine = this.createShape(jmLine, {
+      this.xMarkLine = this.createShape(jmMarkLine, {
+        type: 'x',
         style: this.style.markLine
       });
-      this.xMarkLine.visible = false;
       this.children.add(this.xMarkLine);
     }
 
     if (this.style.markLine && this.style.markLine.y) {
-      this.yMarkLine = this.createShape(jmLine, {
+      this.yMarkLine = this.createShape(jmMarkLine, {
+        type: 'y',
         style: this.style.markLine
       });
       this.children.add(this.yMarkLine);
-      this.yMarkLine.visible = false;
     }
 
     this.on('mousedown touchstart', function (args) {
-      this.graph.xMarkLine && (this.graph.xMarkLine.visible = true);
-      this.graph.yMarkLine && (this.graph.yMarkLine.visible = true);
-      this.graph[MARKLINEMOVE](args);
+      if (this.graph.xMarkLine) {
+        this.graph.xMarkLine.visible = true;
+        this.graph.xMarkLine.move(args);
+      }
+
+      if (this.graph.yMarkLine) {
+        this.graph.yMarkLine.visible = true;
+        this.graph.yMarkLine.move(args);
+      }
     }); // 移动标线
 
     this.on('mousemove touchmove', function (args) {
-      this[MARKLINEMOVE](args);
+      if (this.graph.xMarkLine) {
+        this.graph.xMarkLine.move(args);
+      }
+
+      if (this.graph.yMarkLine) {
+        this.graph.yMarkLine.move(args);
+      }
     }); // 取消移动
 
     this.on('mouseup touchend touchcancel touchleave', function (args) {
-      this.graph.xMarkLine && (this.graph.xMarkLine.visible = false);
-      this.graph.yMarkLine && (this.graph.yMarkLine.visible = false);
-      if (this.graph.xMarkLine || this.graph.yMarkLine) this.needUpdate = true;
+      if (this.graph.xMarkLine) {
+        this.graph.xMarkLine.cancel(args);
+      }
+
+      if (this.graph.yMarkLine) {
+        this.graph.yMarkLine.cancel(args);
+      }
     });
-  }
-  /**
-   * 移动标线
-   * @param { object } args 移动事件参数
-   */
-
-
-  [MARKLINEMOVE](args) {
-    const maxY = this.chartArea.height + this.chartArea.position.y;
-    const maxX = this.chartArea.position.x + this.chartArea.width;
-
-    if (this.graph.xMarkLine && this.graph.xMarkLine.visible) {
-      if (args.position.y < this.chartArea.position.y) {
-        this.graph.xMarkLine.start.y = this.graph.xMarkLine.end.y = this.chartArea.position.y;
-      } else if (args.position.y > maxY) {
-        this.graph.xMarkLine.start.y = this.graph.xMarkLine.end.y = maxY;
-      } else {
-        this.graph.xMarkLine.start.y = this.graph.xMarkLine.end.y = args.position.y;
-      }
-
-      this.graph.xMarkLine.start.x = this.chartArea.position.x;
-      this.graph.xMarkLine.end.x = this.chartArea.position.x + this.chartArea.width;
-      this.needUpdate = true;
-    }
-
-    if (this.graph.yMarkLine && this.graph.yMarkLine.visible) {
-      if (args.position.x < this.chartArea.position.x) {
-        this.graph.yMarkLine.start.x = this.graph.yMarkLine.end.x = this.chartArea.position.x;
-      } else if (args.position.x > maxX) {
-        this.graph.yMarkLine.start.x = this.graph.yMarkLine.end.x = maxX;
-      } else {
-        this.graph.yMarkLine.start.x = this.graph.yMarkLine.end.x = args.position.x;
-      }
-
-      this.graph.yMarkLine.start.y = this.chartArea.position.y;
-      this.graph.yMarkLine.end.y = this.chartArea.position.y + this.chartArea.height;
-      this.needUpdate = true;
-    }
   }
 
 }
@@ -6203,7 +6242,10 @@ jmChart.prototype.beginDraw = function () {
 
   this.series.each(function (i, serie) {
     serie.init && serie.init();
-  });
+  }); // 重置标线，会处理小圆圈问题
+
+  this.xMarkLine && this.xMarkLine.init();
+  this.yMarkLine && this.yMarkLine.init();
 };
 /**
  * 重新定位区域的位置

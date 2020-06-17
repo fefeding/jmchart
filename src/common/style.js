@@ -18,8 +18,9 @@ export default {
 	markLine: {
 		x: true, // 显示X标线
 		y: true, // 显示Y标线
-		stroke: 'red',
-		lineWidth: 1
+		stroke: '#EB792A',
+		lineWidth: 1,
+		radius: 5 // 中间小圆圈大小
 	},
 	legend: {		
 		stroke: 'transparent',		

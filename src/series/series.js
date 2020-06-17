@@ -158,38 +158,3 @@ jmSeries.prototype.createLegend = function() {
 	});
 	this.graph.legend.append(this, shape);
 }
-
-/**
- * 对当前图形绑定提示信息框
- *
- * @method bindTooltip
- * @param {jmControl} shape 被绑定提示的控件
- * @param {object} item 当前点数据源 
- */
-jmSeries.prototype.bindTooltip = function(shape, item) {	
-	shape.itemPoint = item;
-	//shape.tooltip = this.decodeInfo(this.tooltip, item);	
-	//显示提示信息	
-	shape.bind('mousemove touchmove', (evt) => {						
-		/*this.graph.tooltip.value(this.tooltip);
-		var x = evt.position.x - this.graph.tooltip.width;
-		if(x < 0) {
-			x = evt.position.x;
-		}
-		this.graph.tooltip.setPosition(x,evt.position.y + 10);
-		this.graph.tooltip.show();*/
-		//应用动态样式
-		//this.style.hover && Object.assign(this.style, this.style.hover);
-		//.graph.refresh();
-		console.log(item, this);
-		return false;
-	});
-	shape.bind('mouseleave touchend touchcancel',(evt) => {
-		/*this.graph.tooltip.hide();*/
-		//this.style.normal && Object.assign(this.style, this.style.normal);
-		//this.graph.refresh();
-	});	
-}
-
-
-
