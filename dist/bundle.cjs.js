@@ -3528,7 +3528,7 @@ var defaultStyle = {
       left: 10,
       top: 10,
       right: 20,
-      bottom: 20
+      bottom: 10
     },
     width: 200,
     height: 0,
@@ -3567,6 +3567,10 @@ var defaultStyle = {
       // 是否显示网格
       y: true,
       stroke: 'rgb(229,229,229)',
+      lineType: 'dotted',
+      // 虚线，不填为实线
+      dashLength: 6,
+      //虚线条间隔，默认5
       lineWidth: 1,
       zIndex: 0
     },
@@ -3576,7 +3580,7 @@ var defaultStyle = {
       count: 10,
       length: 5,
       fill: '#000',
-      stroke: 'red',
+      stroke: '#000',
       margin: {
         left: 0,
         top: 10,
@@ -5062,7 +5066,7 @@ jmSeries.prototype.createPoints = function (data) {
       yLabel: yv
     }; // 这里的点应相对于chartArea
 
-    p.x = xstep * i; //如果Y值不存在。则此点无效，不画图
+    p.x = xstep * i + this.xAxis.labelStart; //如果Y值不存在。则此点无效，不画图
 
     if (yv == null || typeof yv == 'undefined') {
       p.m = true;
@@ -5939,6 +5943,7 @@ class jmSplineSeries extends jmLineSeries {
       }, 50, this, shapePoints, Math.ceil(shapePoints.length / 20));
     } else {
       this.points = shapePoints;
+      this.createArea(this.points); // 仓建区域效果	
     }
   }
 

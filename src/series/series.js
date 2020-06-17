@@ -126,7 +126,7 @@ jmSeries.prototype.createPoints = function(data) {
 		};
 		
 		// 这里的点应相对于chartArea
-		p.x = xstep * i;			
+		p.x = xstep * i + this.xAxis.labelStart;			
 
 		//如果Y值不存在。则此点无效，不画图
 		if(yv == null || typeof yv == 'undefined') {

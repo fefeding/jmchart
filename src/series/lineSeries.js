@@ -241,7 +241,9 @@ class jmSplineSeries extends jmLineSeries {
 		}
 		else {
 			this.points = shapePoints;
-		}	
+
+			this.createArea(this.points);// 仓建区域效果	
+		}
 	}
 }
 

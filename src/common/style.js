@@ -18,10 +18,10 @@ export default {
 		stroke: 'transparent',		
 		lineWidth: 0,
 		margin: {
-			left:10,
-			top:10,
-			right:20,
-			bottom:20
+			left: 10,
+			top: 10,
+			right: 20,
+			bottom: 10
 		},
 		width: 200,
 		height: 0,		
@@ -59,6 +59,8 @@ export default {
 			x: true, // 是否显示网格
 			y: true,
 			stroke: 'rgb(229,229,229)',
+			lineType: 'dotted', // 虚线，不填为实线
+			dashLength: 6, //虚线条间隔，默认5
 			lineWidth: 1,
 			zIndex: 0
 		},
@@ -68,7 +70,7 @@ export default {
 			count: 10,
 			length: 5,
 			fill: '#000',
-			stroke: 'red',
+			stroke: '#000',
 			margin: {left:0,top:10,right:6,bottom:0},
 			textAlign: 'center',
 			textBaseline: 'top',
