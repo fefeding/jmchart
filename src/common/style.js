@@ -14,6 +14,13 @@ export default {
 		right: 20,
 		bottom: 40
 	},
+	// 跟随标线
+	markLine: {
+		x: true, // 显示X标线
+		y: true, // 显示Y标线
+		stroke: 'red',
+		lineWidth: 1
+	},
 	legend: {		
 		stroke: 'transparent',		
 		lineWidth: 0,

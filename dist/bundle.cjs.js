@@ -2626,10 +2626,13 @@ class jmControl extends jmProperty {
 		//args = jmUtils.clone(args);//参数副本
 		args.position.x = args.position.offsetX - abounds.left;
 		args.position.y = args.position.offsetY - abounds.top;
+
+		// 是否在当前控件内操作
+		const inpos = this.interactive !== false && this.checkPoint(args.position);
 		
 		//事件发生在边界内或健盘事件发生在画布中才触发
 		// 如果有target 表示当前事件已被命中其它节点，则不再需要判断这里
-		if(this.interactive !== false && !args.target && this.checkPoint(args.position)) {
+		if(inpos && !args.target) {
 			//如果没有指定触发对象，则认为当前为第一触发对象
 			if(!args.target) {
 				args.target = this;
@@ -2637,16 +2640,19 @@ class jmControl extends jmProperty {
 			
 			this.runEventAndPopEvent(name, args);
 
-			if(!this.focused && name == 'mousemove') {
+			if(!this.focused && (name === 'mousemove' || name === 'touchmove')) {
 				this.focused = true;//表明当前焦点在此控件中
-				this.raiseEvent('mouseover',args);
+				this.raiseEvent(name === 'mousemove'? 'mouseover': 'touchover',args);
 			}	
 		}
 		else {
 			//如果焦点不在，且原焦点在，则触发mouseleave事件
-			if(this.interactive !== false && this.type != 'jmGraph' && this.focused && name == 'mousemove') {
+			if(this.interactive !== false && !inpos &&
+				this.focused && 
+				(name === 'mousemove' || name === 'touchmove')) {
+
 				this.focused = false;//表明当前焦点离开
-				this.runEventHandle('mouseleave', args);//执行事件	
+				this.runEventHandle(name === 'mousemove'? 'mouseleave' : 'touchleave', args);//执行事件	
 			}	
 		}
 			
@@ -2985,6 +2991,16 @@ class jmGraph extends jmControl {
 
 		//绑定事件
 		this.eventHandler = new jmEvents(this, this.canvas.canvas || this.canvas);	
+
+		//如果指定了自动刷新
+		if(this.option.autoRefresh) {
+			const self = this; 
+			function update() {
+				if(self.needUpdate) self.redraw();
+				requestAnimationFrame(update);
+			}
+			requestAnimationFrame(update);
+		}
 
 		if(callback) callback(this);		
 	}
@@ -3506,6 +3522,92 @@ class jmRect extends jmPath {
 }
 
 /**
+ * 画一条直线
+ *
+ * @class jmLine
+ * @extends jmPath
+ * @param {object} params 直线参数:start=起始点,end=结束点,lineType=线类型(solid=实线，dotted=虚线),dashLength=虚线间隔(=4)
+ */
+class jmLine extends jmPath {	
+	
+	constructor(params, t='jmLine') {
+		super(params, t);
+
+		this.start = params.start || {x:0,y:0};
+		this.end = params.end || {x:0,y:0};
+		this.style.lineType = this.style.lineType || 'solid';
+		this.style.dashLength = this.style.dashLength || 4;
+	}	
+
+	/**
+	 * 控制起始点
+	 * 
+	 * @property start
+	 * @for jmLine
+	 * @type {point}
+	 */
+	get start() {
+		return this.__pro('start');
+	}
+	set start(v) {
+		this.needUpdate = true;
+		return this.__pro('start', v);
+	}
+
+	/**
+	 * 控制结束点
+	 * 
+	 * @property end
+	 * @for jmLine
+	 * @type {point}
+	 */
+	get end() {
+		return this.__pro('end');
+	}
+	set end(v) {
+		this.needUpdate = true;
+		return this.__pro('end', v);
+	}
+
+	/**
+	 * 初始化图形点,如呆为虚线则根据跳跃间隔描点
+	 * @method initPoints
+	 * @private
+	 */
+	initPoints() {	
+		let start = this.start;
+		let end = this.end;
+		this.points = [];	
+		this.points.push(start);
+
+		if(this.style.lineType === 'dotted') {			
+			let dx = end.x - start.x;
+			let dy = end.y - start.y;
+			let lineLen = Math.sqrt(dx * dx + dy * dy);
+			dx = dx / lineLen;
+			dy = dy / lineLen;
+			let dottedstart = false;
+
+			let dashLen = this.style.dashLength || 5;
+			let dottedsp = dashLen / 2;
+			for(let l=dashLen; l<=lineLen;) {
+				if(dottedstart == false) {
+					this.points.push({x: start.x + dx * l, y: start.y + dy * l});
+					l += dottedsp;
+				}
+				else {				
+					this.points.push({x: start.x + dx * l, y: start.y+ dy * l, m: true});
+					l += dashLen;
+				}
+				dottedstart = !dottedstart;				
+			}
+		}
+		this.points.push(end);
+		return this.points;
+	}
+}
+
+/**
  * 基础样式
  *
  * @class jmChartStyle
@@ -3520,6 +3622,15 @@ var defaultStyle = {
     top: 20,
     right: 20,
     bottom: 40
+  },
+  // 跟随标线
+  markLine: {
+    x: true,
+    // 显示X标线
+    y: true,
+    // 显示Y标线
+    stroke: 'red',
+    lineWidth: 1
   },
   legend: {
     stroke: 'transparent',
@@ -3716,92 +3827,6 @@ var defaultStyle = {
     }
   }
 };
-
-/**
- * 画一条直线
- *
- * @class jmLine
- * @extends jmPath
- * @param {object} params 直线参数:start=起始点,end=结束点,lineType=线类型(solid=实线，dotted=虚线),dashLength=虚线间隔(=4)
- */
-class jmLine extends jmPath {	
-	
-	constructor(params, t='jmLine') {
-		super(params, t);
-
-		this.start = params.start || {x:0,y:0};
-		this.end = params.end || {x:0,y:0};
-		this.style.lineType = this.style.lineType || 'solid';
-		this.style.dashLength = this.style.dashLength || 4;
-	}	
-
-	/**
-	 * 控制起始点
-	 * 
-	 * @property start
-	 * @for jmLine
-	 * @type {point}
-	 */
-	get start() {
-		return this.__pro('start');
-	}
-	set start(v) {
-		this.needUpdate = true;
-		return this.__pro('start', v);
-	}
-
-	/**
-	 * 控制结束点
-	 * 
-	 * @property end
-	 * @for jmLine
-	 * @type {point}
-	 */
-	get end() {
-		return this.__pro('end');
-	}
-	set end(v) {
-		this.needUpdate = true;
-		return this.__pro('end', v);
-	}
-
-	/**
-	 * 初始化图形点,如呆为虚线则根据跳跃间隔描点
-	 * @method initPoints
-	 * @private
-	 */
-	initPoints() {	
-		let start = this.start;
-		let end = this.end;
-		this.points = [];	
-		this.points.push(start);
-
-		if(this.style.lineType === 'dotted') {			
-			let dx = end.x - start.x;
-			let dy = end.y - start.y;
-			let lineLen = Math.sqrt(dx * dx + dy * dy);
-			dx = dx / lineLen;
-			dy = dy / lineLen;
-			let dottedstart = false;
-
-			let dashLen = this.style.dashLength || 5;
-			let dottedsp = dashLen / 2;
-			for(let l=dashLen; l<=lineLen;) {
-				if(dottedstart == false) {
-					this.points.push({x: start.x + dx * l, y: start.y + dy * l});
-					l += dottedsp;
-				}
-				else {				
-					this.points.push({x: start.x + dx * l, y: start.y+ dy * l, m: true});
-					l += dashLen;
-				}
-				dottedstart = !dottedstart;				
-			}
-		}
-		this.points.push(end);
-		return this.points;
-	}
-}
 
 /**
  * 画箭头,继承自jmPath
@@ -5949,6 +5974,7 @@ class jmSplineSeries extends jmLineSeries {
 
 }
 
+const MARKLINEMOVE = Symbol('jmchart#marklinemove');
 /**
  * jm图表组件
  * option参数:graph=jmgraph
@@ -6025,6 +6051,77 @@ class jmChart extends jmGraph {
       maxXValue: options.maxXValue,
       format: options.xLabelFormat
     }); // 生成X轴
+    // 生成标线，可以跟随鼠标或手指滑动
+
+    if (this.style.markLine && this.style.markLine.x) {
+      this.xMarkLine = this.createShape(jmLine, {
+        style: this.style.markLine
+      });
+      this.xMarkLine.visible = false;
+      this.children.add(this.xMarkLine);
+    }
+
+    if (this.style.markLine && this.style.markLine.y) {
+      this.yMarkLine = this.createShape(jmLine, {
+        style: this.style.markLine
+      });
+      this.children.add(this.yMarkLine);
+      this.yMarkLine.visible = false;
+    }
+
+    this.on('mousedown touchstart', function (args) {
+      this.graph.xMarkLine && (this.graph.xMarkLine.visible = true);
+      this.graph.yMarkLine && (this.graph.yMarkLine.visible = true);
+      this.graph[MARKLINEMOVE](args);
+    }); // 移动标线
+
+    this.on('mousemove touchmove', function (args) {
+      this[MARKLINEMOVE](args);
+    }); // 取消移动
+
+    this.on('mouseup touchend touchcancel touchleave', function (args) {
+      this.graph.xMarkLine && (this.graph.xMarkLine.visible = false);
+      this.graph.yMarkLine && (this.graph.yMarkLine.visible = false);
+      if (this.graph.xMarkLine || this.graph.yMarkLine) this.needUpdate = true;
+    });
+  }
+  /**
+   * 移动标线
+   * @param { object } args 移动事件参数
+   */
+
+
+  [MARKLINEMOVE](args) {
+    const maxY = this.chartArea.height + this.chartArea.position.y;
+    const maxX = this.chartArea.position.x + this.chartArea.width;
+
+    if (this.graph.xMarkLine && this.graph.xMarkLine.visible) {
+      if (args.position.y < this.chartArea.position.y) {
+        this.graph.xMarkLine.start.y = this.graph.xMarkLine.end.y = this.chartArea.position.y;
+      } else if (args.position.y > maxY) {
+        this.graph.xMarkLine.start.y = this.graph.xMarkLine.end.y = maxY;
+      } else {
+        this.graph.xMarkLine.start.y = this.graph.xMarkLine.end.y = args.position.y;
+      }
+
+      this.graph.xMarkLine.start.x = this.chartArea.position.x;
+      this.graph.xMarkLine.end.x = this.chartArea.position.x + this.chartArea.width;
+      this.needUpdate = true;
+    }
+
+    if (this.graph.yMarkLine && this.graph.yMarkLine.visible) {
+      if (args.position.x < this.chartArea.position.x) {
+        this.graph.yMarkLine.start.x = this.graph.yMarkLine.end.x = this.chartArea.position.x;
+      } else if (args.position.x > maxX) {
+        this.graph.yMarkLine.start.x = this.graph.yMarkLine.end.x = maxX;
+      } else {
+        this.graph.yMarkLine.start.x = this.graph.yMarkLine.end.x = args.position.x;
+      }
+
+      this.graph.yMarkLine.start.y = this.chartArea.position.y;
+      this.graph.yMarkLine.end.y = this.chartArea.position.y + this.chartArea.height;
+      this.needUpdate = true;
+    }
   }
 
 }
@@ -6137,7 +6234,7 @@ jmChart.prototype.resetAreaPosition = function () {
 
 jmChart.prototype.createAxis = function (options) {
   // 深度组件默认样式
-  options.style = this.utils.clone(this.style.axis, options.style, true);
+  options.style = options.style ? this.utils.clone(this.style.axis, options.style, true) : this.style.axis;
   const axis = this.createShape(jmAxis, options);
   this.children.add(axis);
   return axis;
