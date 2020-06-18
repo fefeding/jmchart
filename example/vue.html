@@ -36,7 +36,7 @@
             </v-chart>
             <button @click="visible=!visible">显示/隐藏</button>
             <br />
-            <div>
+            <div style="color: #ccc; font-size: 12px;">
                 {{ touchDataInfo }}
             </div>
 		</div>	
@@ -161,7 +161,8 @@
                         // 图，可以指定多个
                         chartSeries: series,
                         width: '100%',
-                        height: '50%'
+                        height: '50%',
+                        touchDataInfo: ''
                     },
                     components: {
                         vChart
@@ -170,6 +171,7 @@
                         // 滑动改变数据点
                         touchPointChange: (args) => {
                             console.log(args);
+                            app.touchDataInfo = JSON.stringify(args);
                         }
                     }
                 });
