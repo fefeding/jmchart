@@ -60,8 +60,7 @@
 						legendFormat: function(options) {
 							return '图1';
 						}
-					});
-					//line1.curve = true;//画曲线					
+					});			
 
 					var line2 = chart.createSeries('line', {
 						field: 'y2',
@@ -70,35 +69,22 @@
 						// 如果指定了也只是指定了最大或最小边界，如果有数值超过它，依然以事实数值为准
 						minYValue: 0,
 						maxYValue: 500 ,
+						style: {
+							// 画圆滑的曲线 
+							curve: true
+						},
 						legendFormat: function(options) {
 							return '图例2';
 						}
-					});
-					//line2.enableAnimate = true;
-
-					//line2.enableAnimate = true;
-					//chart.series.add(line2);	
-					//line2.legendLabel = "测试图例2afasdf";
+					});		
+					
 
 
-					var line3 = chart.createSeries('spline', {
+					var line3 = chart.createSeries('line', {
 						field: 'y3',
 						legendLabel: '图例3'
 					});						
-		/*		
-					var ymapping5 = {field:'y5',type:'y',dataType:'number'};
-					var line5 = chart.createSeries('line',[xmapping,ymapping5]);
-					chart.series.add(line5);		
-
-					var ymapping6 = {field:'y6',type:'y',dataType:'number'};
-					var line6 = chart.createSeries('line',[xmapping,ymapping6]);
-					chart.series.add(line6);		
-
-					var ymapping7 = {field:'y7',type:'y',dataType:'number'};
-					var line7 = chart.createSeries('line',[xmapping,ymapping7]);
-					chart.series.add(line7);	
-					line7.enableAnimate = true;	
-*/
+		
 					const datacount = 6;
 					function animate() {
 						if(true) {
@@ -140,61 +126,16 @@
 						//setTimeout(animate,500);
 						chart.refresh();
 						console.log(chart.data);
-
-						chart2.data = chart.data;
-						chart2.refresh();
 					}
-
-
-					
-					var chart2 = new jmChart('mycanvas2',{
-						width: w,
-						height: Math.max(h, 500)
-					});
-					chart2.legendPosition = 'top';
-					//chart2.legend.visible = true;
-					//chart2.enableAnimate = false;
-					
-					var pie = chart2.createSeries('pie', {
-						field: 'y6',
-						legendFormat: function(options) {
-							return 'test' + options.data.y8;
-						}
-					});
-
 					
 					animate();
-
-					chart.utils.bindEvent(document.getElementById('btnRedraw'),'click',function() {
-							chart.data = [];
-							//datacount = Math.random() * 10 + 4;
-							for(var i = 0;i<datacount;i++) {
-								var data = {
-									x : i,
-									y1 : Math.random() * 200 + 100,
-									y2:Math.random() * 200,
-									y3:Math.random() * 200 + 50,
-									y4:Math.random() * 200 + 50,
-									y5:Math.random() * 200 + 50,
-									y6:Math.random() * 200 - 50,
-									y7:Math.random() * 200 + 50,
-									y8:Math.random() * 200 - 50,
-									y9:Math.random() * 200 - 50,
-									y10:Math.random() * 200 - 50
-								};
-								chart.data.push(data);
-							}
-							chart.refresh();
-							//chart2.refresh();
-						});
+					chart.utils.bindEvent(document.getElementById('btnRedraw'),'click',animate);
 					
 				}
 		</script>
 	</head>
 	<body>
 		<div id="mycanvas">
-			</div>	
-		<div id="mycanvas2">
 			</div>	
 			<button id="btnRedraw">重绘</button>		
 	</body>

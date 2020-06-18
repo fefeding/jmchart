@@ -7,11 +7,7 @@ import jmLegend from './core/legend/legend.js';
 import jmBarSeries from './series/barSeries.js';
 import jmPieSeries from './series/pieSeries.js';
 
-import {
-	jmLineSeries,
-	jmSplineSeries
-} from './series/lineSeries.js';
-
+import jmLineSeries from './series/lineSeries.js';
 import jmMarkLine from './core/axis/markLine';
 
 /**
@@ -27,7 +23,7 @@ export default class jmChart extends jmgraph.jmGraph  {
 	constructor(container, options) {
 		options = options||{};
 		options.autoRefresh = typeof options.autoRefresh === 'undefined'? true: options.autoRefresh;
-		
+
 		 // 深度复制默认样式，以免被改
 		options.style = jmgraph.jmUtils.clone(defaultStyle, options.style, true);
 
@@ -312,7 +308,6 @@ jmChart.prototype.createSeries = function (type, options = {}) {
 	if(!this.serieTypes) {
 		this.serieTypes = {
 			'line' : jmLineSeries,
-			'spline' : jmSplineSeries,
 			'bar' : jmBarSeries,
 			'pie' : jmPieSeries
 		};		
