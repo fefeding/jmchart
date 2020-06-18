@@ -8,7 +8,7 @@ console.log(process.env);
 
 app.use(express.static("."));
 
-rollupOptions.output.format = 'esm';// 方便调用
+//rollupOptions.output.format = 'esm';// 方便调用
 const watcher = rollup.watch(rollupOptions);
 
 watcher.on('event', event => {

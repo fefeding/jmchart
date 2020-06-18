@@ -3,8 +3,6 @@ import jmArc from 'jmgraph/src/shapes/jmArc.js';
 import jmPath from 'jmgraph/src/core/jmPath.js';
 import jmSeries from './series.js';
 
-const PreDrawKey = Symbol('lineSeries#preDraw');
-
 /**
  * 图形基类
  *
