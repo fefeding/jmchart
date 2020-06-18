@@ -56,6 +56,7 @@ export default class jmPieSeries extends jmSeries {
 		});
 
 		const points = this.createPoints();
+
 		
 		if(ani) {
 			var endAni = points[0].per * cm;
@@ -110,7 +111,7 @@ export default class jmPieSeries extends jmSeries {
 				//绑定提示框
 				//this.bindTooltip(p.shape, p);
 			}
-		}	
+		}
 	}
 
 	/**
@@ -166,15 +167,22 @@ export default class jmPieSeries extends jmSeries {
  * @method createLegend	 
  */
 jmPieSeries.prototype.createLegend = function() {
-	if(!this.shapes.length) return;
+
+	const points = this.createPoints();
+	if(!points || !points.length) return;
 	
-	for(let k in this.data) {
+	for(let k in points) {
 		const p = this.shapes[k];
+		if(!p) continue;
+
 		//生成图例前的图标
 		const style = this.graph.utils.clone(p.style);
 		style.fill = style.color;	
 		//delete style.stroke;
-		const shape = this.graph.createShape(jmRect,{style:style});
+		const shape = this.graph.createShape(jmRect,{
+			style: style,
+			position : {x: 0, y: 0}
+		});
 		//shape.targetShape = p.shape;
 		//此处重写图例事件
 		this.graph.legend.append(this, shape, {

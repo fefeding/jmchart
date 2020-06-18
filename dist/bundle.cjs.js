@@ -4876,18 +4876,26 @@ jmLegend.prototype.append = function (series, shape, options = {}) {
   shape.width = panel.style.shape.width;
   shape.height = panel.style.shape.height;
   name = options.name || series.legendLabel;
-  name = series.options.legendFormat ? series.options.legendFormat.call(series, options) : name; //生成图例名称
+  name = series.options.legendFormat ? series.options.legendFormat.call(series, options) : name;
 
-  const label = this.graph.createShape(jmLabel, {
-    style: panel.style.label,
-    text: name || ''
-  });
-  label.height = shape.height;
-  label.position = {
-    x: shape.width + 4,
-    y: 0
-  };
-  panel.children.add(label); //执行进入事件
+  if (name) {
+    //生成图例名称
+    const label = this.graph.createShape(jmLabel, {
+      style: panel.style.label,
+      text: name || ''
+    });
+    label.height = shape.height;
+    label.position = {
+      x: shape.width + 4,
+      y: 0
+    };
+    panel.children.add(label);
+    panel.width = shape.width + label.testSize().width;
+  } else {
+    panel.width = shape.width;
+  }
+
+  panel.height = shape.height; //执行进入事件
   //触动图例后加粗显示图
 
   /*const hover = options.hover || function() {	
@@ -4910,8 +4918,6 @@ jmLegend.prototype.append = function (series, shape, options = {}) {
   };
   panel.bind('mouseleave', leave);*/
 
-  panel.width = shape.width + label.testSize().width;
-  panel.height = shape.height;
   var legendPosition = this.legendPosition || this.style.legendPosition;
 
   if (legendPosition == 'top' || legendPosition == 'bottom') {
@@ -5089,16 +5095,16 @@ class jmSeries extends jmPath {
  */
 
 jmSeries.prototype.reset = function () {
-  //生成图例
-  this.createLegend(); // 重置所有图形
-
+  // 重置所有图形
   var shape;
 
   while (shape = this.shapes.shift()) {
     shape && shape.remove();
-  } // 计算最大最小值
-  // 当前需要先更新axis的边界值，轴好画图
+  } //生成图例  这里要放到shape清理后面
 
+
+  this.createLegend(); // 计算最大最小值
+  // 当前需要先更新axis的边界值，轴好画图
 
   for (var i = 0; i < this.data.length; i++) {
     const v = this.data[i][this.field];
@@ -5599,16 +5605,22 @@ class jmPieSeries extends jmSeries {
  */
 
 jmPieSeries.prototype.createLegend = function () {
-  if (!this.shapes.length) return;
+  const points = this.createPoints();
+  if (!points || !points.length) return;
 
-  for (let k in this.data) {
-    const p = this.shapes[k]; //生成图例前的图标
+  for (let k in points) {
+    const p = this.shapes[k];
+    if (!p) continue; //生成图例前的图标
 
     const style = this.graph.utils.clone(p.style);
     style.fill = style.color; //delete style.stroke;
 
     const shape = this.graph.createShape(jmRect, {
-      style: style
+      style: style,
+      position: {
+        x: 0,
+        y: 0
+      }
     }); //shape.targetShape = p.shape;
     //此处重写图例事件
 

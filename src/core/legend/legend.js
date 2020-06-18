@@ -53,14 +53,23 @@ jmLegend.prototype.append = function(series, shape, options = {}) {
 	
 	name = options.name || series.legendLabel;
 	name = series.options.legendFormat? series.options.legendFormat.call(series, options): name; 
-	//生成图例名称
-	const label = this.graph.createShape(jmLabel, {
-		style: panel.style.label,
-		text: name || ''
-	});		
-	label.height = shape.height;
-	label.position = {x: shape.width + 4, y: 0};
-	panel.children.add(label);	
+
+	if(name) {
+		//生成图例名称
+		const label = this.graph.createShape(jmLabel, {
+			style: panel.style.label,
+			text: name || ''
+		});		
+		label.height = shape.height;
+		label.position = {x: shape.width + 4, y: 0};
+		panel.children.add(label);	
+		
+		panel.width = shape.width + label.testSize().width;
+	}
+	else {
+		panel.width = shape.width;
+	}
+	panel.height = shape.height;
 
 	//执行进入事件
 	//触动图例后加粗显示图
@@ -83,9 +92,6 @@ jmLegend.prototype.append = function(series, shape, options = {}) {
 		//series.graph.refresh();
 	};
 	panel.bind('mouseleave', leave);*/
-	
-	panel.width = shape.width + label.testSize().width;
-	panel.height = shape.height;
 
 	var legendPosition = this.legendPosition || this.style.legendPosition;
 	if(legendPosition == 'top' || legendPosition == 'bottom') {

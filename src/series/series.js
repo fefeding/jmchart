@@ -102,14 +102,14 @@ export default class jmSeries extends jmPath {
  */
 jmSeries.prototype.reset = function() {	
 
-	//生成图例
-	this.createLegend();
-
 	// 重置所有图形
 	var shape;
 	while(shape = this.shapes.shift()) {
 		shape && shape.remove();
 	}
+	
+	//生成图例  这里要放到shape清理后面
+	this.createLegend();
 
 	// 计算最大最小值
 	// 当前需要先更新axis的边界值，轴好画图
