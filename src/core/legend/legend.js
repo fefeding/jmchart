@@ -35,7 +35,7 @@ export default class jmLegend extends jmRect {
  */
 jmLegend.prototype.append = function(series, shape, options = {}) {
 	// 如果不显示图例，就不处理
-	if(this.visible === false) return;
+	if(this.visible === false) return;	
 
 	const panel = this.graph.createShape(jmRect,{
 		style: this.graph.utils.clone(this.style.item),
@@ -52,10 +52,11 @@ jmLegend.prototype.append = function(series, shape, options = {}) {
 	shape.height = panel.style.shape.height;
 	
 	name = options.name || series.legendLabel;
+	name = series.options.legendFormat? series.options.legendFormat.call(series, options): name; 
 	//生成图例名称
 	const label = this.graph.createShape(jmLabel, {
 		style: panel.style.label,
-		text: name
+		text: name || ''
 	});		
 	label.height = shape.height;
 	label.position = {x: shape.width + 4, y: 0};
@@ -99,6 +100,8 @@ jmLegend.prototype.append = function(series, shape, options = {}) {
 		this.height = panel.position.y + panel.height;
 		this.width = Math.max(panel.width, this.width);
 	}
+
+	this.needUpdate = true;
 }
 
 /**

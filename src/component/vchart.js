@@ -85,6 +85,11 @@ export default {
             }
             this.chartInstance.data = this.chartData;
             this.chartInstance.refresh();
+
+            // touch改变数据点事件
+            this.chartInstance.on('touchPointChange', (args) => {
+                this.$emit('touch-point-change', args);
+            });
         }
     },
 

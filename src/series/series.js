@@ -17,6 +17,8 @@ export default class jmSeries extends jmPath {
 	constructor(options) {
 		super(options);
 
+		this.options = options;
+
 		this.field = options.field || '';
 		this.index = options.index || 1;
 		this.legendLabel = options.legendLabel || '';
@@ -71,11 +73,13 @@ export default class jmSeries extends jmPath {
 		if(!this.dataPoints) return null;
 		// 获取最近的那个
 		let prePoint = undefined, nextPoint = undefined; // 跟上一个点和下一个点的距离，哪个近用哪个
-		for(let p of this.dataPoints) {
+		for(let i=0; i< this.dataPoints.length; i++) {
+			const p = this.dataPoints[i];
 			if(p.x == x) return p;
 
 			// 上一个点
 			if(p.x < x) {
+				if(i === this.dataPoints.length - 1) return p;
 				prePoint = p;
 			}
 
@@ -173,7 +177,7 @@ jmSeries.prototype.createPoints = function(data) {
 /**
  * 生成图例
  *
- * @method createLegend	 
+ * @method createLegend
  */
 jmSeries.prototype.createLegend = function() {
 	//生成图例前的图标

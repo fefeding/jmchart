@@ -19,6 +19,7 @@ export default {
 		x: true, // 显示X标线
 		y: true, // 显示Y标线
 		stroke: '#EB792A',
+		fill: '#CCC',
 		lineWidth: 1,
 		radius: 5, // 中间小圆圈大小
 		zIndex: 20
@@ -146,7 +147,7 @@ export default {
 			zIndex: 19
 		},
 		// 默认不填充，需要填满请配置{fill:'',stroke:''}
-		area: false	
+		area: true	
 	},
 	bar : {
 		normal: {

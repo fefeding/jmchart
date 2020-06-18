@@ -63,7 +63,7 @@ export default class jmLineSeries extends jmSeries {
 				pointShape.zIndex = (pointShape.style.zIndex || 1) + 1;	
 				this.graph.chartArea.children.add(pointShape);
 				this.shapes.add(pointShape);
-				this.bindTooltip(pointShape, p);	
+				//this.bindTooltip(pointShape, p);	
 			}
 		}
 
@@ -101,7 +101,7 @@ export default class jmLineSeries extends jmSeries {
 				x: this.graph.style.legend.item.shape.width,y: this.graph.style.legend.item.shape.height/2
 			}];
 		}
-		this.graph.legend.append(this,shape);
+		this.graph.legend.append(this, shape);
 	}
 
 	// 生成布效果
@@ -120,9 +120,9 @@ export default class jmLineSeries extends jmSeries {
 			const color = this.graph.utils.hexToRGBA(this.style.stroke);
 			style.fill = `linear-gradient(50% 0 50% 100%, 
 				rgba(${color.r},${color.g},${color.b}, 0) 1, 
-				rgba(${color.r},${color.g},${color.b}, 0.1) 0.5, 
-				rgba(${color.r},${color.g},${color.b}, 0.3) 0.2, 
-				rgba(${color.r},${color.g},${color.b}, 0.4) 0)`;
+				rgba(${color.r},${color.g},${color.b}, 0) 0.3,
+				rgba(${color.r},${color.g},${color.b}, 0.1) 0.1, 
+				rgba(${color.r},${color.g},${color.b}, 0.2) 0)`;
 		}
 		const area = this.graph.createShape(jmPath, {
 			points: this.graph.utils.clone(points, true),
@@ -202,7 +202,7 @@ class jmSplineSeries extends jmLineSeries {
 				pointShape.zIndex = (pointShape.style.zIndex || 1) + 1;	
 				this.graph.chartArea.children.add(pointShape);
 				this.shapes.add(pointShape);
-				this.bindTooltip(pointShape, p);
+				//this.bindTooltip(pointShape, p);
 			}
 
 			const startPoint = shapePoints[shapePoints.length - 1];

@@ -31,6 +31,7 @@
             <v-chart v-if="visible" :chart-data="chartData" 
                 :chart-options="chartOptions" 
                 :chart-series="chartSeries" 
+                v-on:touch-point-change="touchPointChange"
                 :width="width" :height="height">
             </v-chart>
             <button @click="visible=!visible">显示/隐藏</button>
@@ -74,6 +75,12 @@
                             yLabel: {
                                 fill: 'green' // 轴上的字颜色
                             }
+                        },
+                        // 跟随标线
+                        markLine: {
+                            x: false, // 显示X标线
+                            y: true, // 显示Y标线
+                            fill: '#000'
                         },
                         // 隐藏边框
                         chartArea: {
@@ -143,6 +150,12 @@
                     },
                     components: {
                         vChart
+                    },
+                    methods: {
+                        // 滑动改变数据点
+                        touchPointChange: (args) => {
+                            console.log(args);
+                        }
                     }
                 });
 

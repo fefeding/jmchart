@@ -47,22 +47,32 @@
 					chart.legend.legendPosition = 'top';
 					chart.legend.visible = true;
 					chart.enableAnimate = false;
+
+					// touch改变数据点事件
+					chart.on('touchPointChange', function(args) {
+						console.log(args);
+					});
 					
 					
 					var line1 = chart.createSeries('bar', {
 						field: 'y1',
-						legendLabel: '图例1'
+						// 图例格式化，如果不给定，则采用legendLabel
+						legendFormat: function(options) {
+							return '图1';
+						}
 					});
 					//line1.curve = true;//画曲线					
 
 					var line2 = chart.createSeries('line', {
 						field: 'y2',
-						//index: 2, // 指定Y轴索引，如是档指定就会共用左边的Y轴，  
-						legendLabel: '图例2',
+						//index: 2, // 指定Y轴索引，如是档指定就会共用左边的Y轴，
 						// 最大值和最小值，如果不指定会自动计算，
 						// 如果指定了也只是指定了最大或最小边界，如果有数值超过它，依然以事实数值为准
 						minYValue: 0,
-						maxYValue: 500 
+						maxYValue: 500 ,
+						legendFormat: function(options) {
+							return '图例2';
+						}
 					});
 					//line2.enableAnimate = true;
 
@@ -146,9 +156,11 @@
 					chart2.enableAnimate = false;
 					
 					var pie = chart2.createSeries('pie', {
-						field: 'y6'
+						field: 'y6',
+						legendFormat: function(options) {
+							return 'test' + options.data.y8;
+						}
 					});
-					pie.legendLabel = "{DATA.y8}";
 
 					
 					animate();

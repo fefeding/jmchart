@@ -58,7 +58,7 @@ export default class jmBarSeries extends jmSeries {
 				var sp = this.shapes.add(this.graph.createPath(null, this.graph.utils.clone(this.style)));
 				this.children.add(sp);
 				//绑定提示框
-				this.bindTooltip(sp, point);
+				//this.bindTooltip(sp, point);
 
 				//首先确定p1和p4,因为他们是底脚。会固定
 				var p1 = {x: point.x - this.barTotalWidth / 2 + this.barWidth * this.barIndex, y: this.graph.chartArea.height};			

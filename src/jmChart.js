@@ -26,7 +26,8 @@ export default class jmChart extends jmgraph.jmGraph  {
 
 	constructor(container, options) {
 		options = options||{};
-
+		options.autoRefresh = typeof options.autoRefresh === 'undefined'? true: options.autoRefresh;
+		
 		 // 深度复制默认样式，以免被改
 		options.style = jmgraph.jmUtils.clone(defaultStyle, options.style, true);
 
@@ -123,19 +124,19 @@ export default class jmChart extends jmgraph.jmGraph  {
 		});
 		// 移动标线
 		this.on('mousemove touchmove', function(args) {
-			if(this.graph.xMarkLine) {
+			if(this.graph.xMarkLine && this.graph.xMarkLine.visible) {
 				this.graph.xMarkLine.move(args);
 			}
-			if(this.graph.yMarkLine) {
+			if(this.graph.yMarkLine && this.graph.yMarkLine.visible) {
 				this.graph.yMarkLine.move(args);
 			}
 		});
 		// 取消移动
 		this.on('mouseup touchend touchcancel touchleave', function(args) {
-			if(this.graph.xMarkLine) {
+			if(this.graph.xMarkLine && this.graph.xMarkLine.visible) {
 				this.graph.xMarkLine.cancel(args);
 			}
-			if(this.graph.yMarkLine) {
+			if(this.graph.yMarkLine && this.graph.yMarkLine.visible) {
 				this.graph.yMarkLine.cancel(args);
 			}
 		});

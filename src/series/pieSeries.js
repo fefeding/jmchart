@@ -61,7 +61,7 @@ export default class jmPieSeries extends jmSeries {
 			var endAni = points[0].per * cm;
 			function animate(points,start,endAni,cm,arc,index,series) {
 				var p = points[index];
-				var end = arc.endAngle() || start;
+				var end = arc.endAngle || start;
 				end += 0.3;
 				
 				//完成一个，接替到下一个
@@ -90,7 +90,7 @@ export default class jmPieSeries extends jmSeries {
 						}
 					}
 					//绑定提示框
-					series.bindTooltip(p.shape,p);
+					//series.bindTooltip(p.shape,p);
 					return false;
 				}
 			}
@@ -108,7 +108,7 @@ export default class jmPieSeries extends jmSeries {
 				p.shape.points = arc.initPoints();
 				p.shape.points.push(center);			
 				//绑定提示框
-				this.bindTooltip(p.shape, p);
+				//this.bindTooltip(p.shape, p);
 			}
 		}	
 	}
@@ -168,27 +168,31 @@ export default class jmPieSeries extends jmSeries {
 jmPieSeries.prototype.createLegend = function() {
 	if(!this.shapes.length) return;
 	
-	for(var k in this.data) {
-		var p = this.shapes[k];
+	for(let k in this.data) {
+		const p = this.shapes[k];
 		//生成图例前的图标
-		var style = this.graph.utils.clone(p.style);
+		const style = this.graph.utils.clone(p.style);
 		style.fill = style.color;	
 		//delete style.stroke;
-		var shape = this.graph.createShape(jmRect,{style:style});
+		const shape = this.graph.createShape(jmRect,{style:style});
 		//shape.targetShape = p.shape;
 		//此处重写图例事件
-		var name = this.decodeInfo(this.legendLabel, p);
-		this.graph.legend.append(this, shape, name, function() {	
-			var sp = this.children.get(0);
-			//应用图的动态样式
-			Object.assign(this.targetShape.style, this.targetShape.style.hover);	
-			Object.assign(this.style, this.style.hover);
-		},function() {	
-			var sp = this.children.get(0);
-			//应用图的普通样式
-			Object.assign(this.targetShape.style, this.targetShape.style.normal);			
-			Object.assign(this.style, this.style.normal);
-		}, p.shape);
+		this.graph.legend.append(this, shape, {
+			name: this.legendLabel, 
+			hover: function() {	
+				//var sp = this.children.get(0);
+				//应用图的动态样式
+				Object.assign(this.targetShape.style, this.targetShape.style.hover);	
+				Object.assign(this.style, this.style.hover);
+			},
+			leave: function() {	
+				//var sp = this.children.get(0);
+				//应用图的普通样式
+				Object.assign(this.targetShape.style, this.targetShape.style.normal);			
+				Object.assign(this.style, this.style.normal);
+			}, 
+			data: this.data[k]
+		});
 	}	
 }
 

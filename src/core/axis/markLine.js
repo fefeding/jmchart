@@ -30,6 +30,8 @@ export default class jmMarkLine extends jmLine {
     
     // 初始化轴
     init() {
+        if(!this.visible) return;
+        
         // 纵标线，中间标小圆圈
         if(this.markLineType === 'y') {
             // 重置所有图形
@@ -38,18 +40,22 @@ export default class jmMarkLine extends jmLine {
                 shape && shape.remove();
             }
 
+            const touchPoints = []; // 命中的数据点
+            const graph = this.graph;
+            let touchChange = false;
+
             // 根据线条数生成标点个数
-            for(let serie of this.graph.series) {
+            for(let serie of graph.series) {
                 // 得有数据描点的才展示圆
                 if(!serie.getDataPointByX) continue; 
 
                 const point = serie.getDataPointByX(this.start.x); // 找到最近的数据点
                 if(!point) continue;
 
-                const style = this.graph.utils.clone(this.style, {
+                const style = graph.utils.clone(this.style, {
                     stroke: serie.style.color || serie.style.stroke                    
                 }, true);
-                this.markArc = this.graph.createShape(jmArc, {
+                this.markArc = graph.createShape(jmArc, {
                     style,
                     radius: this.style.radius || 5
                 });
@@ -59,8 +65,20 @@ export default class jmMarkLine extends jmLine {
                 this.children.add(this.markArc);
                 this.shapes.add(this.markArc);
 
+                // x轴改变，表示变换了位置
+                if(!touchChange) touchChange = this.start.x !== point.x;
+
                 this.start.x = this.end.x = point.x;
+
+                touchPoints.push(point);
             }
+
+            // 触发touch数据点改变事件
+            touchChange && setTimeout(()=>{
+                    graph.emit('touchPointChange', {
+                        points: touchPoints
+                    });
+                }, 10);
         }
     }
 
@@ -69,21 +87,20 @@ export default class jmMarkLine extends jmLine {
 	 * @param { object } args 移动事件参数
 	 */
 	move(args) {
-		const maxY = this.graph.chartArea.height + this.graph.chartArea.position.y;
-		const maxX = this.graph.chartArea.position.x + this.graph.chartArea.width;
-
+        // 事件是挂在graph下的，，但此轴是放在chartArea中的。所以事件判断用graph坐标，但是当前位置要相对于chartArea
+		
 		if(this.visible && this.markLineType === 'x') {
-			if(args.position.y < this.graph.chartArea.position.y) {
-				this.start.y = this.end.y = this.graph.chartArea.position.y;
+			if(args.position.y <= this.graph.chartArea.position.y) {
+				this.start.y = this.end.y = 0;
 			}
-			else if(args.position.y > maxY) {
-				this.start.y = this.end.y = maxY;
+			else if(args.position.y > this.graph.chartArea.height + this.graph.chartArea.position.y) {
+				this.start.y = this.end.y = this.graph.chartArea.height;
 			}
 			else {
-				this.start.y = this.end.y = args.position.y;
+				this.start.y = this.end.y = args.position.y - this.graph.chartArea.position.y;
 			}
-			this.start.x = this.graph.chartArea.position.x;
-			this.end.x = this.graph.chartArea.position.x + this.graph.chartArea.width;
+			this.start.x = 0;
+			this.end.x = this.graph.chartArea.width;
 
 			this.needUpdate = true;
 		}
@@ -91,16 +108,16 @@ export default class jmMarkLine extends jmLine {
 		if(this.visible && this.markLineType === 'y') {
 
 			if(args.position.x < this.graph.chartArea.position.x) {
-				this.start.x = this.end.x = this.graph.chartArea.position.x;
+				this.start.x = this.end.x = 0;
 			}
-			else if(args.position.x > maxX) {
-				this.start.x = this.end.x = maxX;
+			else if(args.position.x > this.graph.chartArea.width + this.graph.chartArea.position.x) {
+				this.start.x = this.end.x = this.graph.chartArea.width;
 			}
 			else {
-				this.start.x = this.end.x = args.position.x;
+				this.start.x = this.end.x = args.position.x - this.graph.chartArea.position.x;
 			}
-			this.start.y = this.graph.chartArea.position.y;
-			this.end.y = this.graph.chartArea.position.y + this.graph.chartArea.height;
+			this.start.y = 0;
+			this.end.y = this.graph.chartArea.height;
 
 			this.needUpdate = true;
 		}
