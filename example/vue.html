@@ -82,9 +82,10 @@
                         },
                         // 跟随标线
                         markLine: {
-                            x: false, // 显示X标线
+                            x: true, // 显示X标线
                             y: true, // 显示Y标线
-                            fill: '#000'
+                            fill: '#000',
+                            //lineType: 'dotted' // 虚线  待优化，会卡住
                         },
                         // 隐藏边框
                         chartArea: {
@@ -100,7 +101,7 @@
                 };
                 const series = [
                     {
-                        type: 'spline', // line bar pie spline
+                        type: 'line', // line bar pie spline
                         field: 'y1', // 当前图绑定的数据字段名  
                         legendLabel: '图例2',
                         // 最大值和最小值，如果不指定会自动计算，
@@ -115,6 +116,7 @@
                             // 不显示小圆点
                             showItem: false,
                             color: '#C79156', // 自定义颜色，如果不指定就会采用默认的
+                            curve: true, // 圆滑的曲线
                             // 填充图形
                             area: {
                                 // 自定义填充颜色处理
