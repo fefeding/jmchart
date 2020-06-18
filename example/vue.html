@@ -35,6 +35,10 @@
                 :width="width" :height="height">
             </v-chart>
             <button @click="visible=!visible">显示/隐藏</button>
+            <br />
+            <div>
+                {{ touchDataInfo }}
+            </div>
 		</div>	
             <script type="module">
                 import { vChart } from '../dist/bundle.cjs.js';
