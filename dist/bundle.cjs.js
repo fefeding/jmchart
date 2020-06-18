@@ -3783,7 +3783,7 @@ var defaultStyle = {
       zIndex: 19
     },
     // 默认不填充，需要填满请配置{fill:'',stroke:''}
-    area: true
+    area: false
   },
   bar: {
     normal: {
@@ -5865,6 +5865,8 @@ class jmLineSeries extends jmSeries {
 				rgba(${color.r},${color.g},${color.b}, 0) 0.3,
 				rgba(${color.r},${color.g},${color.b}, 0.1) 0.1, 
 				rgba(${color.r},${color.g},${color.b}, 0.2) 0)`;
+    } else if (typeof style.fill === 'function') {
+      style.fill = style.fill.call(this, style);
     }
 
     const area = this.graph.createShape(jmPath, {
@@ -6049,9 +6051,10 @@ class jmMarkLine extends jmLine {
         this.children.add(this.markArc);
         this.shapes.add(this.markArc); // x轴改变，表示变换了位置
 
-        if (!touchChange) touchChange = this.start.x !== point.x;
+        if (!touchChange && (!serie.lastMarkPoint || serie.lastMarkPoint.x != point.x)) touchChange = true;
         this.start.x = this.end.x = point.x;
         touchPoints.push(point);
+        serie.lastMarkPoint = point; // 记下最后一次改变的点
       } // 触发touch数据点改变事件
 
 

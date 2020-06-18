@@ -124,6 +124,9 @@ export default class jmLineSeries extends jmSeries {
 				rgba(${color.r},${color.g},${color.b}, 0.1) 0.1, 
 				rgba(${color.r},${color.g},${color.b}, 0.2) 0)`;
 		}
+		else if(typeof style.fill === 'function') {
+			style.fill = style.fill.call(this, style);
+		}
 		const area = this.graph.createShape(jmPath, {
 			points: this.graph.utils.clone(points, true),
 			style,

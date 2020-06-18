@@ -66,11 +66,12 @@ export default class jmMarkLine extends jmLine {
                 this.shapes.add(this.markArc);
 
                 // x轴改变，表示变换了位置
-                if(!touchChange) touchChange = this.start.x !== point.x;
+                if(!touchChange && (!serie.lastMarkPoint || serie.lastMarkPoint.x != point.x)) touchChange = true;
 
                 this.start.x = this.end.x = point.x;
 
                 touchPoints.push(point);
+                serie.lastMarkPoint = point;// 记下最后一次改变的点
             }
 
             // 触发touch数据点改变事件

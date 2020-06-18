@@ -147,7 +147,7 @@ export default {
 			zIndex: 19
 		},
 		// 默认不填充，需要填满请配置{fill:'',stroke:''}
-		area: true	
+		area: false	
 	},
 	bar : {
 		normal: {
