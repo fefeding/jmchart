@@ -117,14 +117,14 @@ export default {
 	chartColors : [
 		'#249FDA','#EA3B7C','#8EBC00','#309B46','#4B507E','#D8E404','#EB792A','#A00DA0'
 	],
-	tooltip: {
+	/*tooltip: {
 		'background-color': 'rgb(255,255,255)',
 		'padding':'4px',
 		'opacity':'0.8',
 		'border':'1px solid #000',
 		'box-shadow': '0 0 3px #000',
 		'border-radius': '6px'
-	},
+	},*/
 	line : {
 		normal: {
 			lineWidth:1.5,
