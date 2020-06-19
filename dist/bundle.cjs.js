@@ -3756,14 +3756,15 @@ var defaultStyle = {
   },
   // 图形样式集
   chartColors: ['#249FDA', '#EA3B7C', '#8EBC00', '#309B46', '#4B507E', '#D8E404', '#EB792A', '#A00DA0'],
-  tooltip: {
-    'background-color': 'rgb(255,255,255)',
-    'padding': '4px',
-    'opacity': '0.8',
-    'border': '1px solid #000',
-    'box-shadow': '0 0 3px #000',
-    'border-radius': '6px'
-  },
+
+  /*tooltip: {
+  	'background-color': 'rgb(255,255,255)',
+  	'padding':'4px',
+  	'opacity':'0.8',
+  	'border':'1px solid #000',
+  	'box-shadow': '0 0 3px #000',
+  	'border-radius': '6px'
+  },*/
   line: {
     normal: {
       lineWidth: 1.5,
@@ -4905,15 +4906,18 @@ jmLegend.prototype.append = function (series, shape, options = {}) {
   /*const hover = options.hover || function() {	
   	//应用图的动态样式		
   	//Object.assign(series.style, series.style.hover);
-  		//Object.assign(this.style, this.style.hover || {});
-  		//series.graph.refresh();
+  
+  	//Object.assign(this.style, this.style.hover || {});
+  
+  	//series.graph.refresh();
   };
   panel.bind('mouseover', hover);
   //执行离开
   const leave = options.leave || function() {	
   	//应用图的普通样式		
   	//Object.assign(series.style, series.style.normal);
-  		//Object.assign(this.style, this.style.normal || {});
+  
+  	//Object.assign(this.style, this.style.normal || {});
   	//jmUtils.apply(this.series.style.normal,this.series.style);
   	//series.graph.refresh();
   };
@@ -6427,15 +6431,13 @@ var vchart = {
     width: function (newWidth, oldWidth) {
       if (!this.chartInstance) return;
       this.$nextTick(() => {
-        this.chartInstance.width = this.$refs.jmChartContainer.clientWidth || this.$refs.jmChartContainer.offsetWidth;
-        this.chartInstance.refresh();
+        this.chartInstance.width = this.$refs.jmChartContainer.clientWidth || this.$refs.jmChartContainer.offsetWidth; //this.chartInstance.refresh();
       });
     },
     height: function (newHeight, oldHeight) {
       if (!this.chartInstance) return;
       this.$nextTick(() => {
-        this.chartInstance.height = this.$refs.jmChartContainer.clientHeight || this.$refs.jmChartContainer.offsetHeight;
-        this.chartInstance.refresh();
+        this.chartInstance.height = this.$refs.jmChartContainer.clientHeight || this.$refs.jmChartContainer.offsetHeight; //this.chartInstance.refresh();
       });
     }
   },

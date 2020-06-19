@@ -4,14 +4,13 @@ const rollupOptions = require('./rollup.config.js');
 
 const app = express();
 
-console.log(process.env);
-
 app.use(express.static("."));
 
 //rollupOptions.output.format = 'esm';// 方便调用
-const watcher = rollup.watch(rollupOptions);
+const esmWatcher = rollup.watch(rollupOptions);
 
-watcher.on('event', event => {
+
+esmWatcher.on('event', event => {
   // event.code 会是下面其中一个：
   //   START        — 监听器正在启动（重启）
   //   BUNDLE_START — 构建单个文件束

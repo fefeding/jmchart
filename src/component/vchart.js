@@ -54,14 +54,14 @@ export default {
             if(!this.chartInstance) return;            
             this.$nextTick(()=>{
                 this.chartInstance.width = this.$refs.jmChartContainer.clientWidth||this.$refs.jmChartContainer.offsetWidth;
-                this.chartInstance.refresh();
+                //this.chartInstance.refresh();
             });
         },
         height: function(newHeight, oldHeight) {
             if(!this.chartInstance) return;
             this.$nextTick(()=>{
                 this.chartInstance.height = this.$refs.jmChartContainer.clientHeight||this.$refs.jmChartContainer.offsetHeight;
-                this.chartInstance.refresh();
+                //this.chartInstance.refresh();
             });
         }
     },
