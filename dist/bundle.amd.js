@@ -6462,6 +6462,11 @@ define(['module', 'exports'], function (module, exports) { 'use strict';
         this.chartInstance.on('touchPointChange', args => {
           this.$emit('touch-point-change', args);
         });
+      },
+
+      // 刷新图表
+      refresh() {
+        this.chartInstance && this.chartInstance.refresh();
       }
 
     },

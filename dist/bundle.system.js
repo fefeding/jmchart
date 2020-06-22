@@ -6465,6 +6465,11 @@ System.register([], function (exports, module) {
             this.chartInstance.on('touchPointChange', args => {
               this.$emit('touch-point-change', args);
             });
+          },
+
+          // 刷新图表
+          refresh() {
+            this.chartInstance && this.chartInstance.refresh();
           }
 
         },
