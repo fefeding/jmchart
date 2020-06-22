@@ -6186,6 +6186,23 @@ System.register([], function (exports, module) {
               this.graph.yMarkLine.cancel(args);
             }
           });
+        } // 重置整个图表
+
+
+        reset() {
+          // 清空当前图形，重新生成
+          let serie;
+
+          while (serie = this.series.shift()) {
+            // 重置所有图形
+            let shape;
+
+            while (shape = serie.shapes.shift()) {
+              shape && shape.remove();
+            }
+
+            serie.remove();
+          }
         }
 
       } exports({ default: jmChart, jmChart: jmChart });
@@ -6446,7 +6463,20 @@ System.register([], function (exports, module) {
           // 初始化图表组件
           initChart() {
             if (this.chartInstance) return;
-            this.chartInstance = new jmChart(this.$refs.jmChartContainer, this.options); // 生成图
+            this.chartInstance = new jmChart(this.$refs.jmChartContainer, this.options);
+            this.refresh(); // 这里有死循环的问题，但上面 chartInstance不为空就返回了，就没有这个问题了
+            // touch改变数据点事件
+
+            this.chartInstance.on('touchPointChange', args => {
+              this.$emit('touch-point-change', args);
+            });
+          },
+
+          // 刷新图表
+          refresh() {
+            this.initChart(); // 清空当前图形，重新生成
+
+            this.chartInstance.reset(); // 生成图
 
             if (this.chartSeries.length) {
               for (let s of this.chartSeries) {
@@ -6460,16 +6490,7 @@ System.register([], function (exports, module) {
             }
 
             this.chartInstance.data = this.chartData;
-            this.chartInstance.refresh(); // touch改变数据点事件
-
-            this.chartInstance.on('touchPointChange', args => {
-              this.$emit('touch-point-change', args);
-            });
-          },
-
-          // 刷新图表
-          refresh() {
-            this.chartInstance && this.chartInstance.refresh();
+            this.chartInstance.refresh();
           }
 
         },

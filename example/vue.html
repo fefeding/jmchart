@@ -28,13 +28,15 @@
 	</head>
 	<body>
 		<div id="app">
-            <v-chart v-if="visible" :chart-data="chartData" 
+            <v-chart v-if="visible" :chart-data="chartData" ref="mychart"
                 :chart-options="chartOptions" 
                 :chart-series="chartSeries" 
                 v-on:touch-point-change="touchPointChange"
                 :width="width" :height="height">
             </v-chart>
             <button @click="visible=!visible">显示/隐藏</button>
+
+            <button @click="changeField">换field</button>
             <br />
             <div style="color: #ccc; font-size: 12px; overflow: hidden">
                 {{ touchDataInfo }}
@@ -174,6 +176,12 @@
                         touchPointChange: (args) => {
                             console.log(args);
                             app.touchDataInfo = JSON.stringify(args);
+                        },
+
+                        changeField() {
+                            series[0].field == 'y2'?series[0].field = 'y3':series[0].field = 'y2';
+
+                            this.$refs.mychart.refresh();// 改变基础属性需要重刷
                         }
                     }
                 });
@@ -202,6 +210,7 @@
                                     x :  '2019-05-02',
                                     y1 :  Math.random() * 200 + 100,
                                     y2:  Math.random() * 200 + 50,
+                                    y3:  Math.random() * 300 + 50,
                                 };
                                 
                                 if(app.chartData.length < datacount) {

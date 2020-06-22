@@ -136,7 +136,23 @@ export default class jmChart extends jmgraph.jmGraph  {
 				this.graph.yMarkLine.cancel(args);
 			}
 		});
-	}	
+	}
+	
+	// 重置整个图表
+	reset() {
+		// 清空当前图形，重新生成
+		let serie;
+		while(serie = this.series.shift()) {
+			
+			// 重置所有图形
+			let shape;
+			while(shape = serie.shapes.shift()) {
+				shape && shape.remove();
+			}
+			
+			serie.remove();
+		}
+	}
 }
 
 /**

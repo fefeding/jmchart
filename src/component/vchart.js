@@ -73,6 +73,21 @@ export default {
             
             this.chartInstance = new jmChart(this.$refs.jmChartContainer, this.options);
             
+            this.refresh(); // 这里有死循环的问题，但上面 chartInstance不为空就返回了，就没有这个问题了
+
+            // touch改变数据点事件
+            this.chartInstance.on('touchPointChange', (args) => {
+                this.$emit('touch-point-change', args);
+            });
+        },
+
+        // 刷新图表
+        refresh() {
+            this.initChart();
+
+            // 清空当前图形，重新生成
+            this.chartInstance.reset();
+            
             // 生成图
             if(this.chartSeries.length) {
                 for(let s of this.chartSeries) {
@@ -85,16 +100,6 @@ export default {
             }
             this.chartInstance.data = this.chartData;
             this.chartInstance.refresh();
-
-            // touch改变数据点事件
-            this.chartInstance.on('touchPointChange', (args) => {
-                this.$emit('touch-point-change', args);
-            });
-        },
-
-        // 刷新图表
-        refresh() {
-            this.chartInstance && this.chartInstance.refresh();
         }
     },
 
