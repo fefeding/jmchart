@@ -5298,7 +5298,7 @@ class jmBarSeries extends jmSeries {
 
         if (this.enableAnimate && (dataChanged || this.___animateCounter > 0)) {
           const height = Math.abs(point.y - p1.y);
-          const step = height / 50;
+          const step = height / 100;
           const offHeight = step * this.___animateCounter; // 动态计算当前高度
           // 当次动画完成
 
@@ -5846,7 +5846,7 @@ class jmLineSeries extends jmSeries {
 
       if (this.enableAnimate && (dataChanged || this.___animateCounter > 0)) {
         const height = Math.abs(p.y - linePoint.y);
-        const step = height / 50;
+        const step = height / 100;
         const offHeight = step * this.___animateCounter; // 动态计算当前高度
         // 当次动画完成
 

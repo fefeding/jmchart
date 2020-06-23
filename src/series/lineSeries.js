@@ -81,7 +81,7 @@ export default class jmLineSeries extends jmSeries {
 			// 如果要动画。则动态改变高度
 			if(this.enableAnimate && (dataChanged || this.___animateCounter > 0 )) {
 				const height = Math.abs(p.y - linePoint.y);
-				const step = height / 50;
+				const step = height / 100;
 
 				const offHeight = step * this.___animateCounter;// 动态计算当前高度
 
