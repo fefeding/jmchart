@@ -46,8 +46,15 @@ export default class jmChart extends jmgraph.jmGraph  {
 	 */
 	series = new jmgraph.jmList();
 
+	/**
+	 * 是否启用动画
+	 */
+	enableAnimate = false;
+
 	// 初始化图表
 	init(options) {
+
+		this.enableAnimate = !!options.enableAnimate;
 
 		/**
 		 * 绘图区域

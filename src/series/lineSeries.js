@@ -2,6 +2,7 @@ import jmBezier from 'jmgraph/src/shapes/jmBezier.js';
 import jmArc from 'jmgraph/src/shapes/jmArc.js';
 import jmPath from 'jmgraph/src/core/jmPath.js';
 import jmSeries from './series.js';
+import utils from '../common/utils.js';
 
 /**
  * 图形基类
@@ -30,7 +31,25 @@ export default class jmLineSeries extends jmSeries {
 	 */
 	init() {
 		//生成描点位
-		const points = this.createPoints();
+		let points;	
+
+		// 如果有动画，则需要判断是否改变，不然不需要重新动画
+		let dataChanged = false;
+		if(this.enableAnimate) {
+			// 拷贝一份上次的点集合，用于判断数据是否改变
+			const lastPoints = this.graph.utils.clone(this.dataPoints, true);
+
+			// 重新生成描点
+			points = this.createPoints();
+
+			dataChanged = utils.arrayIsChange(lastPoints, points, (s, t) => {
+				return s.x === t.x && s.y === t.y;
+			});
+		}	
+		else {
+			points = this.createPoints();
+		}
+
 		//去除多余的线条
 		//当数据源线条数比现有的少时，删除多余的线条
 		const len = points.length;
@@ -52,11 +71,43 @@ export default class jmLineSeries extends jmSeries {
 				//prePoint = null;						
 				continue;
 			}
+
+			// 当前线条描点，如果有动画是不一样的
+			const linePoint = {
+				x: p.x,
+				y: this.graph.chartArea.height
+			};
+
+			// 如果要动画。则动态改变高度
+			if(this.enableAnimate && (dataChanged || this.___animateCounter > 0 )) {
+				const height = Math.abs(p.y - linePoint.y);
+				const step = height / 50;
+
+				const offHeight = step * this.___animateCounter;// 动态计算当前高度
+
+				// 当次动画完成
+				if(offHeight >= height) {
+					linePoint.y = p.y;
+					this.___animateCounter = 0;
+				}
+				else {
+					this.___animateCounter++;
+					linePoint.y -= offHeight;// 计算高度
+					// next tick 再次刷新
+					setTimeout(()=>{
+						this.needUpdate = true;//需要刷新
+					});
+				}
+			}
+			else {
+				linePoint.y = p.y;		
+			}
+
 			// 是否显示数值点圆
 			if(this.style.showItem) {
 				const pointShape = this.graph.createShape(jmArc,{
 					style: this.style.item,
-					center: p,
+					center: linePoint,
 					radius: this.style.radius || 3
 				});
 			
@@ -69,21 +120,25 @@ export default class jmLineSeries extends jmSeries {
 				const startPoint = shapePoints[shapePoints.length - 1];
 				if(startPoint && startPoint.y != undefined && startPoint.y != null) {
 					//如果需要画曲线，则计算贝塞尔曲线坐标				
-					const p1 = {x: startPoint.x + (p.x - startPoint.x) / 5, y: startPoint.y};
-					const p2 = {x: startPoint.x + (p.x - startPoint.x) / 2, y: p.y - (p.y - startPoint.y) / 2};
-					const p3 = {x: p.x - (p.x - startPoint.x) / 5, y: p.y};
+					const p1 = {x: startPoint.x + (linePoint.x - startPoint.x) / 5, y: startPoint.y};
+					const p2 = {x: startPoint.x + (linePoint.x - startPoint.x) / 2, y: linePoint.y - (linePoint.y - startPoint.y) / 2};
+					const p3 = {x: linePoint.x - (linePoint.x - startPoint.x) / 5, y: linePoint.y};
 
 					//圆滑线条使用的贝塞尔对象
 					this.__bezier = this.__bezier || this.graph.createShape(jmBezier);
 					this.__bezier.cpoints = [
-						startPoint,p1,p2,p3,p
+						startPoint,
+						p1,
+						p2,
+						p3,
+						linePoint
 					];//设置控制点
 
 					const bzpoints = this.__bezier.initPoints();
 					shapePoints = shapePoints.concat(bzpoints);					
 				}
 			}									
-			shapePoints.push(p);
+			shapePoints.push(linePoint);
 		}
 
 		this.points = shapePoints;

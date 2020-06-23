@@ -22,6 +22,7 @@ export default class jmSeries extends jmPath {
 		this.field = options.field || '';
 		this.index = options.index || 1;
 		this.legendLabel = options.legendLabel || '';
+		this.___animateCounter = 0; // 动画计数
 
 		this.xAxis = this.graph.createXAxis(); // 生成X轴
 		
@@ -101,6 +102,8 @@ export default class jmSeries extends jmPath {
  * @method reset
  */
 jmSeries.prototype.reset = function() {	
+	//是否启用动画效果
+	this.enableAnimate = typeof this.enableAnimate === 'undefined'?this.graph.enableAnimate:this.enableAnimate;
 
 	// 重置所有图形
 	var shape;
