@@ -2964,6 +2964,15 @@ class jmGraph extends jmControl {
 			}	
 
 			this.context = canvas.getContext('2d');
+
+						
+				const w = canvas.width, h = canvas.height;
+				//canvas.style.width = w + 'px';
+				//canvas.style.height = h + 'px';
+				//canvas.width = w * 2;
+				//canvas.height = h * 2;
+				//this.context.scale(scale, scale);
+			
 		}
 		this.canvas = canvas;
 		this.__init(callback);
@@ -3642,7 +3651,7 @@ var defaultStyle = {
     // 显示Y标线
     stroke: '#EB792A',
     fill: '#CCC',
-    lineWidth: 1,
+    lineWidth: 0.5,
     radius: 5,
     // 中间小圆圈大小
     zIndex: 20
@@ -3685,7 +3694,7 @@ var defaultStyle = {
   },
   axis: {
     stroke: '#05468E',
-    lineWidth: 1,
+    lineWidth: 0.5,
     zIndex: 1,
     // 显示网格
     grid: {
@@ -3763,7 +3772,7 @@ var defaultStyle = {
   },*/
   line: {
     normal: {
-      lineWidth: 1.5,
+      lineWidth: 0.5,
       zIndex: 18,
       cursor: 'default'
     },
@@ -3772,7 +3781,7 @@ var defaultStyle = {
       //zIndex: 100,
       cursor: 'pointer'
     },
-    lineWidth: 1.5,
+    lineWidth: 1,
     zIndex: 18,
     cursor: 'default',
     radius: 3,
@@ -3788,7 +3797,7 @@ var defaultStyle = {
   },
   bar: {
     normal: {
-      lineWidth: 1.5,
+      lineWidth: 0.5,
       zIndex: 17,
       cursor: 'default',
       opacity: 0.8
@@ -3830,7 +3839,7 @@ var defaultStyle = {
       right: 10,
       bottom: 10
     },
-    lineWidth: 1,
+    lineWidth: 0.5,
     zIndex: 11,
     cursor: 'default',
     close: true,
@@ -4470,7 +4479,7 @@ class jmAxis extends jmArrawLine {
         y: top
       }; // 指定要显示网格
 
-      if (this.style.grid && this.style.grid.x) {
+      if (this.style.grid && this.style.grid.y) {
         // 它的坐标是相对于轴的，所以Y轴会用负的区域高度
         const line = this.graph.createShape(jmLine, {
           start: {
@@ -4579,7 +4588,7 @@ class jmAxis extends jmArrawLine {
           y: offy + this.end.y
         }); // 指定要显示网格
 
-        if (this.style.grid && this.style.grid.y) {
+        if (this.style.grid && this.style.grid.x) {
           // 它的坐标是相对于轴的，所以Y轴会用负的区域高度
           const line = this.graph.createShape(jmLine, {
             start: {

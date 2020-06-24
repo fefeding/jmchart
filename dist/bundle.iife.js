@@ -3766,7 +3766,7 @@
     },*/
     line: {
       normal: {
-        lineWidth: 1.5,
+        lineWidth: 1,
         zIndex: 18,
         cursor: 'default'
       },
@@ -3775,7 +3775,7 @@
         //zIndex: 100,
         cursor: 'pointer'
       },
-      lineWidth: 1.5,
+      lineWidth: 1,
       zIndex: 18,
       cursor: 'default',
       radius: 3,
@@ -3791,7 +3791,7 @@
     },
     bar: {
       normal: {
-        lineWidth: 1.5,
+        lineWidth: 1,
         zIndex: 17,
         cursor: 'default',
         opacity: 0.8
@@ -4473,7 +4473,7 @@
           y: top
         }; // 指定要显示网格
 
-        if (this.style.grid && this.style.grid.x) {
+        if (this.style.grid && this.style.grid.y) {
           // 它的坐标是相对于轴的，所以Y轴会用负的区域高度
           const line = this.graph.createShape(jmLine, {
             start: {
@@ -4582,7 +4582,7 @@
             y: offy + this.end.y
           }); // 指定要显示网格
 
-          if (this.style.grid && this.style.grid.y) {
+          if (this.style.grid && this.style.grid.x) {
             // 它的坐标是相对于轴的，所以Y轴会用负的区域高度
             const line = this.graph.createShape(jmLine, {
               start: {
@@ -5026,6 +5026,8 @@
       this.field = options.field || '';
       this.index = options.index || 1;
       this.legendLabel = options.legendLabel || '';
+      this.___animateCounter = 0; // 动画计数
+
       this.xAxis = this.graph.createXAxis(); // 生成X轴
       // 生成当前Y轴
 
@@ -5099,7 +5101,9 @@
    */
 
   jmSeries.prototype.reset = function () {
-    // 重置所有图形
+    //是否启用动画效果
+    this.enableAnimate = typeof this.enableAnimate === 'undefined' ? this.graph.enableAnimate : this.enableAnimate; // 重置所有图形
+
     var shape;
 
     while (shape = this.shapes.shift()) {
@@ -5185,6 +5189,28 @@
     this.graph.legend.append(this, shape);
   };
 
+  var utils = {
+    /**
+     * 对比二个数组数据是否改变
+     * @param {Array} source 被对比的数、组
+     * @param {Array} target 对比数组
+     * @param {Function} compare 比较函数
+     */
+    arrayIsChange(source, target, compare) {
+      if (!source || !target) return true;
+      if (source.length !== target.length) return true;
+
+      if (typeof compare === 'function') {
+        for (let i = 0; i < source.length; i++) {
+          if (!compare(source[i], target[i])) return true;
+        }
+
+        return false;
+      } else return source == target;
+    }
+
+  };
+
   /**
    * 柱图
    *
@@ -5208,13 +5234,27 @@
      */
 
 
-    beginDraw() {
-      super.beginDraw();
+    init() {
       const data = this.data;
 
       if (data) {
         //生成描点位
-        const points = this.createPoints(data);
+        let points; // 如果有动画，则需要判断是否改变，不然不需要重新动画
+
+        let dataChanged = false;
+
+        if (this.enableAnimate) {
+          // 拷贝一份上次的点集合，用于判断数据是否改变
+          const lastPoints = this.graph.utils.clone(this.dataPoints, true); // 重新生成描点
+
+          points = this.createPoints(data);
+          dataChanged = utils.arrayIsChange(lastPoints, points, (s, t) => {
+            return s.x === t.x && s.y === t.y;
+          });
+        } else {
+          points = this.createPoints(data);
+        }
+
         const len = points.length; //设定其填充颜色
 
         this.style.fill = this.style.color; //计算每个柱子占宽
@@ -5222,15 +5262,12 @@
 
         this.barTotalWidth = this.xAxis.width / len * (this.style.perWidth || 0.4);
         this.barWidth = this.barTotalWidth / this.graph.barSeriesCount;
-        var maxBarWidth = this.graph.barMaxWidth || 50;
+        const maxBarWidth = this.graph.barMaxWidth || 50;
 
         if (this.barWidth > maxBarWidth) {
           this.barWidth = maxBarWidth;
           this.barTotalWidth = maxBarWidth * this.graph.barSeriesCount;
-        } //是否启用动画效果
-
-
-        var ani = typeof this.enableAnimate === 'undefined' ? this.graph.enableAnimate : this.enableAnimate;
+        }
 
         for (let i = 0; i < len; i++) {
           //const label = this.xAxis.labels[i];
@@ -5240,70 +5277,57 @@
             continue;
           }
 
-          var sp = this.shapes.add(this.graph.createPath(null, this.graph.utils.clone(this.style)));
+          const sp = this.shapes.add(this.graph.createPath(null, this.graph.utils.clone(this.style)));
           this.children.add(sp); //绑定提示框
           //this.bindTooltip(sp, point);
           //首先确定p1和p4,因为他们是底脚。会固定
 
-          var p1 = {
+          const p1 = {
             x: point.x - this.barTotalWidth / 2 + this.barWidth * this.barIndex,
             y: this.graph.chartArea.height
           };
-          var p4 = {
+          const p4 = {
             x: p1.x + this.barWidth,
             y: p1.y
           };
+          const p2 = {
+            x: p1.x,
+            y: p1.y
+          };
+          const p3 = {
+            x: p4.x,
+            y: p1.y
+          }; // 如果要动画。则动态改变高度
 
-          if (ani) {
-            var p2 = {
-              x: p1.x,
-              y: p1.y
-            };
-            var p3 = {
-              x: p4.x,
-              y: p1.y
-            };
-            sp.animate(function (sp, p, p2, p3, step) {
-              var complete = true;
+          if (this.enableAnimate && (dataChanged || this.___animateCounter > 0)) {
+            const height = Math.abs(point.y - p1.y);
+            const step = height / 100;
+            const offHeight = step * this.___animateCounter; // 动态计算当前高度
+            // 当次动画完成
 
-              if (p2.y < p.y) {
-                p2.y = p3.y += step;
+            if (offHeight >= height) {
+              p2.y = point.y;
+              this.___animateCounter = 0;
+            } else {
+              this.___animateCounter++;
+              p2.y = p1.y - offHeight; // 计算高度
+              // next tick 再次刷新
 
-                if (p2.y < p.y) {
-                  complete = false;
-                }
-              } else if (p2.y > p.y) {
-                p2.y = p3.y += step;
+              setTimeout(() => {
+                this.needUpdate = true; //需要刷新
+              });
+            }
 
-                if (p2.y > p.y) {
-                  complete = false;
-                }
-              }
-
-              if (complete) {
-                p2.y = p3.y = p.y;
-              }
-
-              return !complete;
-            }, 50, sp, point, p2, p3, (point.y - p1.y) / 10);
-            sp.points.push(p1);
-            sp.points.push(p2);
-            sp.points.push(p3);
-            sp.points.push(p4);
+            p3.y = p2.y;
           } else {
-            var p2 = {
-              x: p1.x,
-              y: point.y
-            };
-            var p3 = {
-              x: p4.x,
-              y: point.y
-            };
-            sp.points.push(p1);
-            sp.points.push(p2);
-            sp.points.push(p3);
-            sp.points.push(p4);
+            p2.y = point.y;
+            p3.y = point.y;
           }
+
+          sp.points.push(p1);
+          sp.points.push(p2);
+          sp.points.push(p3);
+          sp.points.push(p4);
         }
       }
     }
@@ -5782,8 +5806,23 @@
 
     init() {
       //生成描点位
-      const points = this.createPoints(); //去除多余的线条
+      let points; // 如果有动画，则需要判断是否改变，不然不需要重新动画
+
+      let dataChanged = false;
+
+      if (this.enableAnimate) {
+        // 拷贝一份上次的点集合，用于判断数据是否改变
+        const lastPoints = this.graph.utils.clone(this.dataPoints, true); // 重新生成描点
+
+        points = this.createPoints();
+        dataChanged = utils.arrayIsChange(lastPoints, points, (s, t) => {
+          return s.x === t.x && s.y === t.y;
+        });
+      } else {
+        points = this.createPoints();
+      } //去除多余的线条
       //当数据源线条数比现有的少时，删除多余的线条
+
 
       const len = points.length; //设定其填充颜色
       //if(!this.style.fill) this.style.fill = jmUtils.toColor(this.style.stroke,null,null,20);	
@@ -5800,13 +5839,41 @@
         if (typeof p.y === 'undefined' || p.y === null) {
           //prePoint = null;						
           continue;
+        } // 当前线条描点，如果有动画是不一样的
+
+
+        const linePoint = {
+          x: p.x,
+          y: this.graph.chartArea.height
+        }; // 如果要动画。则动态改变高度
+
+        if (this.enableAnimate && (dataChanged || this.___animateCounter > 0)) {
+          const height = Math.abs(p.y - linePoint.y);
+          const step = height / 100;
+          const offHeight = step * this.___animateCounter; // 动态计算当前高度
+          // 当次动画完成
+
+          if (offHeight >= height) {
+            linePoint.y = p.y;
+            this.___animateCounter = 0;
+          } else {
+            this.___animateCounter++;
+            linePoint.y -= offHeight; // 计算高度
+            // next tick 再次刷新
+
+            setTimeout(() => {
+              this.needUpdate = true; //需要刷新
+            });
+          }
+        } else {
+          linePoint.y = p.y;
         } // 是否显示数值点圆
 
 
         if (this.style.showItem) {
           const pointShape = this.graph.createShape(jmArc, {
             style: this.style.item,
-            center: p,
+            center: linePoint,
             radius: this.style.radius || 3
           });
           pointShape.zIndex = (pointShape.style.zIndex || 1) + 1;
@@ -5820,20 +5887,20 @@
           if (startPoint && startPoint.y != undefined && startPoint.y != null) {
             //如果需要画曲线，则计算贝塞尔曲线坐标				
             const p1 = {
-              x: startPoint.x + (p.x - startPoint.x) / 5,
+              x: startPoint.x + (linePoint.x - startPoint.x) / 5,
               y: startPoint.y
             };
             const p2 = {
-              x: startPoint.x + (p.x - startPoint.x) / 2,
-              y: p.y - (p.y - startPoint.y) / 2
+              x: startPoint.x + (linePoint.x - startPoint.x) / 2,
+              y: linePoint.y - (linePoint.y - startPoint.y) / 2
             };
             const p3 = {
-              x: p.x - (p.x - startPoint.x) / 5,
-              y: p.y
+              x: linePoint.x - (linePoint.x - startPoint.x) / 5,
+              y: linePoint.y
             }; //圆滑线条使用的贝塞尔对象
 
             this.__bezier = this.__bezier || this.graph.createShape(jmBezier);
-            this.__bezier.cpoints = [startPoint, p1, p2, p3, p]; //设置控制点
+            this.__bezier.cpoints = [startPoint, p1, p2, p3, linePoint]; //设置控制点
 
             const bzpoints = this.__bezier.initPoints();
 
@@ -5841,7 +5908,7 @@
           }
         }
 
-        shapePoints.push(p);
+        shapePoints.push(linePoint);
       }
 
       this.points = shapePoints;
@@ -6079,6 +6146,8 @@
 
       _defineProperty(this, "series", new jmList());
 
+      _defineProperty(this, "enableAnimate", false);
+
       this.data = options.data || []; // x轴绑定的字段名
 
       this.xField = options.xField || '';
@@ -6091,12 +6160,14 @@
 
     // 初始化图表
     init(options) {
+      this.enableAnimate = !!options.enableAnimate;
       /**
        * 绘图区域
        *
        * @property chartArea
        * @type jmControl
        */
+
       this.chartArea = this.chartArea || this.createShape(jmRect, {
         style: this.style.chartArea,
         position: {

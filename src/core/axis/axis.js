@@ -239,7 +239,7 @@ export default class jmAxis extends jmArrawLine {
 			};
 
 			// 指定要显示网格
-			if(this.style.grid && this.style.grid.x) {
+			if(this.style.grid && this.style.grid.y) {
 				// 它的坐标是相对于轴的，所以Y轴会用负的区域高度
 				const line = this.graph.createShape(jmLine, {
 					start: {
@@ -348,7 +348,7 @@ export default class jmAxis extends jmArrawLine {
 				});
 
 				// 指定要显示网格
-				if(this.style.grid && this.style.grid.y) {
+				if(this.style.grid && this.style.grid.x) {
 					// 它的坐标是相对于轴的，所以Y轴会用负的区域高度
 					const line = this.graph.createShape(jmLine, {
 						start: {
