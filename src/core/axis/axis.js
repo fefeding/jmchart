@@ -21,7 +21,7 @@ export default class jmAxis extends jmArrawLine {
 		this.arrawVisible = !!options.arrawVisible;
 		this.zeroBase = options.zeroBase || false;
 
-		this.labelCount = options.labelCount || 1;
+		this.labelCount = options.labelCount || 5;
 		this.type = options.type || 'x';// 为横轴x或纵轴y
 
 		if(this.type == 'x') {
@@ -122,7 +122,7 @@ export default class jmAxis extends jmArrawLine {
 		switch(this.type) {
 			case 'x' : {	
 				//初始化显示标签个数
-				this.labelCount = this.style.yLabel.count || 10;
+				this.labelCount = this.style.xLabel.count || 5;
 				this.start.x = bounds.left;
 				this.start.y = bounds.bottom;
 				this.end.x = bounds.right;
@@ -130,8 +130,11 @@ export default class jmAxis extends jmArrawLine {
 				break;
 			}
 			case 'y' : {
-				var index = this.index || 1;					
-				var xoffset = bounds.left;
+				const index = this.index || 1;					
+				const xoffset = bounds.left;
+
+				//初始化显示标签个数
+				this.labelCount = this.style.xLabel.count || 5;
 				
 				//多Y轴时，第二个为右边第一轴，其它的依此递推
 				if(index == 2) {
@@ -147,12 +150,12 @@ export default class jmAxis extends jmArrawLine {
 				this.end.y = bounds.top;
 
 				//当Y轴最小值为负数时，则移动X轴的位置到0位置
-				var min = this.min();
-				var max = this.max();
+				const min = this.min();
+				const max = this.max();
 				// zeroBase 时才需要移到0位置，否则依然为沉底
 				if(this.dataType == 'number' && min < 0 && this.zeroBase && this.graph.xAxis) {
-					var step = this.step();
-					var xstepy = 0;//x轴y偏移量
+					const step = this.step();
+					let xstepy = 0;//x轴y偏移量
 					if(max <= 0) {
 						this.graph.xAxis.value = max;
 						xstepy = this.end.y;
@@ -206,18 +209,18 @@ export default class jmAxis extends jmArrawLine {
 	createXLabel() {
 		//var max = this.max();
 		//var min = this.min();
-		var step = this.step();
+		const step = this.step();
 		this.scalePoints = [];// 刻度点集合
 		//最多显示标签个数
 		//var count = this.style.xLabel.count || this.data.length;	
 		//字符串轴。则显示每个标签	
-		var top = this.style.xLabel.margin.top || 0;		
+		const top = this.style.xLabel.margin.top || 0;		
 		for(var i=0; i< this.data.length;i++) {	
 			const d = this.data[i];
 			const v = d[this.field]; 	
 			
-			var w = i * step;
-			var label = this.graph.createShape(jmLabel, {
+			const w = i * step;
+			const label = this.graph.createShape(jmLabel, {
 				style: this.style.xLabel
 			});
 			label.data = d; // 当前点的数据结构值
@@ -298,18 +301,18 @@ export default class jmAxis extends jmArrawLine {
 	 * @private
 	 */
 	createYLabel() {
-		var max = this.max();
-		var min = this.min();
-		var step = this.step();
-		var index = this.index || 1;
+		const max = this.max();
+		const min = this.min();
+		const step = this.step();
+		const index = this.index || 1;
 		this.scalePoints = [];// 刻度点集合
 
-		var count = this.style.yLabel.count || 10;
-		var mm = max - min;
-		if(mm <= 10) {
+		let count = this.labelCount;
+		const mm = max - min;
+		/*if(mm <= 10) {
 			count = mm;
-		}
-		var pervalue = (mm / count) || 1;
+		}*/
+		let pervalue = (mm / count) || 1;
 		if(pervalue > 1 || pervalue < -1) pervalue = Math.floor(pervalue);
 		else pervalue = Number(pervalue.toFixed(2));
 

@@ -77,7 +77,7 @@ export default {
 		// 如果标签居中 center，则把二头的标签左边的左对齐，右边的右对齐
 		align: 'normal',
 		xLabel : {
-			count: 10,
+			count: 5,
 			length: 5,
 			fill: '#000',
 			stroke: '#000',
@@ -93,7 +93,7 @@ export default {
 			}
 		},
 		yLabel : {
-			count: 10,
+			count: 5,
 			length: 1,
 			fill: '#000',			
 			margin: {
