@@ -32,6 +32,9 @@
                 :chart-options="chartOptions" 
                 :chart-series="chartSeries" 
                 v-on:touch-point-change="touchPointChange"
+                v-on:touchstart="touchstart"
+                v-on:touchmove="touchmove"
+                v-on:touchend="touchend"
                 :width="width" :height="height">
             </v-chart>
             <button @click="visible=!visible">显示/隐藏</button>
@@ -76,7 +79,8 @@
                                 stroke: '#292921',
                             },
                             xLabel: {
-                                fill: '#ccc' // 轴上的字颜色
+                                fill: '#fff', // 轴上的字颜色
+                                font: '12px Microsoft YaHei',
                             },
                             yLabel: {
                                 fill: 'green' // 轴上的字颜色
@@ -177,7 +181,15 @@
                             console.log(args);
                             app.touchDataInfo = JSON.stringify(args);
                         },
-
+                        touchstart: (args) => {
+                            console.log('touchstart', args);
+                        },
+                        touchmove: (args) => {
+                            console.log('touchmove', args);
+                        },
+                        touchend: (args) => {
+                            console.log('touchend', args);
+                        },
                         changeField() {
                             series[0].field == 'y2'?series[0].field = 'y3':series[0].field = 'y2';
 

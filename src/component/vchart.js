@@ -76,8 +76,22 @@ export default {
             this.refresh(); // 这里有死循环的问题，但上面 chartInstance不为空就返回了，就没有这个问题了
 
             // touch改变数据点事件
-            this.chartInstance.on('touchPointChange', (args) => {
+            this.chartInstance.bind('touchPointChange', (args) => {
                 this.$emit('touch-point-change', args);
+            });
+
+            // touch事件
+            this.chartInstance.bind('touchstart mousedown', (args) => {
+                this.$emit('touchstart', args);
+                this.$emit('mousedown', args);
+            });
+            this.chartInstance.bind('touchmove mousemove', (args) => {
+                this.$emit('touchmove', args);
+                this.$emit('mousemove', args);
+            });
+            this.chartInstance.bind('touchend touchcancel mouseup', (args) => {
+                this.$emit('touchend', args);
+                this.$emit('mouseup', args);
             });
         },
 
@@ -87,7 +101,7 @@ export default {
 
             // 清空当前图形，重新生成
             this.chartInstance.reset();
-            
+
             // 生成图
             if(this.chartSeries.length) {
                 for(let s of this.chartSeries) {
