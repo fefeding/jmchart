@@ -3767,7 +3767,7 @@ var defaultStyle = {
   },*/
   line: {
     normal: {
-      lineWidth: 0.5,
+      lineWidth: 1,
       zIndex: 18,
       cursor: 'default'
     },
@@ -4369,7 +4369,7 @@ class jmAxis extends jmArrawLine {
           const index = this.index || 1;
           const xoffset = bounds.left; //初始化显示标签个数
 
-          this.labelCount = this.style.xLabel.count || 5; //多Y轴时，第二个为右边第一轴，其它的依此递推
+          this.labelCount = this.style.yLabel.count || 5; //多Y轴时，第二个为右边第一轴，其它的依此递推
 
           if (index == 2) {
             xoffset = bounds.right;

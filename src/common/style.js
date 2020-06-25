@@ -127,7 +127,7 @@ export default {
 	},*/
 	line : {
 		normal: {
-			lineWidth: 0.5,
+			lineWidth: 1,
 			zIndex: 18,
 			cursor: 'default'
 		},

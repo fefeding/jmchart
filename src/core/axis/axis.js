@@ -134,7 +134,7 @@ export default class jmAxis extends jmArrawLine {
 				const xoffset = bounds.left;
 
 				//初始化显示标签个数
-				this.labelCount = this.style.xLabel.count || 5;
+				this.labelCount = this.style.yLabel.count || 5;
 				
 				//多Y轴时，第二个为右边第一轴，其它的依此递推
 				if(index == 2) {
