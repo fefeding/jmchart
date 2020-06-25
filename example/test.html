@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<canvas id="myCanvas" width="300" height="150" style="border:1px solid #d3d3d3;">
+Your browser does not support the HTML5 canvas tag.
+</canvas>
+
+<script>
+
+var c=document.getElementById("myCanvas");
+var ctx=c.getContext("2d");
+
+let width = c.width,height=c.height;
+
+const scale = window.devicePixelRatio > 1? window.devicePixelRatio : 3;
+console.log(window.devicePixelRatio)
+if (scale) {
+  c.style.width = width + "px";
+  c.style.height = height + "px";
+  c.height = height * scale;
+  c.width = width *scale;
+  ctx.scale(scale, scale);
+}
+
+ctx.beginPath();
+ctx.arc(100,75,50,0,2*Math.PI);
+ctx.stroke();
+
+</script> 
+
+</body>
+</html>
