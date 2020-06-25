@@ -3646,7 +3646,7 @@ var defaultStyle = {
     // 显示Y标线
     stroke: '#EB792A',
     fill: '#CCC',
-    lineWidth: 1,
+    lineWidth: 0.5,
     radius: 5,
     // 中间小圆圈大小
     zIndex: 20
@@ -3689,7 +3689,7 @@ var defaultStyle = {
   },
   axis: {
     stroke: '#05468E',
-    lineWidth: 1,
+    lineWidth: 0.5,
     zIndex: 1,
     // 显示网格
     grid: {
@@ -3767,7 +3767,7 @@ var defaultStyle = {
   },*/
   line: {
     normal: {
-      lineWidth: 1,
+      lineWidth: 0.5,
       zIndex: 18,
       cursor: 'default'
     },
@@ -3792,7 +3792,7 @@ var defaultStyle = {
   },
   bar: {
     normal: {
-      lineWidth: 1,
+      lineWidth: 0.5,
       zIndex: 17,
       cursor: 'default',
       opacity: 0.8
@@ -3834,7 +3834,7 @@ var defaultStyle = {
       right: 10,
       bottom: 10
     },
-    lineWidth: 1,
+    lineWidth: 0.5,
     zIndex: 11,
     cursor: 'default',
     close: true,
