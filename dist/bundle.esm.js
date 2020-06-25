@@ -2964,15 +2964,6 @@ class jmGraph extends jmControl {
 			}	
 
 			this.context = canvas.getContext('2d');
-
-						
-				const w = canvas.width, h = canvas.height;
-				//canvas.style.width = w + 'px';
-				//canvas.style.height = h + 'px';
-				//canvas.width = w * 2;
-				//canvas.height = h * 2;
-				//this.context.scale(scale, scale);
-			
 		}
 		this.canvas = canvas;
 		this.__init(callback);
