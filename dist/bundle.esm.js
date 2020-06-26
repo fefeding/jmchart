@@ -315,7 +315,7 @@ class jmUtils {
      * @param {point} [scale] 当前画布的缩放比例
      * @return {point} 事件触发的位置 
      */
-    static getEventPosition (evt, scale) {
+    static getEventPosition (evt, scale, devicePixelRatio) {
         evt = evt || event;
         
         let isTouch = false;
@@ -342,6 +342,13 @@ class jmUtils {
             if(scale.x) ox = ox / scale.x;
             if(scale.y) oy = oy / scale.y;
         }
+        // 如果有指定scale高清处理，需要对坐标处理
+        // 因为是对canvas放大N倍，再把style指定为当前大小，所以坐标需要放大N
+        if(devicePixelRatio > 0) {
+            ox = ox * devicePixelRatio;
+            oy = oy * devicePixelRatio;
+        }
+
         return {
             pageX: px,
             pageY: py,
@@ -2589,7 +2596,8 @@ class jmControl extends jmProperty {
 		if(this.visible === false) return ;//如果不显示则不响应事件	
 		if(!args.position) {		
 			let graph = this.graph;
-			let position = jmUtils.getEventPosition(args, graph.scaleSize);//初始化事件位置		
+			
+			let position = jmUtils.getEventPosition(args, graph.scaleSize, graph.devicePixelRatio);//初始化事件位置		
 
 			let srcElement = args.srcElement || args.target;
 			args = {
@@ -3000,6 +3008,8 @@ class jmGraph extends jmControl {
 		if(this.option.width > 0) this.width = this.option.width;
 		if(this.option.height > 0) this.height = this.option.height;	
 
+		this.resize();
+
 		//绑定事件
 		this.eventHandler = new jmEvents(this, this.canvas.canvas || this.canvas);	
 
@@ -3016,6 +3026,21 @@ class jmGraph extends jmControl {
 		if(callback) callback(this);		
 	}
 
+	//  重置canvas大小，并判断高清屏，画图先放大二倍
+	resize(w, h) {
+		w = w || this.width, h = h || this.height;
+
+		const scale = typeof window != 'undefined' && window.devicePixelRatio > 1? window.devicePixelRatio : 1;
+		if (scale > 1) {
+		  this.canvas.style.width = w + "px";
+		  this.canvas.style.height = h + "px";
+		  this.canvas.height = h * scale;
+		  this.canvas.width = w *scale;
+		  this.context.scale(scale, scale);
+		  this.devicePixelRatio = scale;
+		}
+	}
+
 	/**
 	 * 宽度
 	 * @property width
@@ -3027,7 +3052,10 @@ class jmGraph extends jmControl {
 	}
 	set width(v) {
 		this.needUpdate = true;
-		if(this.canvas) this.canvas.width = v;		
+		if(this.canvas) {
+			this.canvas.width = v;	
+			this.resize();
+		}	
 		return v;
 	}
 
@@ -3042,7 +3070,10 @@ class jmGraph extends jmControl {
 	}
 	set height(v) {
 		this.needUpdate = true;
-		if(this.canvas) this.canvas.height = v;
+		if(this.canvas) {
+			this.canvas.height = v;
+			this.resize();
+		}
 		return v;
 	}
 
@@ -3642,7 +3673,7 @@ var defaultStyle = {
     // 显示Y标线
     stroke: '#EB792A',
     fill: '#CCC',
-    lineWidth: 0.5,
+    lineWidth: 1,
     radius: 5,
     // 中间小圆圈大小
     zIndex: 20
@@ -3685,7 +3716,7 @@ var defaultStyle = {
   },
   axis: {
     stroke: '#05468E',
-    lineWidth: 0.5,
+    lineWidth: 1,
     zIndex: 1,
     // 显示网格
     grid: {
@@ -3788,7 +3819,7 @@ var defaultStyle = {
   },
   bar: {
     normal: {
-      lineWidth: 0.5,
+      lineWidth: 1,
       zIndex: 17,
       cursor: 'default',
       opacity: 0.8
@@ -3799,7 +3830,7 @@ var defaultStyle = {
       opacity: 1,
       cursor: 'pointer'
     },
-    lineWidth: 1.5,
+    lineWidth: 1,
     // 柱子宽占比，决定了柱子相对于总宽度
     perWidth: 0.5,
     zIndex: 17,
@@ -3830,7 +3861,7 @@ var defaultStyle = {
       right: 10,
       bottom: 10
     },
-    lineWidth: 0.5,
+    lineWidth: 1,
     zIndex: 11,
     cursor: 'default',
     close: true,
@@ -4455,13 +4486,13 @@ class jmAxis extends jmArrawLine {
       const label = this.graph.createShape(jmLabel, {
         style: this.style.xLabel
       });
-      label.data = d; // 当前点的数据结构值
-
-      if (typeof v === 'undefined') {
-        label.visible = false;
-      }
+      label.data = d; // 当前点的数据结构值			
 
       label.text = this.format(v, d, i); // 格式化label
+
+      if (!label.text) {
+        label.visible = false;
+      }
 
       this.labels.push(label);
       this.children.add(label);

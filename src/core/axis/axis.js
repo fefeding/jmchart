@@ -223,13 +223,13 @@ export default class jmAxis extends jmArrawLine {
 			const label = this.graph.createShape(jmLabel, {
 				style: this.style.xLabel
 			});
-			label.data = d; // 当前点的数据结构值
-
-			if(typeof v === 'undefined') {
-				label.visible = false;
-			}
+			label.data = d; // 当前点的数据结构值			
 
 			label.text = this.format(v, d, i); // 格式化label
+
+			if(!label.text) {
+				label.visible = false;
+			}
 
 			this.labels.push(label);
 			this.children.add(label);

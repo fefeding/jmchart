@@ -20,7 +20,7 @@ export default {
 		y: true, // 显示Y标线
 		stroke: '#EB792A',
 		fill: '#CCC',
-		lineWidth: 0.5,
+		lineWidth: 1,
 		radius: 5, // 中间小圆圈大小
 		zIndex: 20
 	},
@@ -62,7 +62,7 @@ export default {
 	},
 	axis: {
 		stroke:'#05468E',
-		lineWidth: 0.5,
+		lineWidth: 1,
 		zIndex: 1 ,
 		// 显示网格
 		grid: {
@@ -151,7 +151,7 @@ export default {
 	},
 	bar : {
 		normal: {
-			lineWidth: 0.5,
+			lineWidth: 1,
 			zIndex: 17,
 			cursor: 'default',
 			opacity: 0.8
@@ -162,7 +162,7 @@ export default {
 			opacity: 1,
 			cursor: 'pointer'
 		},
-		lineWidth:1.5,
+		lineWidth: 1,
 		// 柱子宽占比，决定了柱子相对于总宽度
 		perWidth: 0.5,
 		zIndex: 17,
@@ -193,7 +193,7 @@ export default {
 			right: 10,
 			bottom: 10
 		},
-		lineWidth: 0.5,
+		lineWidth: 1,
 		zIndex: 11,
 		cursor: 'default',
 		close : true,
