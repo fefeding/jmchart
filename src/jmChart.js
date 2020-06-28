@@ -159,6 +159,9 @@ export default class jmChart extends jmgraph.jmGraph  {
 			
 			serie.remove();
 		}
+
+		delete this.xAxis;
+		delete this.yAxises;
 	}
 }
 

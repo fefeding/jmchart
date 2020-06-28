@@ -4734,7 +4734,11 @@ class jmAxis extends jmArrawLine {
 
 
     if (this.dataType == 'number') {
-      var m = this._max;
+      let m = this._max; // 如果有指定默认最大值，则不超过它就采用它
+
+      if (typeof this.maxValue != 'undefined' && m <= this.maxValue) {
+        return this.maxValue;
+      }
 
       if (m <= 0) {
         if (m >= -10) m = 0;else m = -10;
@@ -4749,11 +4753,6 @@ class jmAxis extends jmArrawLine {
         m = m * 10 + 10;
       } else {
         m = Math.ceil(m);
-      } // 如果有指定默认最大值，则不超过它就采用它
-
-
-      if (typeof this.maxValue != 'undefined') {
-        return Math.max(this.maxValue, m);
       }
 
       return m;
@@ -6319,6 +6318,9 @@ class jmChart extends jmGraph {
 
       serie.remove();
     }
+
+    delete this.xAxis;
+    delete this.yAxises;
   }
 
 }

@@ -450,7 +450,13 @@ export default class jmAxis extends jmArrawLine {
 
 		//如果是数字类型，则在最大值基础上加一定的值
 		if(this.dataType == 'number') {
-			var m = this._max;
+			let m = this._max;
+
+			// 如果有指定默认最大值，则不超过它就采用它
+			if(typeof this.maxValue != 'undefined' && m <= this.maxValue)  {
+				return this.maxValue;
+			}
+
 			if(m <= 0) {
 				if(m >= -10) m = 0;
 				else m = -10;
@@ -470,10 +476,7 @@ export default class jmAxis extends jmArrawLine {
 			else {
 				m = Math.ceil(m);
 			}
-			// 如果有指定默认最大值，则不超过它就采用它
-			if(typeof this.maxValue != 'undefined')  {
-				return Math.max(this.maxValue, m);
-			}
+			
 			return m;
 		}	
 
