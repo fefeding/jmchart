@@ -93,27 +93,32 @@ export default {
                 this.$emit('touchend', args);
                 this.$emit('mouseup', args);
             });
+            this.chartInstance.bind('touchleave', (args) => {
+                this.$emit('touchleave', args);
+            });
         },
 
         // 刷新图表
         refresh() {
-            this.initChart();
+            this.$nextTick(()=>{
+                this.initChart();
 
-            // 清空当前图形，重新生成
-            this.chartInstance.reset();
-
-            // 生成图
-            if(this.chartSeries.length) {
-                for(let s of this.chartSeries) {
-                    if(!s.type) {
-                        console.error('必须指定serie type');
-                        continue;
+                // 清空当前图形，重新生成
+                this.chartInstance.reset();
+    
+                // 生成图
+                if(this.chartSeries.length) {
+                    for(let s of this.chartSeries) {
+                        if(!s.type) {
+                            console.error('必须指定serie type');
+                            continue;
+                        }
+                        this.chartInstance.createSeries(s.type, s);
                     }
-                    this.chartInstance.createSeries(s.type, s);
                 }
-            }
-            this.chartInstance.data = this.chartData;
-            this.chartInstance.refresh();
+                this.chartInstance.data = this.chartData;
+                this.chartInstance.refresh();
+            });            
         }
     },
 

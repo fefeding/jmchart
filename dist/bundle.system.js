@@ -320,7 +320,7 @@ System.register([], function (exports, module) {
            * @param {point} [scale] 当前画布的缩放比例
            * @return {point} 事件触发的位置 
            */
-          static getEventPosition (evt, scale, devicePixelRatio) {
+          static getEventPosition (evt, scale) {
               evt = evt || event;
               
               let isTouch = false;
@@ -346,12 +346,6 @@ System.register([], function (exports, module) {
               if(scale) {
                   if(scale.x) ox = ox / scale.x;
                   if(scale.y) oy = oy / scale.y;
-              }
-              // 如果有指定scale高清处理，需要对坐标处理
-              // 因为是对canvas放大N倍，再把style指定为当前大小，所以坐标需要放大N
-              if(devicePixelRatio > 0) {
-                  ox = ox * devicePixelRatio;
-                  oy = oy * devicePixelRatio;
               }
 
               return {
@@ -2516,10 +2510,13 @@ System.register([], function (exports, module) {
       		if(this.type == 'jmGraph') {
       			//获取dom位置
       			let position = this.getPosition();
-      			if(p.pageX > position.right || p.pageX < position.left) {
+      			// 由于高清屏会有放大坐标，所以这里用pagex就只能用真实的canvas大小
+      			const right = position.left + (this.canvas.clientWidth || this.canvas.offsetWidth || this.canvas.width);
+      			const bottom = position.top + (this.canvas.clientHeight || this.canvas.offsetHeight || this.canvas.height);
+      			if(p.pageX > right || p.pageX < position.left) {
       				return false;
       			}
-      			if(p.pageY > position.bottom || p.pageY < position.top) {
+      			if(p.pageY > bottom || p.pageY < position.top) {
       				return false;
       			}	
       			return true;
@@ -2601,10 +2598,18 @@ System.register([], function (exports, module) {
       		if(this.visible === false) return ;//如果不显示则不响应事件	
       		if(!args.position) {		
       			let graph = this.graph;
-      			
-      			let position = jmUtils.getEventPosition(args, graph.scaleSize, graph.devicePixelRatio);//初始化事件位置		
 
-      			let srcElement = args.srcElement || args.target;
+      			let srcElement = args.srcElement || args.target;			
+      			
+      			let position = jmUtils.getEventPosition(args, graph.scaleSize);//初始化事件位置		
+
+      			// 如果有指定scale高清处理，需要对坐标处理
+      			// 因为是对canvas放大N倍，再把style指定为当前大小，所以坐标需要放大N    && srcElement === graph.canvas      
+      			if(graph.devicePixelRatio > 0) {
+      				position.x = position.offsetX = position.x * devicePixelRatio;
+      				position.y = position.offsetY = position.y * devicePixelRatio;
+      			}
+      		
       			args = {
       				position: position,
       				button: args.button == 0||position.isTouch?1:args.button,
@@ -3033,10 +3038,15 @@ System.register([], function (exports, module) {
 
       	//  重置canvas大小，并判断高清屏，画图先放大二倍
       	resize(w, h) {
-      		w = w || this.width, h = h || this.height;
 
       		const scale = typeof window != 'undefined' && window.devicePixelRatio > 1? window.devicePixelRatio : 1;
       		if (scale > 1) {
+      		  this.__normalSize = this.__normalSize || { width: 0, height: 0};
+      		  w = w || this.__normalSize.width || this.width, h = h || this.__normalSize.height || this.height;
+
+      		  if(w) this.__normalSize.width = w;
+      		  if(h) this.__normalSize.height = h;
+
       		  this.canvas.style.width = w + "px";
       		  this.canvas.style.height = h + "px";
       		  this.canvas.height = h * scale;
@@ -3059,7 +3069,7 @@ System.register([], function (exports, module) {
       		this.needUpdate = true;
       		if(this.canvas) {
       			this.canvas.width = v;	
-      			this.resize();
+      			this.resize(v);
       		}	
       		return v;
       	}
@@ -3077,7 +3087,7 @@ System.register([], function (exports, module) {
       		this.needUpdate = true;
       		if(this.canvas) {
       			this.canvas.height = v;
-      			this.resize();
+      			this.resize(0, v);
       		}
       		return v;
       	}
@@ -4939,15 +4949,18 @@ System.register([], function (exports, module) {
         /*const hover = options.hover || function() {	
         	//应用图的动态样式		
         	//Object.assign(series.style, series.style.hover);
-        		//Object.assign(this.style, this.style.hover || {});
-        		//series.graph.refresh();
+        
+        	//Object.assign(this.style, this.style.hover || {});
+        
+        	//series.graph.refresh();
         };
         panel.bind('mouseover', hover);
         //执行离开
         const leave = options.leave || function() {	
         	//应用图的普通样式		
         	//Object.assign(series.style, series.style.normal);
-        		//Object.assign(this.style, this.style.normal || {});
+        
+        	//Object.assign(this.style, this.style.normal || {});
         	//jmUtils.apply(this.series.style.normal,this.series.style);
         	//series.graph.refresh();
         };
@@ -5385,6 +5398,8 @@ System.register([], function (exports, module) {
       		this.endAngle = params.end || params.endAngle || Math.PI * 2;		
 
       		this.anticlockwise = params.anticlockwise  || 0;
+
+      		this.isFan = !!params.isFan;
       	}	
 
       	/**
@@ -5493,6 +5508,8 @@ System.register([], function (exports, module) {
       			end = p2 - end;
       		}
       		if(start > end) step = -step;
+
+      		if(this.isFan) this.points.push(location.center);// 如果是扇形，则从中心开始画
       		
       		//椭圆方程x=a*cos(r) ,y=b*sin(r)	
       		for(let r=start;;r += step) {	
@@ -6583,27 +6600,32 @@ System.register([], function (exports, module) {
               this.$emit('touchend', args);
               this.$emit('mouseup', args);
             });
+            this.chartInstance.bind('touchleave', args => {
+              this.$emit('touchleave', args);
+            });
           },
 
           // 刷新图表
           refresh() {
-            this.initChart(); // 清空当前图形，重新生成
+            this.$nextTick(() => {
+              this.initChart(); // 清空当前图形，重新生成
 
-            this.chartInstance.reset(); // 生成图
+              this.chartInstance.reset(); // 生成图
 
-            if (this.chartSeries.length) {
-              for (let s of this.chartSeries) {
-                if (!s.type) {
-                  console.error('必须指定serie type');
-                  continue;
+              if (this.chartSeries.length) {
+                for (let s of this.chartSeries) {
+                  if (!s.type) {
+                    console.error('必须指定serie type');
+                    continue;
+                  }
+
+                  this.chartInstance.createSeries(s.type, s);
                 }
-
-                this.chartInstance.createSeries(s.type, s);
               }
-            }
 
-            this.chartInstance.data = this.chartData;
-            this.chartInstance.refresh();
+              this.chartInstance.data = this.chartData;
+              this.chartInstance.refresh();
+            });
           }
 
         },

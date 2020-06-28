@@ -35,6 +35,7 @@
                 v-on:touchstart="touchstart"
                 v-on:touchmove="touchmove"
                 v-on:touchend="touchend"
+                v-on:touchleave="touchleave"
                 :width="width" :height="height">
             </v-chart>
             <button @click="visible=!visible">显示/隐藏</button>
@@ -106,8 +107,10 @@
                         }
                     }
                 };
-                const series = [
-                    {
+
+                
+
+                const ser1 = {
                         type: 'line', // line bar pie spline
                         field: 'y1', // 当前图绑定的数据字段名  
                         legendLabel: '图例2',
@@ -138,8 +141,9 @@
                                 }
                             }
                         }
-                    }
-                    ,{
+                    };
+
+                const ser2 = {
                         type: 'line', // line bar pie spline
                         field: 'y2', // 当前图绑定的数据字段名  
                         legendLabel: '图例2',
@@ -157,8 +161,7 @@
                             // 填充图形
                             area: true
                         }
-                    }
-                ];
+                    };
 
                 const app = new Vue({
                     el: '#app',
@@ -168,7 +171,10 @@
                         // 图表配置
                         chartOptions: options,
                         // 图，可以指定多个
-                        chartSeries: series,
+                        chartSeries: [
+                            ser1,
+                            ser2
+                        ],
                         width: '100%',
                         height: '50%',
                         touchDataInfo: ''
@@ -191,9 +197,16 @@
                         touchend: (args) => {
                             console.log('touchend', args);
                         },
+                        touchleave: (args) => {
+                            // 滑动离开事件，滑到外面去了
+                            console.log('touchleave', args);
+                        },
                         changeField() {
-                            series[0].field == 'y2'?series[0].field = 'y3':series[0].field = 'y2';
+                            //series[0].field == 'y2'?series[0].field = 'y3':series[0].field = 'y2';
 
+                            this.chartSeries = [
+                                ser2
+                            ];
                             this.$refs.mychart.refresh();// 改变基础属性需要重刷
                         }
                     }
