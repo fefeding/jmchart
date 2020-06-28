@@ -213,12 +213,14 @@ export default class jmAxis extends jmArrawLine {
 		//var count = this.style.xLabel.count || this.data.length;	
 		//字符串轴。则显示每个标签	
 		const format = this.options.format || this.format;
-		const top = this.style.xLabel.margin.top || 0;		
-		for(var i=0; i< this.data.length;i++) {	
+		const top = this.style.xLabel.margin.top || 0;	
+		for(let i=0; i< this.data.length;i++) {	
 			const d = this.data[i];
 			const v = d[this.field]; 	
 			
-			const w = i * step;
+			/// 只有一条数据，就取这条数据就可以了	
+			const w = (this.data.length === 1? 1: i) * step;
+
 			const label = this.graph.createShape(jmLabel, {
 				style: this.style.xLabel
 			});
@@ -278,9 +280,9 @@ export default class jmAxis extends jmArrawLine {
 			}
 			else {
 				// 如果标签居中，则把二头的标签左边的左对齐，右边的右对齐
-				if(this.style.align === 'center' && (
-					i === 0 || (i === this.data.length - 1 && this.data.length > 1)
-				)) {
+				if(this.style.align === 'center' && this.data.length > 1 && (
+					i === 0 || i === this.data.length - 1)
+				) {
 					if(i === this.data.length - 1) {
 						pos.x -= label.width;
 					}
@@ -578,23 +580,25 @@ export default class jmAxis extends jmArrawLine {
 	 */
 	step() {
 		if(this.type == 'x') {
-			var w = this.width;
+			const w = this.width;
 
 			//如果排版为内联，则单位占宽减少一个单位,
 			//也就是起始位从一个单位开始
 			if(this.graph.style.layout == 'inside') {
-				var sp =  w / this.max();	
+				const sp =  w / this.max();	
 				this.labelStart = sp / 2;
 				return sp;
 			}	
 			else {
 				this.labelStart = 0;
-			}		
-			return w / (this.max() - 1);					
+			}	
+			let tmp = this.max() - 1;	
+			if(tmp === 0) tmp = 2; // 只有一个数据的情况，就直接居中
+			return w / tmp;					
 				
 		}		
 		else if(this.type == 'y') {
-			var h = this.height;
+			const h = this.height;
 			switch(this.dataType) {					
 				case 'string': {
 					return h / this.max();
@@ -602,7 +606,7 @@ export default class jmAxis extends jmArrawLine {
 				case 'date':
 				case 'number': 
 				default: {
-					var tmp = Math.abs(this.max() - this.min());
+					let tmp = Math.abs(this.max() - this.min());
 					tmp = tmp || 1;
 					return h / tmp;
 				}

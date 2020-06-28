@@ -2336,8 +2336,9 @@ System.register([], function (exports, module) {
       			let bounds = this.parent && this.parent.absoluteBounds?this.parent.absoluteBounds:this.absoluteBounds;
       			
       			this.context.moveTo(this.points[0].x + bounds.left,this.points[0].y + bounds.top);
-      			let len = this.points.length;			
-      			for(let i=1; i < len;i++) {
+      			let len = this.points.length;	
+      			let i=(len === 1? 0 : 1);		
+      			for(; i < len;i++) {
       				let p = this.points[i];
       				//移至当前坐标
       				if(p.m) {
@@ -4492,10 +4493,11 @@ System.register([], function (exports, module) {
           const format = this.options.format || this.format;
           const top = this.style.xLabel.margin.top || 0;
 
-          for (var i = 0; i < this.data.length; i++) {
+          for (let i = 0; i < this.data.length; i++) {
             const d = this.data[i];
-            const v = d[this.field];
-            const w = i * step;
+            const v = d[this.field]; /// 只有一条数据，就取这条数据就可以了	
+
+            const w = (this.data.length === 1 ? 1 : i) * step;
             const label = this.graph.createShape(jmLabel, {
               style: this.style.xLabel
             });
@@ -4555,7 +4557,7 @@ System.register([], function (exports, module) {
               };
             } else {
               // 如果标签居中，则把二头的标签左边的左对齐，右边的右对齐
-              if (this.style.align === 'center' && (i === 0 || i === this.data.length - 1 && this.data.length > 1)) {
+              if (this.style.align === 'center' && this.data.length > 1 && (i === 0 || i === this.data.length - 1)) {
                 if (i === this.data.length - 1) {
                   pos.x -= label.width;
                 }
@@ -4854,20 +4856,23 @@ System.register([], function (exports, module) {
 
         step() {
           if (this.type == 'x') {
-            var w = this.width; //如果排版为内联，则单位占宽减少一个单位,
+            const w = this.width; //如果排版为内联，则单位占宽减少一个单位,
             //也就是起始位从一个单位开始
 
             if (this.graph.style.layout == 'inside') {
-              var sp = w / this.max();
+              const sp = w / this.max();
               this.labelStart = sp / 2;
               return sp;
             } else {
               this.labelStart = 0;
             }
 
-            return w / (this.max() - 1);
+            let tmp = this.max() - 1;
+            if (tmp === 0) tmp = 2; // 只有一个数据的情况，就直接居中
+
+            return w / tmp;
           } else if (this.type == 'y') {
-            var h = this.height;
+            const h = this.height;
 
             switch (this.dataType) {
               case 'string':
@@ -4879,7 +4884,7 @@ System.register([], function (exports, module) {
               case 'number':
               default:
                 {
-                  var tmp = Math.abs(this.max() - this.min());
+                  let tmp = Math.abs(this.max() - this.min());
                   tmp = tmp || 1;
                   return h / tmp;
                 }
@@ -5204,7 +5209,7 @@ System.register([], function (exports, module) {
         const ystep = this.yAxis.step();
         this.dataPoints = [];
 
-        for (var i = 0; i < data.length; i++) {
+        for (let i = 0; i < data.length; i++) {
           const s = data[i];
           const xv = s[this.xAxis.field];
           const yv = s[this.field];
@@ -5216,7 +5221,7 @@ System.register([], function (exports, module) {
             yLabel: yv
           }; // 这里的点应相对于chartArea
 
-          p.x = xstep * i + this.xAxis.labelStart; //如果Y值不存在。则此点无效，不画图
+          p.x = xstep * (data.length === 1 ? 1 : i) + this.xAxis.labelStart; //如果Y值不存在。则此点无效，不画图
 
           if (yv == null || typeof yv == 'undefined') {
             p.m = true;
@@ -5899,7 +5904,7 @@ System.register([], function (exports, module) {
           this.style.item.stroke = this.style.color;
           let shapePoints = []; // 计算出来的曲线点集合			
 
-          for (var i = 0; i < len; i++) {
+          for (let i = 0; i < len; i++) {
             const p = points[i]; //如果当前点无效，则跳致下一点
 
             if (typeof p.y === 'undefined' || p.y === null) {
