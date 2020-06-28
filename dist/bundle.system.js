@@ -4592,7 +4592,7 @@ System.register([], function (exports, module) {
           }*/
 
           let pervalue = mm / count || 1;
-          if (pervalue > 1 || pervalue < -1) pervalue = Math.floor(pervalue);else pervalue = Number(pervalue.toFixed(2));
+          if (pervalue > 1 || pervalue < -1) pervalue = Math.floor(pervalue);
           const format = this.options.format || this.format;
 
           for (var p = min; p <= max; p += pervalue) {
