@@ -33,8 +33,6 @@ export default class jmAxis extends jmArrawLine {
 
 		this.field = options.field || '';
 		this.index = options.index || 0;
-		
-		this.format = options.format || this.format;// 可以重写格式化label参数
 
 		this.init(options);
 	}
@@ -214,6 +212,7 @@ export default class jmAxis extends jmArrawLine {
 		//最多显示标签个数
 		//var count = this.style.xLabel.count || this.data.length;	
 		//字符串轴。则显示每个标签	
+		const format = this.options.format || this.format;
 		const top = this.style.xLabel.margin.top || 0;		
 		for(var i=0; i< this.data.length;i++) {	
 			const d = this.data[i];
@@ -225,7 +224,7 @@ export default class jmAxis extends jmArrawLine {
 			});
 			label.data = d; // 当前点的数据结构值			
 
-			label.text = this.format(v, d, i); // 格式化label
+			label.text = format.call(this, v, d, i); // 格式化label
 
 			if(!label.text) {
 				label.visible = false;
@@ -315,6 +314,8 @@ export default class jmAxis extends jmArrawLine {
 		let pervalue = (mm / count) || 1;
 		if(pervalue > 1 || pervalue < -1) pervalue = Math.floor(pervalue);
 		else pervalue = Number(pervalue.toFixed(2));
+			
+		const format = this.options.format || this.format;
 
 		for(var p =min;p <= max;p += pervalue) {
 			var v = p;
@@ -322,7 +323,7 @@ export default class jmAxis extends jmArrawLine {
 			var label = this.graph.graph.createShape(jmLabel, {
 				style: this.style.yLabel
 			});
-			label.text = this.format(v, label); // 格式化label
+			label.text = format.call(this, v, label); // 格式化label
 			this.labels.push(label);
 			this.children.add(label);
 

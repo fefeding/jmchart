@@ -92,11 +92,7 @@ export default class jmChart extends jmgraph.jmGraph  {
 		//this.tooltip = this.graph.createShape('tooltip',{style:this.style.tooltip});
 		//this.chartArea.children.add(this.tooltip);
 
-		this.createXAxis({
-			minXValue: options.minXValue,
-			maxXValue: options.maxXValue,
-			format: options.xLabelFormat
-		});// 生成X轴
+		this.createXAxis();// 生成X轴
 
 		// 生成标线，可以跟随鼠标或手指滑动
 		if(this.style.markLine && this.style.markLine.x) {
@@ -304,8 +300,11 @@ jmChart.prototype.createXAxis = function(options) {
 	if(!this.xAxis) {
 		options = Object.assign({
 			field: this.xField,
-			type: 'x'
-		}, options);
+			type: 'x',
+			minXValue: this.options.minXValue,
+			maxXValue: this.options.maxXValue,
+			format: this.options.xLabelFormat
+		}, options || {});
 		this.xAxis = this.createAxis(options);
 	}
 	return this.xAxis;

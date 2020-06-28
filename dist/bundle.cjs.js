@@ -1573,7 +1573,9 @@ class jmControl extends jmProperty {
 
 		this.initializing();	
 		
-		this.on = this.bind;		
+		this.on = this.bind;
+		
+		this.options = params;
 	}
 
 	//# region 定义属性
@@ -4343,8 +4345,6 @@ class jmAxis extends jmArrawLine {
 
     this.field = options.field || '';
     this.index = options.index || 0;
-    this.format = options.format || this.format; // 可以重写格式化label参数
-
     this.init(options);
   } // 初始化一些参数
   // 这个函数可能会重入。
@@ -4491,6 +4491,7 @@ class jmAxis extends jmArrawLine {
     //var count = this.style.xLabel.count || this.data.length;	
     //字符串轴。则显示每个标签	
 
+    const format = this.options.format || this.format;
     const top = this.style.xLabel.margin.top || 0;
 
     for (var i = 0; i < this.data.length; i++) {
@@ -4502,7 +4503,7 @@ class jmAxis extends jmArrawLine {
       });
       label.data = d; // 当前点的数据结构值			
 
-      label.text = this.format(v, d, i); // 格式化label
+      label.text = format.call(this, v, d, i); // 格式化label
 
       if (!label.text) {
         label.visible = false;
@@ -4591,6 +4592,7 @@ class jmAxis extends jmArrawLine {
 
     let pervalue = mm / count || 1;
     if (pervalue > 1 || pervalue < -1) pervalue = Math.floor(pervalue);else pervalue = Number(pervalue.toFixed(2));
+    const format = this.options.format || this.format;
 
     for (var p = min; p <= max; p += pervalue) {
       var v = p;
@@ -4598,7 +4600,7 @@ class jmAxis extends jmArrawLine {
       var label = this.graph.graph.createShape(jmLabel, {
         style: this.style.yLabel
       });
-      label.text = this.format(v, label); // 格式化label
+      label.text = format.call(this, v, label); // 格式化label
 
       this.labels.push(label);
       this.children.add(label);
@@ -6247,11 +6249,7 @@ class jmChart extends jmGraph {
     //this.chartArea.children.add(this.tooltip);
 
 
-    this.createXAxis({
-      minXValue: options.minXValue,
-      maxXValue: options.maxXValue,
-      format: options.xLabelFormat
-    }); // 生成X轴
+    this.createXAxis(); // 生成X轴
     // 生成标线，可以跟随鼠标或手指滑动
 
     if (this.style.markLine && this.style.markLine.x) {
@@ -6465,8 +6463,11 @@ jmChart.prototype.createXAxis = function (options) {
   if (!this.xAxis) {
     options = Object.assign({
       field: this.xField,
-      type: 'x'
-    }, options);
+      type: 'x',
+      minXValue: this.options.minXValue,
+      maxXValue: this.options.maxXValue,
+      format: this.options.xLabelFormat
+    }, options || {});
     this.xAxis = this.createAxis(options);
   }
 
