@@ -81,7 +81,12 @@ export default {
 			length: 5,
 			fill: '#000',
 			stroke: '#000',
-			margin: {left:0,top:10,right:6,bottom:0},
+			margin: {
+				left: 0,
+				top: 10,
+				right: 6,
+				bottom: 0
+			},
 			textAlign: 'center',
 			textBaseline: 'top',
 			font: '12px Arial',
@@ -97,12 +102,12 @@ export default {
 			length: 1,
 			fill: '#000',			
 			margin: {
-				left: 1,
+				left: 2,
 				top: 6,
 				right: 8,
 				bottom: 0
 			},
-			textAlign: 'center',
+			textAlign: 'right',
 			textBaseline: 'middle',
 			font: '12px Arial',
 			zIndex:20,

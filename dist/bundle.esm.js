@@ -1156,16 +1156,16 @@ class jmGradient {
 		//let offsetLine = 1;//渐变长度或半径
 		//处理百分比参数
 		if(jmUtils.checkPercent(x1)) {
-			x1 = jmUtils.percentToNumber(x1) * (location.width || d);
+			x1 = jmUtils.percentToNumber(x1) * (bounds.width || d);
 		}
 		if(jmUtils.checkPercent(x2)) {
-			x2 = jmUtils.percentToNumber(x2) * (location.width || d);
+			x2 = jmUtils.percentToNumber(x2) * (bounds.width || d);
 		}
 		if(jmUtils.checkPercent(y1)) {
-			y1 = jmUtils.percentToNumber(y1) * (location.height || d);
+			y1 = jmUtils.percentToNumber(y1) * (bounds.height || d);
 		}
 		if(jmUtils.checkPercent(y2)) {
-			y2 = jmUtils.percentToNumber(y2) * (location.height || d);
+			y2 = jmUtils.percentToNumber(y2) * (bounds.height || d);
 		}	
 
 		let sx1 = Number(x1) + bounds.left;
@@ -1173,10 +1173,7 @@ class jmGradient {
 		let sx2 = Number(x2) + bounds.left;
 		let sy2 = Number(y2) + bounds.top;
 		if(this.type === 'linear') {		
-			gradient = context.createLinearGradient(sx1, sy1, sx2, sy2);	
-			//let x = Math.abs(x2-x1);
-			//let y = Math.abs(y2-y1);
-			//offsetLine = Math.sqrt(x*x + y*y);
+			gradient = context.createLinearGradient(sx1, sy1, sx2, sy2);
 		}
 		else if(this.type === 'radial') {
 			let r1 = this.r1||0;
@@ -3774,12 +3771,12 @@ var defaultStyle = {
       length: 1,
       fill: '#000',
       margin: {
-        left: 1,
+        left: 2,
         top: 6,
         right: 8,
         bottom: 0
       },
-      textAlign: 'center',
+      textAlign: 'right',
       textBaseline: 'middle',
       font: '12px Arial',
       zIndex: 20,
@@ -4590,28 +4587,32 @@ class jmAxis extends jmArrawLine {
     if (pervalue > 1 || pervalue < -1) pervalue = Math.floor(pervalue);
     const format = this.options.format || this.format;
 
-    for (var p = min; p <= max; p += pervalue) {
-      var v = p;
-      var h = (v - min) * step;
-      var label = this.graph.graph.createShape(jmLabel, {
+    for (let p = min; p <= max; p += pervalue) {
+      const h = (p - min) * step; // 当前点的偏移高度
+
+      const label = this.graph.graph.createShape(jmLabel, {
         style: this.style.yLabel
       });
-      label.text = format.call(this, v, label); // 格式化label
+      label.text = format.call(this, p, label); // 格式化label
 
       this.labels.push(label);
       this.children.add(label);
       const w = label.testSize().width;
       const offy = this.height - h; // 刻度的偏移量
-      //计算标签位置
+      // label的位置
+
+      const pos = {
+        x: this.style.yLabel.margin.left - this.start.x,
+        y: 0
+      };
+      let axiswidth = 0; //计算标签位置
 
       if (index <= 1) {
         //轴的宽度
-        var axiswidth = this.style.yLabel.margin.right + w + label.style.length;
-        this.width = Math.max(axiswidth, this.width);
-        var pos = {
-          x: -axiswidth,
-          y: offy - label.height / 2
-        }; //在轴上画小标记m表示移至当前点开画
+        axiswidth = this.style.yLabel.margin.right + w + label.style.length;
+        this.width = Math.max(axiswidth, this.width); //pos.x = - axiswidth;
+
+        pos.y = offy - label.height / 2; //在轴上画小标记m表示移至当前点开画
 
         this.scalePoints.push({
           x: this.start.x,
@@ -4640,12 +4641,10 @@ class jmAxis extends jmArrawLine {
         }
       } else {
         //轴的宽度
-        var axiswidth = this.style.yLabel.margin.left + w + label.style.length;
-        this.width = Math.max(axiswidth, this.width);
-        var pos = {
-          x: this.style.yLabel.margin.left + label.style.length,
-          y: offy - label.height / 2
-        }; //在轴上画小标记m表示移至当前点开画
+        axiswidth = this.style.yLabel.margin.left + w + label.style.length;
+        this.width = Math.max(axiswidth, this.width); //pos.x = this.style.yLabel.margin.left + label.style.length;
+
+        pos.y = offy - label.height / 2; //在轴上画小标记m表示移至当前点开画
 
         this.scalePoints.push({
           x: this.start.x,
@@ -4656,10 +4655,28 @@ class jmAxis extends jmArrawLine {
           x: this.start.x + label.style.length,
           y: offy + this.end.y
         });
+      } // label对齐方式
+
+
+      switch (this.style.yLabel.textAlign) {
+        case 'center':
+          {
+            pos.x = pos.x / 2 - w / 2;
+            break;
+          }
+
+        case 'right':
+          {
+            if (index <= 1) pos.x = -axiswidth;else {
+              // 轴在最右边时，轴宽减去label宽就是右对齐
+              pos.x = axiswidth - w;
+            }
+            break;
+          }
       } //如果进行了旋转，则处理位移
 
 
-      var rotation = label.style.rotation;
+      const rotation = label.style.rotation;
 
       if (rotation && rotation.angle) {
         label.translate = pos; //先位移再旋转

@@ -316,29 +316,34 @@ export default class jmAxis extends jmArrawLine {
 			
 		const format = this.options.format || this.format;
 
-		for(var p =min;p <= max;p += pervalue) {
-			var v = p;
-			var h = (v - min) * step;
-			var label = this.graph.graph.createShape(jmLabel, {
+		for(let p =min;p <= max;p += pervalue) {
+			const h = (p - min) * step; // 当前点的偏移高度
+			const label = this.graph.graph.createShape(jmLabel, {
 				style: this.style.yLabel
 			});
-			label.text = format.call(this, v, label); // 格式化label
+			label.text = format.call(this, p, label); // 格式化label
 			this.labels.push(label);
 			this.children.add(label);
 
 			const w = label.testSize().width;
 			const offy = this.height - h; // 刻度的偏移量
+			// label的位置
+			const pos = {
+				x: this.style.yLabel.margin.left - this.start.x,
+				y: 0
+			};
+
+			let axiswidth = 0;
 
 			//计算标签位置
 			if(index <= 1) {
 				//轴的宽度
-				var axiswidth = this.style.yLabel.margin.right + w + label.style.length;
+				axiswidth = this.style.yLabel.margin.right + w + label.style.length;
 				this.width = Math.max(axiswidth, this.width);
 				
-				var pos = {
-					x: -axiswidth,
-					y: offy - label.height / 2
-				};
+				//pos.x = - axiswidth;
+				pos.y = offy - label.height / 2;
+
 				//在轴上画小标记m表示移至当前点开画
 				this.scalePoints.push({
 					x: this.start.x,
@@ -369,13 +374,12 @@ export default class jmAxis extends jmArrawLine {
 			}
 			else {
 				//轴的宽度
-				var axiswidth = this.style.yLabel.margin.left + w + label.style.length;
+				axiswidth = this.style.yLabel.margin.left + w + label.style.length;
 				this.width = Math.max(axiswidth, this.width);
 
-				var pos = {
-					x: this.style.yLabel.margin.left + label.style.length,
-					y: offy - label.height / 2
-				};
+				//pos.x = this.style.yLabel.margin.left + label.style.length;
+				pos.y = offy - label.height / 2;
+
 				//在轴上画小标记m表示移至当前点开画
 				this.scalePoints.push({
 					x: this.start.x,
@@ -387,9 +391,30 @@ export default class jmAxis extends jmArrawLine {
 					y: offy + this.end.y
 				});
 			}
+
+			// label对齐方式
+			switch(this.style.yLabel.textAlign) {
+				case 'center': {
+					pos.x = pos.x / 2 - w / 2;
+					break;
+				}
+				case 'right': {
+					if(index <= 1) pos.x = - axiswidth;
+					else {
+						// 轴在最右边时，轴宽减去label宽就是右对齐
+						pos.x = axiswidth - w;
+					}
+					break;
+				}
+				// 默认就是左对齐，无需处理
+				case 'left':
+				default: {
+					break;
+				}
+			}
 			
 			//如果进行了旋转，则处理位移
-			var rotation = label.style.rotation;
+			const rotation = label.style.rotation;
 			if(rotation && rotation.angle) {
 				label.translate = pos;//先位移再旋转
 				label.position = {x: -w / 2, y: 0};
