@@ -160,8 +160,17 @@ export default class jmChart extends jmgraph.jmGraph  {
 			serie.remove();
 		}
 
-		delete this.xAxis;
-		delete this.yAxises;
+		// 轴删除
+		if(this.xAxis) {
+			this.xAxis.remove();
+			delete this.xAxis;
+		}
+		if(this.yAxises) {
+			for(let i in this.yAxises) {
+				this.yAxises[i].remove();
+			}
+			delete this.yAxises;
+		}
 	}
 }
 
@@ -199,7 +208,7 @@ jmChart.prototype.beginDraw = function() {
 
 	//计算Y轴位置
 	if(this.yAxises) {
-		for(var i in this.yAxises) {
+		for(let i in this.yAxises) {
 			this.yAxises[i].clear();
 		}
 	}

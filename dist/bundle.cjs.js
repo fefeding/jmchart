@@ -6317,10 +6317,21 @@ class jmChart extends jmGraph {
       }
 
       serie.remove();
+    } // 轴删除
+
+
+    if (this.xAxis) {
+      this.xAxis.remove();
+      delete this.xAxis;
     }
 
-    delete this.xAxis;
-    delete this.yAxises;
+    if (this.yAxises) {
+      for (let i in this.yAxises) {
+        this.yAxises[i].remove();
+      }
+
+      delete this.yAxises;
+    }
   }
 
 }
@@ -6359,7 +6370,7 @@ jmChart.prototype.beginDraw = function () {
 
 
   if (this.yAxises) {
-    for (var i in this.yAxises) {
+    for (let i in this.yAxises) {
       this.yAxises[i].clear();
     }
   } //计算柱形图个数
