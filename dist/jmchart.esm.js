@@ -6257,7 +6257,7 @@ class jmMarkLine extends jmLine {
 class jmChart extends jmGraph {
   constructor(container, options) {
     options = options || {};
-    options.autoRefresh = typeof options.autoRefresh === 'undefined' ? true : options.autoRefresh; // 深度复制默认样式，以免被改
+    options.autoRefresh = typeof options.autoRefresh === 'undefined' ? false : options.autoRefresh; // 深度复制默认样式，以免被改
 
     options.style = jmUtils.clone(defaultStyle, options.style, true);
     super(container, options);
@@ -6288,20 +6288,23 @@ class jmChart extends jmGraph {
      * @type jmControl
      */
 
-    this.chartArea = this.chartArea || this.createShape(jmRect, {
-      style: this.style.chartArea,
-      position: {
-        x: 0,
-        y: 0
-      }
-    });
-    this.children.add(this.chartArea);
+    if (!this.chartArea) {
+      this.chartArea = this.createShape(jmRect, {
+        style: this.style.chartArea,
+        position: {
+          x: 0,
+          y: 0
+        }
+      });
+      this.children.add(this.chartArea);
+    }
     /**
      * 图例
      *
      * @property legend
      * @type jmLegend
      */
+
 
     this.legend = this.legend || this.createShape(jmLegend, {
       style: this.style.legend
@@ -6352,7 +6355,7 @@ class jmChart extends jmGraph {
       }
     }); // 移动标线
 
-    this.on('mousemove touchmove', function (args) {
+    this.on('mousemove', function (args) {
       if (this.graph.xMarkLine && this.graph.xMarkLine.visible) {
         this.graph.xMarkLine.move(args);
       }

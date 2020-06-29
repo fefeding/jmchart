@@ -48,23 +48,20 @@
 		</div>	
             <script type="module">
                 import { vChart } from '../dist/jmchart.esm.js';
-
+                //window.devicePixelRatio=1;
                 //if(!window.devicePixelRatio || window.devicePixelRatio<2) window.devicePixelRatio = 2; // pc状态下默认指定为2
-                let scale = 1;   
-                if(window.devicePixelRatio) {
-                    scale = window.devicePixelRatio * 1;
-                }
+                
                 const options = {
                     //width: 800,  // 可以这里指定，也可以VUE属性指定
                     //height: 600,
                     xField: 'x',// X轴对应在数据中的字段名
-                    enableAnimate: true,
+                    //enableAnimate: false,
                     legendPosition: 'top', // 图例位置 top left right bottom
                     legendVisible: false, // 不显示图例
                     // 最大和最小X值，  这里一般不用指定，除非硬是需要
                     minXValue : 0,
                     maxXValue : 10,
-                    autoRefresh: true, // 自动响应刷新
+                    //autoRefresh: false, // 自动响应刷新
                     // 格式化x标签值
                     xLabelFormat: function(v, item, index) {
                         if(!this.data) return;
@@ -142,10 +139,10 @@
                             // 不显示小圆点
                             showItem: false,
                             color: '#C79156', // 自定义颜色，如果不指定就会采用默认的
-                            curve: true, // 圆滑的曲线,
+                           // curve: true, // 圆滑的曲线,
                             lineWidth: 1,
                             // 填充图形
-                            area: {
+                            /*area: {
                                 // 自定义填充颜色处理
                                 fill: function(style) {
                                     // 根据颜色生成渐变效果
@@ -156,7 +153,7 @@
                                         rgba(${color.r},${color.g},${color.b}, 0.2) 0.1, 
                                         rgba(${color.r},${color.g},${color.b}, 0.8) 0)`;
                                 }
-                            }
+                            }*/
                         }
                     };
 
@@ -254,7 +251,7 @@
     
                 function inichart() {
     
-                    const datacount = 20;   
+                    const datacount = 365;   
                     
                     // 动态加入数据
                     function animate() {
