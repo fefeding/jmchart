@@ -33,6 +33,9 @@ export default class jmChart extends jmgraph.jmGraph  {
 		// x轴绑定的字段名
 		this.xField = options.xField || '';		
 
+		// 创建操作图层
+		this.createTouchGraph(container, options);
+
 		this.init(options);
 	}
 
@@ -98,48 +101,79 @@ export default class jmChart extends jmgraph.jmGraph  {
 
 		// 生成标线，可以跟随鼠标或手指滑动
 		if(this.style.markLine && this.style.markLine.x) {
-			this.xMarkLine = this.createShape(jmMarkLine, {
+			this.xMarkLine = this.touchGraph.createShape(jmMarkLine, {
 				type: 'x',
 				style: this.style.markLine
 			});
-			this.chartArea.children.add(this.xMarkLine);
+			this.touchGraph.children.add(this.xMarkLine);
 		}
 
 		if(this.style.markLine && this.style.markLine.y) {
-			this.yMarkLine = this.createShape(jmMarkLine, {
+			this.yMarkLine = this.touchGraph.createShape(jmMarkLine, {
 				type: 'y',
 				style: this.style.markLine
 			});
-			this.chartArea.children.add(this.yMarkLine);
+			this.touchGraph.children.add(this.yMarkLine);
 		}
 
-		this.on('mousedown touchstart', function(args) {
-			if(this.graph.xMarkLine) {
-				this.graph.xMarkLine.visible = true;
-				this.graph.xMarkLine.move(args);
+		this.touchGraph.on('mousedown touchstart', (args) => {
+			if(this.xMarkLine) {
+				this.xMarkLine.visible = true;
+				this.xMarkLine.move(args);
 			}
-			if(this.graph.yMarkLine) {
-				this.graph.yMarkLine.visible = true;
-				this.graph.yMarkLine.move(args);
+			if(this.yMarkLine) {
+				this.yMarkLine.visible = true;
+				this.yMarkLine.move(args);
 			}
 		});
 		// 移动标线
-		this.on('mousemove touchmove', function(args) {
-			if(this.graph.xMarkLine && this.graph.xMarkLine.visible) {
-				this.graph.xMarkLine.move(args);
+		this.touchGraph.on('mousemove touchmove', (args) => {
+			if(this.xMarkLine && this.xMarkLine.visible) {
+				this.xMarkLine.move(args);
 			}
-			if(this.graph.yMarkLine && this.graph.yMarkLine.visible) {
-				this.graph.yMarkLine.move(args);
+			if(this.yMarkLine && this.yMarkLine.visible) {
+				this.yMarkLine.move(args);
 			}
 		});
 		// 取消移动
-		this.on('mouseup touchend touchcancel touchleave', function(args) {
-			if(this.graph.xMarkLine && this.graph.xMarkLine.visible) {
-				this.graph.xMarkLine.cancel(args);
+		this.touchGraph.on('mouseup touchend touchcancel touchleave', (args) => {
+			if(this.xMarkLine && this.xMarkLine.visible) {
+				this.xMarkLine.cancel(args);
 			}
-			if(this.graph.yMarkLine && this.graph.yMarkLine.visible) {
-				this.graph.yMarkLine.cancel(args);
+			if(this.yMarkLine && this.yMarkLine.visible) {
+				this.yMarkLine.cancel(args);
 			}
+		});
+	}
+
+	// 创建一个操作层，以免每次刷新
+	createTouchGraph(container, options) {
+		if(container.tagName === 'CANVAS') {
+			container = container.parentElement;
+		}
+		container.style.position = 'relative';
+
+		options = this.utils.clone(options, {
+			autoRefresh: true
+		}, true);
+
+		this.touchGraph = new jmgraph.jmGraph(container, options);
+		this.touchGraph.canvas.style.position = 'absolute';
+		this.touchGraph.canvas.style.top = 0;
+		this.touchGraph.canvas.style.left = 0;
+
+		this.touchGraph.brotherGraph = this;
+
+		this.on('propertyChange', (name, args) => {
+			if(['width', 'height'].includes(name)) {
+				this.touchGraph[name] = args.newValue;
+			}
+		});
+
+		this.touchGraph.on('beginDraw', () => {
+			// 重置标线，会处理小圆圈问题
+			this.xMarkLine && this.xMarkLine.init();
+			this.yMarkLine && this.yMarkLine.init();
 		});
 	}
 	
@@ -251,10 +285,6 @@ jmChart.prototype.beginDraw = function() {
 	this.series.each(function(i, serie) {		
 		serie.init && serie.init();
 	});	
-
-	// 重置标线，会处理小圆圈问题
-	this.xMarkLine && this.xMarkLine.init();
-	this.yMarkLine && this.yMarkLine.init();
 }
 
 /**

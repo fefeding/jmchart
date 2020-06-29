@@ -30,19 +30,26 @@ export default class jmMarkLine extends jmLine {
     
     // 初始化轴
     init() {
-        return;
         if(!this.visible) return;
         
         // 纵标线，中间标小圆圈
         if(this.markLineType === 'y') {
             // 重置所有图形
-            var shape;
+            let shape;
             while(shape = this.shapes.shift()) {
                 shape && shape.remove();
             }
 
+            this.changeTouchPoint();
+        }
+    }
+
+    // 滑动点改变事件
+    changeTouchPoint() {
+        // 纵标线，中间标小圆圈
+        if(this.markLineType === 'y') {
             const touchPoints = []; // 命中的数据点
-            const graph = this.graph;
+            const graph = this.graph.brotherGraph;
             let touchChange = false;
 
             // 根据线条数生成标点个数
@@ -58,47 +65,13 @@ export default class jmMarkLine extends jmLine {
                 }, true);
                 this.markArc = graph.createShape(jmArc, {
                     style,
-                    radius: this.style.radius || 5
+                    radius: (this.style.radius || 5) * this.graph.devicePixelRatio
                 });
 
                 this.markArc.center.y = point.y;
 
                 this.children.add(this.markArc);
                 this.shapes.add(this.markArc);
-
-                // x轴改变，表示变换了位置
-                if(!touchChange && (!serie.lastMarkPoint || serie.lastMarkPoint.x != point.x)) touchChange = true;
-
-                this.start.x = this.end.x = point.x;
-
-                touchPoints.push(point);
-                serie.lastMarkPoint = point;// 记下最后一次改变的点
-            }
-
-            // 触发touch数据点改变事件
-            touchChange && setTimeout(()=>{
-                    graph.emit('touchPointChange', {
-                        points: touchPoints
-                    });
-                }, 10);
-        }
-    }
-
-    // 滑动点改变事件
-    changeTouchPoint() {
-        // 纵标线，中间标小圆圈
-        if(this.markLineType === 'y') {
-            const touchPoints = []; // 命中的数据点
-            const graph = this.graph;
-            let touchChange = false;
-
-            // 根据线条数生成标点个数
-            for(let serie of graph.series) {
-                // 得有数据描点的才展示圆
-                if(!serie.getDataPointByX) continue; 
-
-                const point = serie.getDataPointByX(this.start.x); // 找到最近的数据点
-                if(!point) continue;
 
                 // x轴改变，表示变换了位置
                 if(!touchChange && (!serie.lastMarkPoint || serie.lastMarkPoint.x != point.x)) touchChange = true;
@@ -124,38 +97,36 @@ export default class jmMarkLine extends jmLine {
         // 事件是挂在graph下的，，但此轴是放在chartArea中的。所以事件判断用graph坐标，但是当前位置要相对于chartArea
 		
 		if(this.visible && this.markLineType === 'x') {
-			if(args.position.y <= this.graph.chartArea.position.y) {
-				this.start.y = this.end.y = 0;
+			if(args.position.y <= this.graph.brotherGraph.chartArea.position.y) {
+				this.start.y = this.end.y = this.graph.brotherGraph.chartArea.position.y;
 			}
-			else if(args.position.y > this.graph.chartArea.height + this.graph.chartArea.position.y) {
-				this.start.y = this.end.y = this.graph.chartArea.height;
+			else if(args.position.y > this.graph.brotherGraph.chartArea.height + this.graph.brotherGraph.chartArea.position.y) {
+				this.start.y = this.end.y = this.graph.brotherGraph.chartArea.height + this.graph.brotherGraph.chartArea.position.y;
 			}
 			else {
-				this.start.y = this.end.y = args.position.y - this.graph.chartArea.position.y;
+				this.start.y = this.end.y = args.position.y;
 			}
-			this.start.x = 0;
-			this.end.x = this.graph.chartArea.width;
+			this.start.x = this.graph.brotherGraph.chartArea.position.x;
+			this.end.x = this.start.x + this.graph.brotherGraph.chartArea.width;
 
 			this.needUpdate = true;
 		}
 
 		if(this.visible && this.markLineType === 'y') {
 
-			if(args.position.x < this.graph.chartArea.position.x) {
-				this.start.x = this.end.x = 0;
+			if(args.position.x < this.graph.brotherGraph.chartArea.position.x) {
+				this.start.x = this.end.x = this.graph.brotherGraph.chartArea.position.x;
 			}
-			else if(args.position.x > this.graph.chartArea.width + this.graph.chartArea.position.x) {
-				this.start.x = this.end.x = this.graph.chartArea.width;
+			else if(args.position.x > this.graph.brotherGraph.chartArea.width + this.graph.brotherGraph.chartArea.position.x) {
+				this.start.x = this.end.x = this.graph.brotherGraph.chartArea.width + this.graph.brotherGraph.chartArea.position.x;
 			}
 			else {
-				this.start.x = this.end.x = args.position.x - this.graph.chartArea.position.x;
+				this.start.x = this.end.x = args.position.x;
 			}
-			this.start.y = 0;
-			this.end.y = this.graph.chartArea.height;
+			this.start.y = this.graph.brotherGraph.chartArea.position.y;
+			this.end.y = this.start.y + this.graph.brotherGraph.chartArea.height;
 
             this.needUpdate = true;
-            
-            this.changeTouchPoint();// 触发改变
 		}
     }
     
