@@ -41,6 +41,11 @@ export default {
         this.initChart();
     },
 
+    // 销毁
+    destroyed() {
+        this.chartInstance && this.chartInstance.destory();
+    },
+
     watch: {
         // 数据发生改变，刷新
         chartData: function(newData, oldData) {

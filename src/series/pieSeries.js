@@ -48,7 +48,8 @@ export default class jmPieSeries extends jmSeries {
 		var cm = Math.PI * 2;
 		
 		const radius = Math.min(center.x - this.style.margin.left - 
-			this.style.margin.right,center.y - this.style.margin.top - this.style.margin.bottom);
+			this.style.margin.right * this.graph.devicePixelRatio,
+			center.y - this.style.margin.top * this.graph.devicePixelRatio - this.style.margin.bottom * this.graph.devicePixelRatio);
 		const arc = this.graph.createShape(jmArc, {
 			center: center,
 			radius: radius,

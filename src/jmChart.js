@@ -261,10 +261,10 @@ jmChart.prototype.beginDraw = function() {
  * @method resetAreaPosition
  */
 jmChart.prototype.resetAreaPosition = function () {
-	this.chartArea.position.x = this.style.margin.left || 0;
-	this.chartArea.position.y = this.style.margin.top || 0;
-	var w = this.width - this.style.margin.right - this.chartArea.position.x;
-	var h = this.height - this.style.margin.bottom - this.chartArea.position.y;
+	this.chartArea.position.x = (this.style.margin.left || 0) * this.graph.devicePixelRatio;
+	this.chartArea.position.y = (this.style.margin.top || 0) * this.graph.devicePixelRatio;
+	const w = this.width - (this.style.margin.right * this.graph.devicePixelRatio) - this.chartArea.position.x;
+	const h = this.height - (this.style.margin.bottom * this.graph.devicePixelRatio) - this.chartArea.position.y;
 
 	this.chartArea.width = w;
 	this.chartArea.height = h;

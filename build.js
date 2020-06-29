@@ -15,7 +15,7 @@ async function build(format = 'cjs') {
 	const bundle = await rollup.rollup(rollupOptions);
 
 	const outputOptions = Object.assign(rollupOptions.output, {
-		file: `./dist/bundle.${format}.js`,
+		file: `./dist/jmchart.${format}.js`,
 		format
 	})
 	const { code, map } = await bundle.generate(rollupOptions.output);

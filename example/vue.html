@@ -47,10 +47,13 @@
             </div>
 		</div>	
             <script type="module">
-                import { vChart } from '../dist/bundle.esm.js';
+                import { vChart } from '../dist/jmchart.esm.js';
 
                 //if(!window.devicePixelRatio || window.devicePixelRatio<2) window.devicePixelRatio = 2; // pc状态下默认指定为2
-
+                let scale = 1;   
+                if(window.devicePixelRatio) {
+                    scale = window.devicePixelRatio * 1;
+                }
                 const options = {
                     //width: 800,  // 可以这里指定，也可以VUE属性指定
                     //height: 600,
@@ -72,24 +75,32 @@
                         return '';
                     },
                     style: {
+                        margin:{
+                            left: 50,
+                            top: 20,
+                            right: 20,
+                            bottom: 30
+                        },
                         // x轴 Y轴隐藏
                         axis: {
                             stroke: 'transparent',
                             align: 'center', // 轴标签往中间靠。不出二边
                             grid: {
                                 x: true,  // 不显示X轴网格
-                                y: true,     // 显示Y轴网格
+                                y: false,     // 显示Y轴网格
                                 stroke: '#292921',
+                                lineWidth: 1,
                             },
                             xLabel: {
                                 fill: '#fff', // 轴上的字颜色
-                                font: '12px Microsoft YaHei'
+                                font: `12px Microsoft YaHei`
                             },
                             yLabel: {
                                 count: 4,
                                 fill: 'green', // 轴上的字颜色
                                 textAlign: 'right',
-                                textBaseline: 'middle'
+                                textBaseline: 'middle',
+                                font: `12px Microsoft YaHei`
                             }
                         },
                         // 跟随标线
@@ -97,17 +108,12 @@
                             x: true, // 显示X标线
                             y: true, // 显示Y标线
                             fill: '#000',
+                            lineWidth: 1
                             //lineType: 'dotted' // 虚线  待优化，会卡住
                         },
                         // 隐藏边框
                         chartArea: {
                             stroke: 'transparent'
-                        },
-                        margin: {
-                            top: 10,
-                            left: 50,
-                            right: 10,
-                            bottom: 30
                         }
                     }
                 };
@@ -120,8 +126,8 @@
                         legendLabel: '图例2',
                         // 最大值和最小值，如果不指定会自动计算，
                         // 如果指定了也只是指定了最大或最小边界，如果有数值超过它，依然以事实数值为准
-                        minYValue: 0,
-                        maxYValue: 2,
+                        minYValue: 1,
+                        maxYValue: 1.5,
                         // 格式化y轴标签值
                         yLabelFormat: function(v) {
                             return v.toFixed? (v+ '%') : v;
@@ -130,7 +136,8 @@
                             // 不显示小圆点
                             showItem: false,
                             color: '#C79156', // 自定义颜色，如果不指定就会采用默认的
-                            curve: true, // 圆滑的曲线
+                            curve: true, // 圆滑的曲线,
+                            lineWidth: 1,
                             // 填充图形
                             area: {
                                 // 自定义填充颜色处理
@@ -155,6 +162,7 @@
                         // 如果指定了也只是指定了最大或最小边界，如果有数值超过它，依然以事实数值为准
                         //minYValue: 0,
                         maxYValue: 5,
+                        lineWidth: 1,
                         // 格式化y轴标签值
                         yLabelFormat: (v) => {
                             return v.toFixed? (v + '%') : v;
@@ -234,41 +242,40 @@
 
                     //setTimeout(()=>{
                     //    app.width = "800px";
-
                     //}, 1000)
                 })();
                 
     
                 function inichart() {
     
-                        const datacount = 20;   
+                    const datacount = 20;   
+                    
+                    // 动态加入数据
+                    function animate() {
                         
-                        // 动态加入数据
-                        function animate() {
-                           
-                            for(let i =0; i<datacount; i++) {
-                                const d = {
-                                    x :  '2019-05-02',
-                                    y1 :  Math.random(),
-                                    y2:  Math.random(),
-                                    y3:  Math.random(),
-                                };
+                        for(let i =0; i<datacount; i++) {
+                            const d = {
+                                x :  '2019-05-02',
+                                y1:  Math.random()/2 + 1,
+                                y2:  Math.random(),
+                                y3:  Math.random(),
+                            };
+                            
+                            if(app.chartData.length < datacount) {
+                                app.chartData.push(d);  
                                 
-                                if(app.chartData.length < datacount) {
-                                    app.chartData.push(d);  
-                                    
-                                    //setTimeout(animate, 200); // 一直加
-                                }
-                                else {
-                                    app.chartData.shift();   
-                                    app.chartData.push(d); 
-                                }
+                                //setTimeout(animate, 200); // 一直加
                             }
-                            //setTimeout(animate, 50); // 一直加
+                            else {
+                                app.chartData.shift();   
+                                app.chartData.push(d); 
+                            }
                         }
-                        
-                        animate();    
+                        //setTimeout(animate, 50); // 一直加
                     }
+                    
+                    animate();    
+                }
             </script>	
 	</body>
 </html>

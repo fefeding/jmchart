@@ -213,7 +213,7 @@ export default class jmAxis extends jmArrawLine {
 		//var count = this.style.xLabel.count || this.data.length;	
 		//字符串轴。则显示每个标签	
 		const format = this.options.format || this.format;
-		const top = this.style.xLabel.margin.top || 0;	
+		const top = (this.style.xLabel.margin.top || 0) * this.graph.devicePixelRatio;	
 		for(let i=0; i< this.data.length;i++) {	
 			const d = this.data[i];
 			const v = d[this.field]; 	
@@ -331,7 +331,7 @@ export default class jmAxis extends jmArrawLine {
 			const offy = this.height - h; // 刻度的偏移量
 			// label的位置
 			const pos = {
-				x: this.style.yLabel.margin.left - this.start.x,
+				x: this.style.yLabel.margin.left * this.graph.devicePixelRatio - this.start.x,
 				y: 0
 			};
 
@@ -340,7 +340,7 @@ export default class jmAxis extends jmArrawLine {
 			//计算标签位置
 			if(index <= 1) {
 				//轴的宽度
-				axiswidth = this.style.yLabel.margin.right + w + label.style.length;
+				axiswidth = this.style.yLabel.margin.right * this.graph.devicePixelRatio + w + label.style.length;
 				this.width = Math.max(axiswidth, this.width);
 				
 				//pos.x = - axiswidth;
@@ -376,10 +376,10 @@ export default class jmAxis extends jmArrawLine {
 			}
 			else {
 				//轴的宽度
-				axiswidth = this.style.yLabel.margin.left + w + label.style.length;
+				axiswidth = this.style.yLabel.margin.left * this.graph.devicePixelRatio + w + label.style.length;
 				this.width = Math.max(axiswidth, this.width);
 
-				//pos.x = this.style.yLabel.margin.left + label.style.length;
+				//pos.x = this.style.yLabel.margin.left * this.graph.devicePixelRatio + label.style.length;
 				pos.y = offy - label.height / 2;
 
 				//在轴上画小标记m表示移至当前点开画
@@ -530,7 +530,13 @@ export default class jmAxis extends jmArrawLine {
 
 		//如果是数字类型，则在最小值基础上减去一定的值
 		if(this.dataType == 'number') {
-			var m = this._min;
+			let m = this._min;
+
+			// 如果有指定默认最小值，则不小于它就采用它
+			if(typeof this.minValue != 'undefined')  {
+				return Math.min(this.minValue, m);
+			}
+
 			if(m >= 0) {
 				if(m <= 10) m = 0;
 				else {
@@ -552,14 +558,11 @@ export default class jmAxis extends jmArrawLine {
 			else {
 				m = Math.floor(m);
 			}
-			// 如果有指定默认最小值，则不小于它就采用它
-			if(typeof this.minValue != 'undefined')  {
-				return Math.min(this.minValue, m);
-			}
+			
 			return m;
 		}
 		//如果为字符串则返回0
-		return this.dataType == 'string'?0:this._min;
+		return this.dataType == 'string'? 0: this._min;
 	}
 
 	/**
