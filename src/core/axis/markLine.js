@@ -30,6 +30,7 @@ export default class jmMarkLine extends jmLine {
     
     // 初始化轴
     init() {
+        return;
         if(!this.visible) return;
         
         // 纵标线，中间标小圆圈
@@ -83,6 +84,38 @@ export default class jmMarkLine extends jmLine {
         }
     }
 
+    // 滑动点改变事件
+    changeTouchPoint() {
+        // 纵标线，中间标小圆圈
+        if(this.markLineType === 'y') {
+            const touchPoints = []; // 命中的数据点
+            const graph = this.graph;
+            let touchChange = false;
+
+            // 根据线条数生成标点个数
+            for(let serie of graph.series) {
+                // 得有数据描点的才展示圆
+                if(!serie.getDataPointByX) continue; 
+
+                const point = serie.getDataPointByX(this.start.x); // 找到最近的数据点
+                if(!point) continue;
+
+                // x轴改变，表示变换了位置
+                if(!touchChange && (!serie.lastMarkPoint || serie.lastMarkPoint.x != point.x)) touchChange = true;
+
+                touchPoints.push(point);
+                serie.lastMarkPoint = point;// 记下最后一次改变的点
+            }
+
+            // 触发touch数据点改变事件
+            touchChange && setTimeout(()=>{
+                    graph.emit('touchPointChange', {
+                        points: touchPoints
+                    });
+                }, 10);
+        }
+    }
+
     /**
 	 * 移动标线
 	 * @param { object } args 移动事件参数
@@ -120,7 +153,9 @@ export default class jmMarkLine extends jmLine {
 			this.start.y = 0;
 			this.end.y = this.graph.chartArea.height;
 
-			this.needUpdate = true;
+            this.needUpdate = true;
+            
+            this.changeTouchPoint();// 触发改变
 		}
     }
     

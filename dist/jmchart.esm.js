@@ -6151,16 +6151,13 @@ class jmMarkLine extends jmLine {
 
 
   init() {
-    if (!this.visible) return; // 纵标线，中间标小圆圈
+    return;
+  } // 滑动点改变事件
 
+
+  changeTouchPoint() {
+    // 纵标线，中间标小圆圈
     if (this.markLineType === 'y') {
-      // 重置所有图形
-      var shape;
-
-      while (shape = this.shapes.shift()) {
-        shape && shape.remove();
-      }
-
       const touchPoints = []; // 命中的数据点
 
       const graph = this.graph;
@@ -6171,20 +6168,9 @@ class jmMarkLine extends jmLine {
         if (!serie.getDataPointByX) continue;
         const point = serie.getDataPointByX(this.start.x); // 找到最近的数据点
 
-        if (!point) continue;
-        const style = graph.utils.clone(this.style, {
-          stroke: serie.style.color || serie.style.stroke
-        }, true);
-        this.markArc = graph.createShape(jmArc, {
-          style,
-          radius: this.style.radius || 5
-        });
-        this.markArc.center.y = point.y;
-        this.children.add(this.markArc);
-        this.shapes.add(this.markArc); // x轴改变，表示变换了位置
+        if (!point) continue; // x轴改变，表示变换了位置
 
         if (!touchChange && (!serie.lastMarkPoint || serie.lastMarkPoint.x != point.x)) touchChange = true;
-        this.start.x = this.end.x = point.x;
         touchPoints.push(point);
         serie.lastMarkPoint = point; // 记下最后一次改变的点
       } // 触发touch数据点改变事件
@@ -6231,6 +6217,7 @@ class jmMarkLine extends jmLine {
       this.start.y = 0;
       this.end.y = this.graph.chartArea.height;
       this.needUpdate = true;
+      this.changeTouchPoint(); // 触发改变
     }
   }
   /**

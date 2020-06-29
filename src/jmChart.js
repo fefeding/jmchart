@@ -124,7 +124,7 @@ export default class jmChart extends jmgraph.jmGraph  {
 			}
 		});
 		// 移动标线
-		this.on('mousemove', function(args) {
+		this.on('mousemove touchmove', function(args) {
 			if(this.graph.xMarkLine && this.graph.xMarkLine.visible) {
 				this.graph.xMarkLine.move(args);
 			}
