@@ -57,7 +57,7 @@ export default class jmMarkLine extends jmLine {
                 // 得有数据描点的才展示圆
                 if(!serie.getDataPointByX) continue; 
 
-                const point = serie.getDataPointByX(this.start.x); // 找到最近的数据点
+                const point = serie.getDataPointByX(this.start.x - this.graph.brotherGraph.chartArea.position.x); // 找到最近的数据点
                 if(!point) continue;
 
                 const style = graph.utils.clone(this.style, {
