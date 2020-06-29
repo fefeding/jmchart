@@ -6177,7 +6177,7 @@ class jmMarkLine extends jmLine {
       for (let serie of graph.series) {
         // 得有数据描点的才展示圆
         if (!serie.getDataPointByX) continue;
-        const point = serie.getDataPointByX(this.start.x); // 找到最近的数据点
+        const point = serie.getDataPointByX(this.start.x - this.graph.brotherGraph.chartArea.position.x); // 找到最近的数据点
 
         if (!point) continue;
         const style = graph.utils.clone(this.style, {
@@ -6714,19 +6714,19 @@ var vchart = {
         this.$emit('touch-point-change', args);
       }); // touch事件
 
-      this.chartInstance.bind('touchstart mousedown', args => {
+      this.chartInstance.touchGraph.bind('touchstart mousedown', args => {
         this.$emit('touchstart', args);
         this.$emit('mousedown', args);
       });
-      this.chartInstance.bind('touchmove mousemove', args => {
+      this.chartInstance.touchGraph.bind('touchmove mousemove', args => {
         this.$emit('touchmove', args);
         this.$emit('mousemove', args);
       });
-      this.chartInstance.bind('touchend touchcancel mouseup', args => {
+      this.chartInstance.touchGraph.bind('touchend touchcancel mouseup', args => {
         this.$emit('touchend', args);
         this.$emit('mouseup', args);
       });
-      this.chartInstance.bind('touchleave', args => {
+      this.chartInstance.touchGraph.bind('touchleave', args => {
         this.$emit('touchleave', args);
       });
     },

@@ -6156,7 +6156,18 @@ System.register([], function (exports, module) {
 
 
         init() {
-          return;
+          if (!this.visible) return; // 纵标线，中间标小圆圈
+
+          if (this.markLineType === 'y') {
+            // 重置所有图形
+            let shape;
+
+            while (shape = this.shapes.shift()) {
+              shape && shape.remove();
+            }
+
+            this.changeTouchPoint();
+          }
         } // 滑动点改变事件
 
 
@@ -6165,15 +6176,25 @@ System.register([], function (exports, module) {
           if (this.markLineType === 'y') {
             const touchPoints = []; // 命中的数据点
 
-            const graph = this.graph;
+            const graph = this.graph.brotherGraph;
             let touchChange = false; // 根据线条数生成标点个数
 
             for (let serie of graph.series) {
               // 得有数据描点的才展示圆
               if (!serie.getDataPointByX) continue;
-              const point = serie.getDataPointByX(this.start.x); // 找到最近的数据点
+              const point = serie.getDataPointByX(this.start.x - this.graph.brotherGraph.chartArea.position.x); // 找到最近的数据点
 
-              if (!point) continue; // x轴改变，表示变换了位置
+              if (!point) continue;
+              const style = graph.utils.clone(this.style, {
+                stroke: serie.style.color || serie.style.stroke
+              }, true);
+              this.markArc = graph.createShape(jmArc, {
+                style,
+                radius: (this.style.radius || 5) * this.graph.devicePixelRatio
+              });
+              this.markArc.center.y = point.y;
+              this.children.add(this.markArc);
+              this.shapes.add(this.markArc); // x轴改变，表示变换了位置
 
               if (!touchChange && (!serie.lastMarkPoint || serie.lastMarkPoint.x != point.x)) touchChange = true;
               touchPoints.push(point);
@@ -6197,32 +6218,31 @@ System.register([], function (exports, module) {
         move(args) {
           // 事件是挂在graph下的，，但此轴是放在chartArea中的。所以事件判断用graph坐标，但是当前位置要相对于chartArea
           if (this.visible && this.markLineType === 'x') {
-            if (args.position.y <= this.graph.chartArea.position.y) {
-              this.start.y = this.end.y = 0;
-            } else if (args.position.y > this.graph.chartArea.height + this.graph.chartArea.position.y) {
-              this.start.y = this.end.y = this.graph.chartArea.height;
+            if (args.position.y <= this.graph.brotherGraph.chartArea.position.y) {
+              this.start.y = this.end.y = this.graph.brotherGraph.chartArea.position.y;
+            } else if (args.position.y > this.graph.brotherGraph.chartArea.height + this.graph.brotherGraph.chartArea.position.y) {
+              this.start.y = this.end.y = this.graph.brotherGraph.chartArea.height + this.graph.brotherGraph.chartArea.position.y;
             } else {
-              this.start.y = this.end.y = args.position.y - this.graph.chartArea.position.y;
+              this.start.y = this.end.y = args.position.y;
             }
 
-            this.start.x = 0;
-            this.end.x = this.graph.chartArea.width;
+            this.start.x = this.graph.brotherGraph.chartArea.position.x;
+            this.end.x = this.start.x + this.graph.brotherGraph.chartArea.width;
             this.needUpdate = true;
           }
 
           if (this.visible && this.markLineType === 'y') {
-            if (args.position.x < this.graph.chartArea.position.x) {
-              this.start.x = this.end.x = 0;
-            } else if (args.position.x > this.graph.chartArea.width + this.graph.chartArea.position.x) {
-              this.start.x = this.end.x = this.graph.chartArea.width;
+            if (args.position.x < this.graph.brotherGraph.chartArea.position.x) {
+              this.start.x = this.end.x = this.graph.brotherGraph.chartArea.position.x;
+            } else if (args.position.x > this.graph.brotherGraph.chartArea.width + this.graph.brotherGraph.chartArea.position.x) {
+              this.start.x = this.end.x = this.graph.brotherGraph.chartArea.width + this.graph.brotherGraph.chartArea.position.x;
             } else {
-              this.start.x = this.end.x = args.position.x - this.graph.chartArea.position.x;
+              this.start.x = this.end.x = args.position.x;
             }
 
-            this.start.y = 0;
-            this.end.y = this.graph.chartArea.height;
+            this.start.y = this.graph.brotherGraph.chartArea.position.y;
+            this.end.y = this.start.y + this.graph.brotherGraph.chartArea.height;
             this.needUpdate = true;
-            this.changeTouchPoint(); // 触发改变
           }
         }
         /**
@@ -6262,7 +6282,9 @@ System.register([], function (exports, module) {
 
           this.data = options.data || []; // x轴绑定的字段名
 
-          this.xField = options.xField || '';
+          this.xField = options.xField || ''; // 创建操作图层
+
+          this.createTouchGraph(container, options);
           this.init(options);
         }
         /**
@@ -6320,51 +6342,78 @@ System.register([], function (exports, module) {
           // 生成标线，可以跟随鼠标或手指滑动
 
           if (this.style.markLine && this.style.markLine.x) {
-            this.xMarkLine = this.createShape(jmMarkLine, {
+            this.xMarkLine = this.touchGraph.createShape(jmMarkLine, {
               type: 'x',
               style: this.style.markLine
             });
-            this.chartArea.children.add(this.xMarkLine);
+            this.touchGraph.children.add(this.xMarkLine);
           }
 
           if (this.style.markLine && this.style.markLine.y) {
-            this.yMarkLine = this.createShape(jmMarkLine, {
+            this.yMarkLine = this.touchGraph.createShape(jmMarkLine, {
               type: 'y',
               style: this.style.markLine
             });
-            this.chartArea.children.add(this.yMarkLine);
+            this.touchGraph.children.add(this.yMarkLine);
           }
 
-          this.on('mousedown touchstart', function (args) {
-            if (this.graph.xMarkLine) {
-              this.graph.xMarkLine.visible = true;
-              this.graph.xMarkLine.move(args);
+          this.touchGraph.on('mousedown touchstart', args => {
+            if (this.xMarkLine) {
+              this.xMarkLine.visible = true;
+              this.xMarkLine.move(args);
             }
 
-            if (this.graph.yMarkLine) {
-              this.graph.yMarkLine.visible = true;
-              this.graph.yMarkLine.move(args);
+            if (this.yMarkLine) {
+              this.yMarkLine.visible = true;
+              this.yMarkLine.move(args);
             }
           }); // 移动标线
 
-          this.on('mousemove', function (args) {
-            if (this.graph.xMarkLine && this.graph.xMarkLine.visible) {
-              this.graph.xMarkLine.move(args);
+          this.touchGraph.on('mousemove touchmove', args => {
+            if (this.xMarkLine && this.xMarkLine.visible) {
+              this.xMarkLine.move(args);
             }
 
-            if (this.graph.yMarkLine && this.graph.yMarkLine.visible) {
-              this.graph.yMarkLine.move(args);
+            if (this.yMarkLine && this.yMarkLine.visible) {
+              this.yMarkLine.move(args);
             }
           }); // 取消移动
 
-          this.on('mouseup touchend touchcancel touchleave', function (args) {
-            if (this.graph.xMarkLine && this.graph.xMarkLine.visible) {
-              this.graph.xMarkLine.cancel(args);
+          this.touchGraph.on('mouseup touchend touchcancel touchleave', args => {
+            if (this.xMarkLine && this.xMarkLine.visible) {
+              this.xMarkLine.cancel(args);
             }
 
-            if (this.graph.yMarkLine && this.graph.yMarkLine.visible) {
-              this.graph.yMarkLine.cancel(args);
+            if (this.yMarkLine && this.yMarkLine.visible) {
+              this.yMarkLine.cancel(args);
             }
+          });
+        } // 创建一个操作层，以免每次刷新
+
+
+        createTouchGraph(container, options) {
+          if (container.tagName === 'CANVAS') {
+            container = container.parentElement;
+          }
+
+          container.style.position = 'relative';
+          options = this.utils.clone(options, {
+            autoRefresh: true
+          }, true);
+          this.touchGraph = new jmGraph(container, options);
+          this.touchGraph.canvas.style.position = 'absolute';
+          this.touchGraph.canvas.style.top = 0;
+          this.touchGraph.canvas.style.left = 0;
+          this.touchGraph.brotherGraph = this;
+          this.on('propertyChange', (name, args) => {
+            if (['width', 'height'].includes(name)) {
+              this.touchGraph[name] = args.newValue;
+            }
+          });
+          this.touchGraph.on('beginDraw', () => {
+            // 重置标线，会处理小圆圈问题
+            this.xMarkLine && this.xMarkLine.init();
+            this.yMarkLine && this.yMarkLine.init();
           });
         } // 重置整个图表
 
@@ -6478,10 +6527,7 @@ System.register([], function (exports, module) {
 
         this.series.each(function (i, serie) {
           serie.init && serie.init();
-        }); // 重置标线，会处理小圆圈问题
-
-        this.xMarkLine && this.xMarkLine.init();
-        this.yMarkLine && this.yMarkLine.init();
+        });
       };
       /**
        * 重新定位区域的位置
@@ -6673,19 +6719,19 @@ System.register([], function (exports, module) {
               this.$emit('touch-point-change', args);
             }); // touch事件
 
-            this.chartInstance.bind('touchstart mousedown', args => {
+            this.chartInstance.touchGraph.bind('touchstart mousedown', args => {
               this.$emit('touchstart', args);
               this.$emit('mousedown', args);
             });
-            this.chartInstance.bind('touchmove mousemove', args => {
+            this.chartInstance.touchGraph.bind('touchmove mousemove', args => {
               this.$emit('touchmove', args);
               this.$emit('mousemove', args);
             });
-            this.chartInstance.bind('touchend touchcancel mouseup', args => {
+            this.chartInstance.touchGraph.bind('touchend touchcancel mouseup', args => {
               this.$emit('touchend', args);
               this.$emit('mouseup', args);
             });
-            this.chartInstance.bind('touchleave', args => {
+            this.chartInstance.touchGraph.bind('touchleave', args => {
               this.$emit('touchleave', args);
             });
           },

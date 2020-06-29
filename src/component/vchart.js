@@ -86,19 +86,19 @@ export default {
             });
 
             // touch事件
-            this.chartInstance.bind('touchstart mousedown', (args) => {
+            this.chartInstance.touchGraph.bind('touchstart mousedown', (args) => {
                 this.$emit('touchstart', args);
                 this.$emit('mousedown', args);
             });
-            this.chartInstance.bind('touchmove mousemove', (args) => {
+            this.chartInstance.touchGraph.bind('touchmove mousemove', (args) => {
                 this.$emit('touchmove', args);
                 this.$emit('mousemove', args);
             });
-            this.chartInstance.bind('touchend touchcancel mouseup', (args) => {
+            this.chartInstance.touchGraph.bind('touchend touchcancel mouseup', (args) => {
                 this.$emit('touchend', args);
                 this.$emit('mouseup', args);
             });
-            this.chartInstance.bind('touchleave', (args) => {
+            this.chartInstance.touchGraph.bind('touchleave', (args) => {
                 this.$emit('touchleave', args);
             });
         },
