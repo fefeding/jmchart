@@ -6741,6 +6741,7 @@ var vchart = {
   // 销毁
   destroyed() {
     this.chartInstance && this.chartInstance.destory();
+    this.chartInstance && this.chartInstance.touchGraph && this.chartInstance.touchGraph.destory();
   },
 
   watch: {
