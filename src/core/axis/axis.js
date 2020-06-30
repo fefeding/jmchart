@@ -218,6 +218,10 @@ export default class jmAxis extends jmArrawLine {
 			const d = this.data[i];
 			const v = d[this.field]; 	
 			
+			// 不显示就不生成label。这里性能影响很大
+			const text = format.call(this, v, d, i); // 格式化label
+			//if(!text) continue;
+
 			/// 只有一条数据，就取这条数据就可以了	
 			const w = (this.data.length === 1? 1: i) * step;
 
@@ -226,14 +230,11 @@ export default class jmAxis extends jmArrawLine {
 			});
 			label.data = d; // 当前点的数据结构值			
 
-			label.text = format.call(this, v, d, i); // 格式化label
-
-			if(!label.text) {
-				label.visible = false;
-			}
+			label.text = text;
 
 			this.labels.push(label);
 			this.children.add(label);
+
 			label.width =  label.testSize().width + 2;
 			label.height = 15;
 
@@ -271,7 +272,7 @@ export default class jmAxis extends jmArrawLine {
 			});
 			
 			//如果进行了旋转，则处理位移
-			var rotation = label.style.rotation;
+			const rotation = label.style.rotation;
 			if(rotation && rotation.angle) {
 				//设定旋转原点为label左上角					
 				rotation.point = pos;

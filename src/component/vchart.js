@@ -49,11 +49,7 @@ export default {
     watch: {
         // 数据发生改变，刷新
         chartData: function(newData, oldData) {
-
-            this.initChart();
-            
-            this.chartInstance.data = newData;
-            this.chartInstance.refresh();
+            this.refresh();
         },
         width: function(newWidth, oldWidth) {
             if(!this.chartInstance) return;            
@@ -78,7 +74,7 @@ export default {
             
             this.chartInstance = new jmChart(this.$refs.jmChartContainer, this.options);
             
-            this.refresh(); // 这里有死循环的问题，但上面 chartInstance不为空就返回了，就没有这个问题了
+            if(this.chartData && this.chartData.length) this.refresh(); // 这里有死循环的问题，但上面 chartInstance不为空就返回了，就没有这个问题了
 
             // touch改变数据点事件
             this.chartInstance.bind('touchPointChange', (args) => {

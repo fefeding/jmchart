@@ -67,7 +67,7 @@ export default {
 		// 显示网格
 		grid: {
 			x: true, // 是否显示网格
-			y: true,
+			y: false,
 			stroke: 'rgb(229,229,229)',
 			lineType: 'dotted', // 虚线，不填为实线
 			dashLength: 6, //虚线条间隔，默认5

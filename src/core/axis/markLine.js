@@ -49,15 +49,17 @@ export default class jmMarkLine extends jmLine {
         // 纵标线，中间标小圆圈
         if(this.markLineType === 'y') {
             const touchPoints = []; // 命中的数据点
-            const graph = this.graph.brotherGraph;
+            const graph = this.graph.chartGraph || this.graph;
             let touchChange = false;
+            // 查找最近的X坐标
+            const findX = graph !== this.graph? (this.start.x - graph.chartArea.position.x) : this.start.x;
 
             // 根据线条数生成标点个数
             for(let serie of graph.series) {
                 // 得有数据描点的才展示圆
                 if(!serie.getDataPointByX) continue; 
-
-                const point = serie.getDataPointByX(this.start.x - this.graph.brotherGraph.chartArea.position.x); // 找到最近的数据点
+               
+                const point = serie.getDataPointByX(findX); // 找到最近的数据点
                 if(!point) continue;
 
                 const style = graph.utils.clone(this.style, {
@@ -97,34 +99,65 @@ export default class jmMarkLine extends jmLine {
         // 事件是挂在graph下的，，但此轴是放在chartArea中的。所以事件判断用graph坐标，但是当前位置要相对于chartArea
 		
 		if(this.visible && this.markLineType === 'x') {
-			if(args.position.y <= this.graph.brotherGraph.chartArea.position.y) {
-				this.start.y = this.end.y = this.graph.brotherGraph.chartArea.position.y;
-			}
-			else if(args.position.y > this.graph.brotherGraph.chartArea.height + this.graph.brotherGraph.chartArea.position.y) {
-				this.start.y = this.end.y = this.graph.brotherGraph.chartArea.height + this.graph.brotherGraph.chartArea.position.y;
-			}
-			else {
-				this.start.y = this.end.y = args.position.y;
-			}
-			this.start.x = this.graph.brotherGraph.chartArea.position.x;
-			this.end.x = this.start.x + this.graph.brotherGraph.chartArea.width;
+            // 有操作层的情况下，相对于左上角，否则是chartarea
+            if(this.graph.chartGraph) {
+                if(args.position.y <= this.graph.chartGraph.chartArea.position.y) {
+                    this.start.y = this.end.y = this.graph.chartGraph.chartArea.position.y;
+                }
+                else if(args.position.y > this.graph.chartGraph.chartArea.height + this.graph.chartGraph.chartArea.position.y) {
+                    this.start.y = this.end.y = this.graph.chartGraph.chartArea.height + this.graph.chartGraph.chartArea.position.y;
+                }
+                else {
+                    this.start.y = this.end.y = args.position.y;
+                }
+                this.start.x = this.graph.chartGraph.chartArea.position.x;
+                this.end.x = this.start.x + this.graph.chartGraph.chartArea.width;
+            }
+            else {
+                if(args.position.y <= this.graph.chartArea.position.y) {
+                    this.start.y = this.end.y = 0;
+                }
+                else if(args.position.y > this.graph.chartArea.height + this.graph.chartArea.position.y) {
+                    this.start.y = this.end.y = this.graph.chartArea.height;
+                }
+                else {
+                    this.start.y = this.end.y = args.position.y - this.graph.chartArea.position.y;
+                }
+                this.start.x = 0;
+                this.end.x = this.graph.chartArea.width;
+            }
 
 			this.needUpdate = true;
 		}
 
 		if(this.visible && this.markLineType === 'y') {
-
-			if(args.position.x < this.graph.brotherGraph.chartArea.position.x) {
-				this.start.x = this.end.x = this.graph.brotherGraph.chartArea.position.x;
-			}
-			else if(args.position.x > this.graph.brotherGraph.chartArea.width + this.graph.brotherGraph.chartArea.position.x) {
-				this.start.x = this.end.x = this.graph.brotherGraph.chartArea.width + this.graph.brotherGraph.chartArea.position.x;
-			}
-			else {
-				this.start.x = this.end.x = args.position.x;
-			}
-			this.start.y = this.graph.brotherGraph.chartArea.position.y;
-			this.end.y = this.start.y + this.graph.brotherGraph.chartArea.height;
+            // 有操作层的情况下，相对于左上角，否则是chartarea
+            if(this.graph.chartGraph) {
+                if(args.position.x < this.graph.chartGraph.chartArea.position.x) {
+                    this.start.x = this.end.x = this.graph.chartGraph.chartArea.position.x;
+                }
+                else if(args.position.x > this.graph.chartGraph.chartArea.width + this.graph.chartGraph.chartArea.position.x) {
+                    this.start.x = this.end.x = this.graph.chartGraph.chartArea.width + this.graph.chartGraph.chartArea.position.x;
+                }
+                else {
+                    this.start.x = this.end.x = args.position.x;
+                }
+                this.start.y = this.graph.chartGraph.chartArea.position.y;
+                this.end.y = this.start.y + this.graph.chartGraph.chartArea.height;
+            }
+            else {
+                if(args.position.x < this.graph.chartArea.position.x) {
+                    this.start.x = this.end.x = 0;
+                }
+                else if(args.position.x > this.graph.chartArea.width + this.graph.chartArea.position.x) {
+                    this.start.x = this.end.x = this.graph.chartArea.width;
+                }
+                else {
+                    this.start.x = this.end.x = args.position.x - this.graph.chartArea.position.x;
+                }
+                this.start.y = 0;
+                this.end.y = this.graph.chartArea.height;
+            }
 
             this.needUpdate = true;
 		}
