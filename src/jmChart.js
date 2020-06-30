@@ -115,10 +115,16 @@ export default class jmChart extends jmgraph.jmGraph  {
 
 		// 生成图层, 当图刷新慢时，需要用一个操作图层来进行滑动等操作重绘
 		if(options.touchGraph) {
-			this.touchGraph = graph = new jmgraph.jmGraph(container, options);
-			this.touchGraph.canvas.style.position = 'absolute';
-			this.touchGraph.canvas.style.top = 0;
-			this.touchGraph.canvas.style.left = 0;
+			let cn = document.createElement('canvas');
+			cn.width = container.offsetWidth||container.clientWidth;
+			cn.height = container.offsetHeight||container.clientHeight;
+			cn.style.position = 'absolute';
+			cn.style.top = 0;
+			cn.style.left = 0;
+
+			this.touchGraph = graph = new jmgraph.jmGraph(cn, options);
+			
+			container.appendChild(cn);
 
 			this.touchGraph.chartGraph = this;
 
