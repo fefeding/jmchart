@@ -3025,13 +3025,18 @@
   			else if(canvas.length) {
   				canvas = canvas[0];
   			}
+
   			if(canvas.tagName != 'CANVAS') {
+  				this.container = canvas;
   				let cn = document.createElement('canvas');
   				canvas.appendChild(cn);
   				cn.width = canvas.offsetWidth||canvas.clientWidth;
   				cn.height = canvas.offsetHeight||canvas.clientHeight;
   				canvas = cn;
   			}	
+  			else {
+  				this.container = canvas.parentElement;
+  			}
 
   			this.context = canvas.getContext('2d');
   		}
@@ -4557,8 +4562,8 @@
         const v = d[this.field]; // 不显示就不生成label。这里性能影响很大
 
         const text = format.call(this, v, d, i); // 格式化label
-        //if(!text) continue;
-        /// 只有一条数据，就取这条数据就可以了	
+
+        if (!text) continue; /// 只有一条数据，就取这条数据就可以了	
 
         const w = (this.data.length === 1 ? 1 : i) * step;
         const label = this.graph.createShape(jmLabel, {
@@ -6320,7 +6325,7 @@
       this.xField = options.xField || '';
       this.init(options); // 创建操作图层
 
-      this.createTouchGraph(container, options);
+      this.createTouchGraph(this.container, options);
     }
     /**
      * 绑定的数据源
@@ -6513,8 +6518,8 @@
 
 
     beginDraw() {
-      const startTime = Date.now(); //重置图例
-
+      //const startTime = Date.now();
+      //重置图例
       this.legend && this.legend.init(); //先定位图例等信息，确定画图区域
 
       this.resetAreaPosition();
@@ -6528,9 +6533,9 @@
         for (let i in this.yAxises) {
           this.yAxises[i].clear();
         }
-      }
+      } //console.log('beginDraw1', Date.now() - startTime);
+      //计算柱形图个数
 
-      console.log('beginDraw1', Date.now() - startTime); //计算柱形图个数
 
       this.barSeriesCount = 0; //初始化图序列，并初始化轴值,生成图例项
 
@@ -6551,8 +6556,8 @@
         }
 
         serie.reset();
-      });
-      console.log('beginDraw2', Date.now() - startTime); //重置图例
+      }); //console.log('beginDraw2', Date.now() - startTime);
+      //重置图例
 
       this.legend && this.legend.reset();
 
@@ -6565,14 +6570,13 @@
         for (var i in this.yAxises) {
           this.yAxises[i].reset();
         }
-      }
+      } //console.log('beginDraw3', Date.now() - startTime);
+      //最后再来初始化图形，这个必须在轴初始化完后才能执行
 
-      console.log('beginDraw3', Date.now() - startTime); //最后再来初始化图形，这个必须在轴初始化完后才能执行
 
       this.series.each(function (i, serie) {
         serie.init && serie.init();
-      });
-      console.log('beginDraw4', Date.now() - startTime);
+      }); //console.log('beginDraw4', Date.now() - startTime);
     }
     /**
      * 重新定位区域的位置

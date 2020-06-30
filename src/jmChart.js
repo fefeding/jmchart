@@ -36,7 +36,7 @@ export default class jmChart extends jmgraph.jmGraph  {
 		this.init(options);	
 
 		// 创建操作图层
-		this.createTouchGraph(container, options);
+		this.createTouchGraph(this.container, options);
 	}
 
 	/**
@@ -232,7 +232,7 @@ export default class jmChart extends jmgraph.jmGraph  {
 	 * @method beginDraw 
 	 */
 	beginDraw() {
-		const startTime = Date.now();
+		//const startTime = Date.now();
 		//重置图例
 		this.legend && this.legend.init();
 
@@ -250,7 +250,7 @@ export default class jmChart extends jmgraph.jmGraph  {
 			}
 		}
 
-		console.log('beginDraw1', Date.now() - startTime);
+		//console.log('beginDraw1', Date.now() - startTime);
 
 		//计算柱形图个数
 		this.barSeriesCount = 0;
@@ -272,7 +272,7 @@ export default class jmChart extends jmgraph.jmGraph  {
 			}
 			serie.reset();
 		});	
-		console.log('beginDraw2', Date.now() - startTime);
+		//console.log('beginDraw2', Date.now() - startTime);
 		//重置图例
 		this.legend && this.legend.reset();	
 
@@ -286,12 +286,12 @@ export default class jmChart extends jmgraph.jmGraph  {
 				this.yAxises[i].reset();
 			}
 		}
-		console.log('beginDraw3', Date.now() - startTime);
+		//console.log('beginDraw3', Date.now() - startTime);
 		//最后再来初始化图形，这个必须在轴初始化完后才能执行
 		this.series.each(function(i, serie) {		
 			serie.init && serie.init();
 		});	
-		console.log('beginDraw4', Date.now() - startTime);
+		//console.log('beginDraw4', Date.now() - startTime);
 	}
 
 	/**

@@ -220,7 +220,7 @@ export default class jmAxis extends jmArrawLine {
 			
 			// 不显示就不生成label。这里性能影响很大
 			const text = format.call(this, v, d, i); // 格式化label
-			//if(!text) continue;
+			if(!text) continue;
 
 			/// 只有一条数据，就取这条数据就可以了	
 			const w = (this.data.length === 1? 1: i) * step;
