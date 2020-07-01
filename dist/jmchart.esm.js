@@ -1822,10 +1822,8 @@ class jmControl extends jmProperty {
 					zindex = Number(obj.style.zIndex);
 					if(isNaN(zindex)) zindex=obj.style.zIndex||0;
 				}
-				if(zindex) {
-					let items = levelItems[zindex] || (levelItems[zindex] = []);
-					items.push(obj);					
-				}
+				let items = levelItems[zindex] || (levelItems[zindex] = []);
+				items.push(obj);
 			});
 
 			this.splice(0, this.length);
