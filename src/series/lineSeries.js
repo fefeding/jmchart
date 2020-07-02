@@ -78,7 +78,7 @@ export default class jmLineSeries extends jmSeries {
 				y: this.graph.chartArea.height
 			};
 
-			// 如果要动画。则动态改变高度
+			// 如果要动画。则动态改变高度, dataChanged或动画没完成才需要执行，否则只是普通刷新s
 			if(this.enableAnimate && (dataChanged || this.___animateCounter > 0 )) {
 				const height = Math.abs(p.y - linePoint.y);
 				const step = height / 100;

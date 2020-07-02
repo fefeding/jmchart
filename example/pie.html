@@ -51,8 +51,8 @@
 						}
                     });
                     
-                    const datacount = 6;
-					function animate() {
+                    const datacount = 3;
+					function refreshData() {
 						
 							chart.data = [];
 							for(var i = 0;i<datacount;i++) {
@@ -67,14 +67,14 @@
 							}
 						
 						//setTimeout(animate,500);
-						chart.refresh();
+						//chart.refresh();
 						console.log(chart.data);
 					}
 
 					
-					animate();
+					refreshData();
 
-					chart.utils.bindEvent(document.getElementById('btnRedraw'),'click', animate);
+					chart.utils.bindEvent(document.getElementById('btnRedraw'),'click', refreshData);
 					
 				}
 		</script>
