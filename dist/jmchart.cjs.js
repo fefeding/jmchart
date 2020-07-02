@@ -1,3 +1,7 @@
+'use strict';
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
 function _defineProperty(obj, key, value) {
   if (key in obj) {
     Object.defineProperty(obj, key, {
@@ -236,6 +240,7 @@ class jmUtils {
      * @param {element} html元素对象
      * @param {string} name 事件名称
      * @param {function} fun 事件委托
+     * @returns {name, fun, target} 返回当前绑定
      */
     static bindEvent(target, name, fun, opt) {
         if(name &&  name.indexOf && name.indexOf(' ') != -1) {
@@ -243,18 +248,18 @@ class jmUtils {
             for(let i=0;i<ns.length;i++) {
                 this.bindEvent(target, ns[i], fun, opt);
             }
-            return;
         }
         if(target.attachEvent) {
-            return target.attachEvent("on"+name, fun, opt);
+            target.attachEvent("on"+name, fun, opt);
         }    
         else if(target.addEventListener) {
             target.addEventListener(name, fun, opt);
-            return true;
         }
-        else {
-            return false;
-        }
+        return {
+            name,
+            target,
+            fun
+        };
     }
 
     /**
@@ -315,7 +320,7 @@ class jmUtils {
      * @param {point} [scale] 当前画布的缩放比例
      * @return {point} 事件触发的位置 
      */
-    static getEventPosition (evt, scale, devicePixelRatio) {
+    static getEventPosition (evt, scale) {
         evt = evt || event;
         
         let isTouch = false;
@@ -341,12 +346,6 @@ class jmUtils {
         if(scale) {
             if(scale.x) ox = ox / scale.x;
             if(scale.y) oy = oy / scale.y;
-        }
-        // 如果有指定scale高清处理，需要对坐标处理
-        // 因为是对canvas放大N倍，再把style指定为当前大小，所以坐标需要放大N
-        if(devicePixelRatio > 0) {
-            ox = ox * devicePixelRatio;
-            oy = oy * devicePixelRatio;
         }
 
         return {
@@ -1162,16 +1161,16 @@ class jmGradient {
 		//let offsetLine = 1;//渐变长度或半径
 		//处理百分比参数
 		if(jmUtils.checkPercent(x1)) {
-			x1 = jmUtils.percentToNumber(x1) * (location.width || d);
+			x1 = jmUtils.percentToNumber(x1) * (bounds.width || d);
 		}
 		if(jmUtils.checkPercent(x2)) {
-			x2 = jmUtils.percentToNumber(x2) * (location.width || d);
+			x2 = jmUtils.percentToNumber(x2) * (bounds.width || d);
 		}
 		if(jmUtils.checkPercent(y1)) {
-			y1 = jmUtils.percentToNumber(y1) * (location.height || d);
+			y1 = jmUtils.percentToNumber(y1) * (bounds.height || d);
 		}
 		if(jmUtils.checkPercent(y2)) {
-			y2 = jmUtils.percentToNumber(y2) * (location.height || d);
+			y2 = jmUtils.percentToNumber(y2) * (bounds.height || d);
 		}	
 
 		let sx1 = Number(x1) + bounds.left;
@@ -1179,10 +1178,7 @@ class jmGradient {
 		let sx2 = Number(x2) + bounds.left;
 		let sy2 = Number(y2) + bounds.top;
 		if(this.type === 'linear') {		
-			gradient = context.createLinearGradient(sx1, sy1, sx2, sy2);	
-			//let x = Math.abs(x2-x1);
-			//let y = Math.abs(y2-y1);
-			//offsetLine = Math.sqrt(x*x + y*y);
+			gradient = context.createLinearGradient(sx1, sy1, sx2, sy2);
 		}
 		else if(this.type === 'radial') {
 			let r1 = this.r1||0;
@@ -1352,11 +1348,17 @@ class jmEvents {
 		
 		this.container.raiseEvent('touchcancel',evt);
 		let t = evt.target || evt.srcElement;
-		if(t == target) {
+		if(t == this.target) {
 			//if(evt.preventDefault) evt.preventDefault();
 			return false;
 		}
 	};
+
+	// 销毁
+	destory() {
+		this.mouseHandler.destory();
+		this.keyHandler.destory();
+	}
 }
 
 /**
@@ -1367,6 +1369,8 @@ class jmMouseEvent {
 		this.instance = instance;
 		this.container = container;
 		this.target = target || container;
+
+		this.eventEvents = {};// 所有绑定的事件
 
 		this.init(instance, container, target);
 	}
@@ -1379,7 +1383,7 @@ class jmMouseEvent {
 		//	return false;
 		//};
 
-		jmUtils.bindEvent(this.target,'mousedown',function(evt) {
+		this.eventEvents['mousedown'] = jmUtils.bindEvent(this.target,'mousedown',function(evt) {
 			evt = evt || window.event;
 			let r = container.raiseEvent('mousedown',evt);
 			//if(r === false) {
@@ -1388,7 +1392,7 @@ class jmMouseEvent {
 			//}				
 		});
 		
-		doc && jmUtils.bindEvent(doc,'mousemove',function(evt) {	
+		this.eventEvents['mousedown'] = jmUtils.bindEvent(this.target,'mousemove',function(evt) {	
 			evt = evt || window.event;		
 			let target = evt.target || evt.srcElement;
 			if(target == canvas) {
@@ -1400,19 +1404,19 @@ class jmMouseEvent {
 			}				
 		});
 		
-		jmUtils.bindEvent(this.target,'mouseover',function(evt) {
+		this.eventEvents['mousedown'] = jmUtils.bindEvent(this.target,'mouseover',function(evt) {
 			evt = evt || window.event;
 			container.raiseEvent('mouseover',evt);
 		});
-		jmUtils.bindEvent(this.target,'mouseleave',function(evt) {
+		this.eventEvents['mouseleave'] = jmUtils.bindEvent(this.target,'mouseleave',function(evt) {
 			evt = evt || window.event;
 			container.raiseEvent('mouseleave',evt);
 		});			
-		jmUtils.bindEvent(this.target,'mouseout',function(evt) {
+		this.eventEvents['mouseout'] = jmUtils.bindEvent(this.target,'mouseout',function(evt) {
 			evt = evt || window.event;
 			container.raiseEvent('mouseout',evt);
 		});
-		doc && jmUtils.bindEvent(doc,'mouseup',function(evt) {
+		doc && (this.eventEvents['mouseup'] = jmUtils.bindEvent(doc,'mouseup',function(evt) {
 			evt = evt || window.event;
 			//let target = evt.target || evt.srcElement;
 			//if(target == canvas) {						
@@ -1422,39 +1426,48 @@ class jmMouseEvent {
 					return false;
 				}					
 			//}
-		});
+		}));
 		
-		jmUtils.bindEvent(this.target,'dblclick',function(evt) {
+		this.eventEvents['dblclick'] = jmUtils.bindEvent(this.target,'dblclick',function(evt) {
 			evt = evt || window.event;
 			container.raiseEvent('dblclick',evt);
 		});
-		jmUtils.bindEvent(this.target,'click',function(evt) {
+		this.eventEvents['click'] = jmUtils.bindEvent(this.target,'click',function(evt) {
 			evt = evt || window.event;
 			container.raiseEvent('click',evt);
 		});
 
-		doc && jmUtils.bindEvent(doc,'resize',function(evt) {
+		doc && (this.eventEvents['resize'] = jmUtils.bindEvent(doc,'resize',function(evt) {
 			evt = evt || window.event;
 			return container.raiseEvent('resize',evt);
-		});
+		}));
 
 		// passive: false 为了让浏览器不告警并且preventDefault有效
 		// 另一种处理：touch-action: none; 这样任何触摸事件都不会产生默认行为，但是 touch 事件照样触发。
-		jmUtils.bindEvent(this.target,'touchstart', function(evt) {
+		this.eventEvents['touchstart'] = jmUtils.bindEvent(this.target,'touchstart', function(evt) {
 			return instance.touchStart(evt);
 		},{ passive: false });
 
-		doc && jmUtils.bindEvent(doc,'touchmove', function(evt) {
+		this.eventEvents['touchmove'] = jmUtils.bindEvent(this.target,'touchmove', function(evt) {
 			return instance.touchMove(evt);
 		},{ passive: false });
 
-		doc && jmUtils.bindEvent(doc,'touchend', function(evt) {
+		doc && (this.eventEvents['touchend'] = jmUtils.bindEvent(doc,'touchend', function(evt) {
 			return instance.touchEnd(evt);
-		},{ passive: false });
+		},{ passive: false }));
 
-		doc && jmUtils.bindEvent(doc,'touchcancel', function(evt) {
+		doc && (this.eventEvents['touchcancel'] = jmUtils.bindEvent(doc,'touchcancel', function(evt) {
 			return instance.touchCancel(evt);
-		},{ passive: false });
+		},{ passive: false }));
+	}
+
+	// 销毁所有事件
+	destory() {
+		for(let name in this.eventEvents) {
+			const event = this.eventEvents[name];
+			if(!event || !event.fun) continue;
+			jmUtils.removeEvent(event.target, name, event.fun);
+		}
 	}
 }
 
@@ -1466,6 +1479,8 @@ class jmKeyEvent {
 		this.instance = instance;
 		this.container = container;
 		this.target = target || container;
+
+		this.eventEvents = {};// 所有绑定的事件
 
 		this.init(container, target);
 	}
@@ -1496,30 +1511,39 @@ class jmKeyEvent {
 			return true;
 		};
 
-		doc && jmUtils.bindEvent(doc,'keypress',function(evt) {
+		doc && (this.eventEvents['touchcancel'] = jmUtils.bindEvent(doc,'keypress',function(evt) {
 			evt = evt || window.event;
 			if(!checkKeyEvent(evt)) return;//如果事件为其它输入框，则不响应
 			let r = container.raiseEvent('keypress',evt);
 			if(r === false && evt.preventDefault) 
 				evt.preventDefault();
 			return r;
-		});
-		doc && jmUtils.bindEvent(doc,'keydown',function(evt) {
+		}));
+		doc && (this.eventEvents['touchcancel'] = jmUtils.bindEvent(doc,'keydown',function(evt) {
 			evt = evt || window.event;
 			if(!checkKeyEvent(evt)) return;//如果事件为其它输入框，则不响应
 			let r = container.raiseEvent('keydown',evt);
 			if(r === false && evt.preventDefault) 
 				evt.preventDefault();
 			return r;
-		});
-		doc && jmUtils.bindEvent(doc,'keyup',function(evt) {
+		}));
+		doc && (this.eventEvents['touchcancel'] = jmUtils.bindEvent(doc,'keyup',function(evt) {
 			evt = evt || window.event;
 			if(!checkKeyEvent(evt)) return;//如果事件为其它输入框，则不响应
 			let r = container.raiseEvent('keyup',evt);
 			if(r === false && evt.preventDefault) 
 				evt.preventDefault();
 			return r;
-		});			
+		}));			
+	}
+
+	// 销毁所有事件
+	destory() {
+		for(let name in this.eventEvents) {
+			const event = this.eventEvents[name];
+			if(!event || !event.fun) continue;
+			jmUtils.removeEvent(event.target, name, event.fun);
+		}
 	}
 }
 
@@ -1575,7 +1599,9 @@ class jmControl extends jmProperty {
 
 		this.initializing();	
 		
-		this.on = this.bind;		
+		this.on = this.bind;
+		
+		this.options = params;
 	}
 
 	//# region 定义属性
@@ -1748,10 +1774,10 @@ class jmControl extends jmProperty {
 	 */
 	initializing() {
 
-		var self = this;
+		const self = this;
 		//定义子元素集合
 		this.children = this.children || new jmList();
-		var oadd = this.children.add;
+		const oadd = this.children.add;
 		//当把对象添加到当前控件中时，设定其父节点
 		this.children.add = function(obj) {
 			if(typeof obj === 'object') {
@@ -1788,6 +1814,7 @@ class jmControl extends jmProperty {
 		/**
 		 * 根据控件zIndex排序，越大的越高
 		 */
+		//const osort = this.children.sort;
 		this.children.sort = function() {
 			const levelItems = {};
 			//提取zindex大于0的元素
@@ -1799,21 +1826,21 @@ class jmControl extends jmProperty {
 					zindex = Number(obj.style.zIndex);
 					if(isNaN(zindex)) zindex=obj.style.zIndex||0;
 				}
-				if(zindex) {
-					let items = levelItems[zindex] || (levelItems[zindex] = []);
-					items.push(obj);					
-				}
+				let items = levelItems[zindex] || (levelItems[zindex] = []);
+				items.push(obj);
 			});
+
+			this.splice(0, this.length);
 			
 			for(let index in levelItems) {
-				// 先从数组内去掉， 再加到进后
-				for(let i=0; i< levelItems[index].length; i++) {
-					this.oremove(levelItems[index][i]);
-				}
 				oadd.call(this, levelItems[index]);
 			}
-
-			self.needUpdate = true;
+			/*
+			osort.call(this, (c1, c2) => {
+				let zindex1 = c1.zIndex || c1.style.zIndex || 0;
+				let zindex2 = c2.zIndex || c2.style.zIndex || 0;
+				return zindex1 - zindex2;
+			});*/
 		};
 		this.children.clear = function() {
 			this.each(function(i,obj) {
@@ -1856,6 +1883,9 @@ class jmControl extends jmProperty {
 		style = style || this.style;
 		if(!style) return;
 
+		// 当前根据屏幕放大倍数，如果有倍数，则需要对线宽等同比放大
+		let scale = this.graph.devicePixelRatio;
+
 		/**
 		 * 样式设定
 		 * 
@@ -1894,6 +1924,26 @@ class jmControl extends jmProperty {
 					//颜色转换
 					if(t == 'string' && ['fillStyle', 'strokeStyle', 'shadowColor'].indexOf(mpname) > -1) {
 						style = jmUtils.toColor(style);
+					}
+
+					// 按比例需要放大的样式
+					if(scale && style) {
+						switch(mpname) {
+							case 'lineWidth': {
+								style *= scale;
+								break;
+							}
+							// 字体放大
+							case 'fontSize':
+							case 'font': {
+								const ms = style.toString().match(/[\d\.]+/);
+								if(ms && ms.length) {
+									const size = Number(ms[0]) * scale;
+									style = style.toString().replace(ms[0], size);
+								}
+								break;
+							}
+						}
 					}					
 					this.context[mpname] = style;
 				}	
@@ -1948,11 +1998,6 @@ class jmControl extends jmProperty {
 									style.offsetX,//水平位移
 									style.offsetY);//垂直位移
 							}								
-							break;
-						}
-						//位移
-						case 'translate' : {
-							this.context.translate(style.x,style.y);			
 							break;
 						}
 						//鼠标指针
@@ -2079,11 +2124,11 @@ class jmControl extends jmProperty {
 		local.width = this.width;
 		local.height = this.height;
 
-		let margin = this.style.margin || {};
-		margin.left = margin.left || 0;
-		margin.top = margin.top || 0;
-		margin.right = margin.right || 0;
-		margin.bottom = margin.bottom || 0;
+		let margin = jmUtils.clone(this.style.margin, {});
+		margin.left = (margin.left || 0) * this.graph.devicePixelRatio;
+		margin.top = (margin.top || 0) * this.graph.devicePixelRatio;
+		margin.right = (margin.right || 0) * this.graph.devicePixelRatio;
+		margin.bottom = (margin.bottom || 0) * this.graph.devicePixelRatio;
 		
 		//如果没有指定位置，但指定了margin。则位置取margin偏移量
 		if(local.position) {
@@ -2511,10 +2556,13 @@ class jmControl extends jmProperty {
 		if(this.type == 'jmGraph') {
 			//获取dom位置
 			let position = this.getPosition();
-			if(p.pageX > position.right || p.pageX < position.left) {
+			// 由于高清屏会有放大坐标，所以这里用pagex就只能用真实的canvas大小
+			const right = position.left + (this.canvas.clientWidth || this.canvas.offsetWidth || this.canvas.width);
+			const bottom = position.top + (this.canvas.clientHeight || this.canvas.offsetHeight || this.canvas.height);
+			if(p.pageX > right || p.pageX < position.left) {
 				return false;
 			}
-			if(p.pageY > position.bottom || p.pageY < position.top) {
+			if(p.pageY > bottom || p.pageY < position.top) {
 				return false;
 			}	
 			return true;
@@ -2596,10 +2644,18 @@ class jmControl extends jmProperty {
 		if(this.visible === false) return ;//如果不显示则不响应事件	
 		if(!args.position) {		
 			let graph = this.graph;
-			
-			let position = jmUtils.getEventPosition(args, graph.scaleSize, graph.devicePixelRatio);//初始化事件位置		
 
-			let srcElement = args.srcElement || args.target;
+			let srcElement = args.srcElement || args.target;			
+			
+			let position = jmUtils.getEventPosition(args, graph.scaleSize);//初始化事件位置		
+
+			// 如果有指定scale高清处理，需要对坐标处理
+			// 因为是对canvas放大N倍，再把style指定为当前大小，所以坐标需要放大N    && srcElement === graph.canvas      
+			if(graph.devicePixelRatio > 0) {
+				position.x = position.offsetX = position.x * devicePixelRatio;
+				position.y = position.offsetY = position.y * devicePixelRatio;
+			}
+		
 			args = {
 				position: position,
 				button: args.button == 0||position.isTouch?1:args.button,
@@ -2943,6 +2999,8 @@ class jmGraph extends jmControl {
 		super(option, 'jmGraph');
 
 		this.option = option || {};
+		
+		this.devicePixelRatio = 1; // 根据屏幕的缩放倍数
 
 		/**
 		 * 工具类
@@ -2963,13 +3021,18 @@ class jmGraph extends jmControl {
 			else if(canvas.length) {
 				canvas = canvas[0];
 			}
+
 			if(canvas.tagName != 'CANVAS') {
+				this.container = canvas;
 				let cn = document.createElement('canvas');
 				canvas.appendChild(cn);
 				cn.width = canvas.offsetWidth||canvas.clientWidth;
 				cn.height = canvas.offsetHeight||canvas.clientHeight;
 				canvas = cn;
 			}	
+			else {
+				this.container = canvas.parentElement;
+			}
 
 			this.context = canvas.getContext('2d');
 		}
@@ -3015,12 +3078,7 @@ class jmGraph extends jmControl {
 
 		//如果指定了自动刷新
 		if(this.option.autoRefresh) {
-			const self = this; 
-			function update() {
-				if(self.needUpdate) self.redraw();
-				requestAnimationFrame(update);
-			}
-			requestAnimationFrame(update);
+			this.autoRefresh();
 		}
 
 		if(callback) callback(this);		
@@ -3390,14 +3448,26 @@ class jmGraph extends jmControl {
 	 * @param {function} callback 执行回调
 	 */
 	autoRefresh(callback) {
-		var self = this;
+		if(this.___isAutoRefreshing) return;
+		const self = this;
+		this.___isAutoRefreshing = true;
 		function update() {
+			if(self.destoryed) {
+				self.___isAutoRefreshing = false;
+				return;// 已销毁
+			}
 			if(self.needUpdate) self.redraw();
 			requestAnimationFrame(update);
 			if(callback) callback();
 		}
-		update();
+		requestAnimationFrame(update);
 		return this;
+	}
+
+	// 销毁当前对象
+	destory() {
+		this.eventHandler.destory();
+		this.destoryed = true;// 标记已销毁
 	}
 }
 
@@ -3727,7 +3797,7 @@ var defaultStyle = {
     grid: {
       x: true,
       // 是否显示网格
-      y: true,
+      y: false,
       stroke: 'rgb(229,229,229)',
       lineType: 'dotted',
       // 虚线，不填为实线
@@ -3767,12 +3837,12 @@ var defaultStyle = {
       length: 1,
       fill: '#000',
       margin: {
-        left: 1,
+        left: 2,
         top: 6,
         right: 8,
         bottom: 0
       },
-      textAlign: 'center',
+      textAlign: 'right',
       textBaseline: 'middle',
       font: '12px Arial',
       zIndex: 20,
@@ -4334,8 +4404,6 @@ class jmAxis extends jmArrawLine {
 
     this.field = options.field || '';
     this.index = options.index || 0;
-    this.format = options.format || this.format; // 可以重写格式化label参数
-
     this.init(options);
   } // 初始化一些参数
   // 这个函数可能会重入。
@@ -4482,23 +4550,24 @@ class jmAxis extends jmArrawLine {
     //var count = this.style.xLabel.count || this.data.length;	
     //字符串轴。则显示每个标签	
 
-    const top = this.style.xLabel.margin.top || 0;
+    const format = this.options.format || this.format;
+    const top = (this.style.xLabel.margin.top || 0) * this.graph.devicePixelRatio;
 
-    for (var i = 0; i < this.data.length; i++) {
+    for (let i = 0; i < this.data.length; i++) {
       const d = this.data[i];
-      const v = d[this.field];
-      const w = i * step;
+      const v = d[this.field]; // 不显示就不生成label。这里性能影响很大
+
+      const text = format.call(this, v, d, i); // 格式化label
+
+      if (!text) continue; /// 只有一条数据，就取这条数据就可以了	
+
+      const w = (this.data.length === 1 ? 1 : i) * step;
       const label = this.graph.createShape(jmLabel, {
         style: this.style.xLabel
       });
       label.data = d; // 当前点的数据结构值			
 
-      label.text = this.format(v, d, i); // 格式化label
-
-      if (!label.text) {
-        label.visible = false;
-      }
-
+      label.text = text;
       this.labels.push(label);
       this.children.add(label);
       label.width = label.testSize().width + 2;
@@ -4535,7 +4604,7 @@ class jmAxis extends jmArrawLine {
         y: this.start.y + (this.style.length || 5)
       }); //如果进行了旋转，则处理位移
 
-      var rotation = label.style.rotation;
+      const rotation = label.style.rotation;
 
       if (rotation && rotation.angle) {
         //设定旋转原点为label左上角					
@@ -4547,7 +4616,7 @@ class jmAxis extends jmArrawLine {
         };
       } else {
         // 如果标签居中，则把二头的标签左边的左对齐，右边的右对齐
-        if (this.style.align === 'center' && (i === 0 || i === this.data.length - 1 && this.data.length > 1)) {
+        if (this.style.align === 'center' && this.data.length > 1 && (i === 0 || i === this.data.length - 1)) {
           if (i === this.data.length - 1) {
             pos.x -= label.width;
           }
@@ -4581,30 +4650,35 @@ class jmAxis extends jmArrawLine {
     }*/
 
     let pervalue = mm / count || 1;
-    if (pervalue > 1 || pervalue < -1) pervalue = Math.floor(pervalue);else pervalue = Number(pervalue.toFixed(2));
+    if (pervalue > 1 || pervalue < -1) pervalue = Math.floor(pervalue);
+    const format = this.options.format || this.format;
 
-    for (var p = min; p <= max; p += pervalue) {
-      var v = p;
-      var h = (v - min) * step;
-      var label = this.graph.graph.createShape(jmLabel, {
+    for (let p = min; p <= max; p += pervalue) {
+      const h = (p - min) * step; // 当前点的偏移高度
+
+      const label = this.graph.graph.createShape(jmLabel, {
         style: this.style.yLabel
       });
-      label.text = this.format(v, label); // 格式化label
+      label.text = format.call(this, p, label); // 格式化label
 
       this.labels.push(label);
       this.children.add(label);
       const w = label.testSize().width;
       const offy = this.height - h; // 刻度的偏移量
-      //计算标签位置
+      // label的位置
+
+      const pos = {
+        x: this.style.yLabel.margin.left * this.graph.devicePixelRatio - this.start.x,
+        y: 0
+      };
+      let axiswidth = 0; //计算标签位置
 
       if (index <= 1) {
         //轴的宽度
-        var axiswidth = this.style.yLabel.margin.right + w + label.style.length;
-        this.width = Math.max(axiswidth, this.width);
-        var pos = {
-          x: -axiswidth,
-          y: offy - label.height / 2
-        }; //在轴上画小标记m表示移至当前点开画
+        axiswidth = this.style.yLabel.margin.right * this.graph.devicePixelRatio + w + label.style.length;
+        this.width = Math.max(axiswidth, this.width); //pos.x = - axiswidth;
+
+        pos.y = offy - label.height / 2; //在轴上画小标记m表示移至当前点开画
 
         this.scalePoints.push({
           x: this.start.x,
@@ -4633,12 +4707,10 @@ class jmAxis extends jmArrawLine {
         }
       } else {
         //轴的宽度
-        var axiswidth = this.style.yLabel.margin.left + w + label.style.length;
-        this.width = Math.max(axiswidth, this.width);
-        var pos = {
-          x: this.style.yLabel.margin.left + label.style.length,
-          y: offy - label.height / 2
-        }; //在轴上画小标记m表示移至当前点开画
+        axiswidth = this.style.yLabel.margin.left * this.graph.devicePixelRatio + w + label.style.length;
+        this.width = Math.max(axiswidth, this.width); //pos.x = this.style.yLabel.margin.left * this.graph.devicePixelRatio + label.style.length;
+
+        pos.y = offy - label.height / 2; //在轴上画小标记m表示移至当前点开画
 
         this.scalePoints.push({
           x: this.start.x,
@@ -4649,10 +4721,28 @@ class jmAxis extends jmArrawLine {
           x: this.start.x + label.style.length,
           y: offy + this.end.y
         });
+      } // label对齐方式
+
+
+      switch (this.style.yLabel.textAlign) {
+        case 'center':
+          {
+            pos.x = pos.x / 2 - w / 2;
+            break;
+          }
+
+        case 'right':
+          {
+            if (index <= 1) pos.x = -axiswidth;else {
+              // 轴在最右边时，轴宽减去label宽就是右对齐
+              pos.x = axiswidth - w;
+            }
+            break;
+          }
       } //如果进行了旋转，则处理位移
 
 
-      var rotation = label.style.rotation;
+      const rotation = label.style.rotation;
 
       if (rotation && rotation.angle) {
         label.translate = pos; //先位移再旋转
@@ -4725,7 +4815,11 @@ class jmAxis extends jmArrawLine {
 
 
     if (this.dataType == 'number') {
-      var m = this._max;
+      let m = this._max; // 如果有指定默认最大值，则不超过它就采用它
+
+      if (typeof this.maxValue != 'undefined' && m <= this.maxValue) {
+        return this.maxValue;
+      }
 
       if (m <= 0) {
         if (m >= -10) m = 0;else m = -10;
@@ -4740,11 +4834,6 @@ class jmAxis extends jmArrawLine {
         m = m * 10 + 10;
       } else {
         m = Math.ceil(m);
-      } // 如果有指定默认最大值，则不超过它就采用它
-
-
-      if (typeof this.maxValue != 'undefined') {
-        return Math.max(this.maxValue, m);
       }
 
       return m;
@@ -4775,7 +4864,11 @@ class jmAxis extends jmArrawLine {
 
 
     if (this.dataType == 'number') {
-      var m = this._min;
+      let m = this._min; // 如果有指定默认最小值，则不小于它就采用它
+
+      if (typeof this.minValue != 'undefined') {
+        return Math.min(this.minValue, m);
+      }
 
       if (m >= 0) {
         if (m <= 10) m = 0;else {
@@ -4792,11 +4885,6 @@ class jmAxis extends jmArrawLine {
         m = m * 10 - 10;
       } else {
         m = Math.floor(m);
-      } // 如果有指定默认最小值，则不小于它就采用它
-
-
-      if (typeof this.minValue != 'undefined') {
-        return Math.min(this.minValue, m);
       }
 
       return m;
@@ -4826,20 +4914,23 @@ class jmAxis extends jmArrawLine {
 
   step() {
     if (this.type == 'x') {
-      var w = this.width; //如果排版为内联，则单位占宽减少一个单位,
+      const w = this.width; //如果排版为内联，则单位占宽减少一个单位,
       //也就是起始位从一个单位开始
 
       if (this.graph.style.layout == 'inside') {
-        var sp = w / this.max();
+        const sp = w / this.max();
         this.labelStart = sp / 2;
         return sp;
       } else {
         this.labelStart = 0;
       }
 
-      return w / (this.max() - 1);
+      let tmp = this.max() - 1;
+      if (tmp === 0) tmp = 2; // 只有一个数据的情况，就直接居中
+
+      return w / tmp;
     } else if (this.type == 'y') {
-      var h = this.height;
+      const h = this.height;
 
       switch (this.dataType) {
         case 'string':
@@ -4851,7 +4942,7 @@ class jmAxis extends jmArrawLine {
         case 'number':
         default:
           {
-            var tmp = Math.abs(this.max() - this.min());
+            let tmp = Math.abs(this.max() - this.min());
             tmp = tmp || 1;
             return h / tmp;
           }
@@ -4939,15 +5030,18 @@ jmLegend.prototype.append = function (series, shape, options = {}) {
   /*const hover = options.hover || function() {	
   	//应用图的动态样式		
   	//Object.assign(series.style, series.style.hover);
-  		//Object.assign(this.style, this.style.hover || {});
-  		//series.graph.refresh();
+  
+  	//Object.assign(this.style, this.style.hover || {});
+  
+  	//series.graph.refresh();
   };
   panel.bind('mouseover', hover);
   //执行离开
   const leave = options.leave || function() {	
   	//应用图的普通样式		
   	//Object.assign(series.style, series.style.normal);
-  		//Object.assign(this.style, this.style.normal || {});
+  
+  	//Object.assign(this.style, this.style.normal || {});
   	//jmUtils.apply(this.series.style.normal,this.series.style);
   	//series.graph.refresh();
   };
@@ -5003,21 +5097,21 @@ jmLegend.prototype.reset = function () {
         {
           this.graph.chartArea.width = this.graph.chartArea.width - this.width; //画图区域向右偏移
 
-          this.graph.chartArea.position.x = this.position.x + this.width + this.style.margin.right;
+          this.graph.chartArea.position.x = this.position.x + this.width + this.style.margin.right * this.graph.devicePixelRatio;
           break;
         }
 
       case 'top':
         {
           this.graph.chartArea.height = this.graph.chartArea.height - this.height;
-          this.graph.chartArea.position.y = this.position.y + this.height + this.style.margin.bottom;
+          this.graph.chartArea.position.y = this.position.y + this.height + this.style.margin.bottom * this.graph.devicePixelRatio;
           break;
         }
 
       case 'bottom':
         {
           this.graph.chartArea.height = this.graph.chartArea.height - this.height;
-          this.position.y = this.graph.chartArea.position.y + this.graph.chartArea.height + this.style.margin.top;
+          this.position.y = this.graph.chartArea.position.y + this.graph.chartArea.height + this.style.margin.top * this.graph.devicePixelRatio;
           break;
         }
 
@@ -5025,7 +5119,7 @@ jmLegend.prototype.reset = function () {
       default:
         {
           this.graph.chartArea.width = this.graph.chartArea.width - this.width;
-          this.position.x = this.graph.chartArea.position.x + this.graph.chartArea.width + this.style.margin.left;
+          this.position.x = this.graph.chartArea.position.x + this.graph.chartArea.width + this.style.margin.left * this.graph.devicePixelRatio;
           break;
         }
     }
@@ -5173,7 +5267,7 @@ jmSeries.prototype.createPoints = function (data) {
   const ystep = this.yAxis.step();
   this.dataPoints = [];
 
-  for (var i = 0; i < data.length; i++) {
+  for (let i = 0; i < data.length; i++) {
     const s = data[i];
     const xv = s[this.xAxis.field];
     const yv = s[this.field];
@@ -5185,7 +5279,7 @@ jmSeries.prototype.createPoints = function (data) {
       yLabel: yv
     }; // 这里的点应相对于chartArea
 
-    p.x = xstep * i + this.xAxis.labelStart; //如果Y值不存在。则此点无效，不画图
+    p.x = xstep * (data.length === 1 ? 1 : i) + this.xAxis.labelStart; //如果Y值不存在。则此点无效，不画图
 
     if (yv == null || typeof yv == 'undefined') {
       p.m = true;
@@ -5385,6 +5479,8 @@ class jmArc extends jmPath {
 		this.endAngle = params.end || params.endAngle || Math.PI * 2;		
 
 		this.anticlockwise = params.anticlockwise  || 0;
+
+		this.isFan = !!params.isFan;
 	}	
 
 	/**
@@ -5493,6 +5589,8 @@ class jmArc extends jmPath {
 			end = p2 - end;
 		}
 		if(start > end) step = -step;
+
+		if(this.isFan) this.points.push(location.center);// 如果是扇形，则从中心开始画
 		
 		//椭圆方程x=a*cos(r) ,y=b*sin(r)	
 		for(let r=start;;r += step) {	
@@ -5552,7 +5650,7 @@ class jmPieSeries extends jmSeries {
     const ani = typeof this.enableAnimate === 'undefined' ? this.graph.enableAnimate : this.enableAnimate;
     var startAni = 0;
     var cm = Math.PI * 2;
-    const radius = Math.min(center.x - this.style.margin.left - this.style.margin.right, center.y - this.style.margin.top - this.style.margin.bottom);
+    const radius = Math.min(center.x - this.style.margin.left - this.style.margin.right * this.graph.devicePixelRatio, center.y - this.style.margin.top * this.graph.devicePixelRatio - this.style.margin.bottom * this.graph.devicePixelRatio);
     const arc = this.graph.createShape(jmArc, {
       center: center,
       radius: radius,
@@ -5864,7 +5962,7 @@ class jmLineSeries extends jmSeries {
     this.style.item.stroke = this.style.color;
     let shapePoints = []; // 计算出来的曲线点集合			
 
-    for (var i = 0; i < len; i++) {
+    for (let i = 0; i < len; i++) {
       const p = points[i]; //如果当前点无效，则跳致下一点
 
       if (typeof p.y === 'undefined' || p.y === null) {
@@ -6066,21 +6164,31 @@ class jmMarkLine extends jmLine {
 
     if (this.markLineType === 'y') {
       // 重置所有图形
-      var shape;
+      let shape;
 
       while (shape = this.shapes.shift()) {
         shape && shape.remove();
       }
 
+      this.changeTouchPoint();
+    }
+  } // 滑动点改变事件
+
+
+  changeTouchPoint() {
+    // 纵标线，中间标小圆圈
+    if (this.markLineType === 'y') {
       const touchPoints = []; // 命中的数据点
 
-      const graph = this.graph;
-      let touchChange = false; // 根据线条数生成标点个数
+      const graph = this.graph.chartGraph || this.graph;
+      let touchChange = false; // 查找最近的X坐标
+
+      const findX = graph !== this.graph ? this.start.x - graph.chartArea.position.x : this.start.x; // 根据线条数生成标点个数
 
       for (let serie of graph.series) {
         // 得有数据描点的才展示圆
         if (!serie.getDataPointByX) continue;
-        const point = serie.getDataPointByX(this.start.x); // 找到最近的数据点
+        const point = serie.getDataPointByX(findX); // 找到最近的数据点
 
         if (!point) continue;
         const style = graph.utils.clone(this.style, {
@@ -6088,14 +6196,13 @@ class jmMarkLine extends jmLine {
         }, true);
         this.markArc = graph.createShape(jmArc, {
           style,
-          radius: this.style.radius || 5
+          radius: (this.style.radius || 5) * this.graph.devicePixelRatio
         });
         this.markArc.center.y = point.y;
         this.children.add(this.markArc);
         this.shapes.add(this.markArc); // x轴改变，表示变换了位置
 
         if (!touchChange && (!serie.lastMarkPoint || serie.lastMarkPoint.x != point.x)) touchChange = true;
-        this.start.x = this.end.x = point.x;
         touchPoints.push(point);
         serie.lastMarkPoint = point; // 记下最后一次改变的点
       } // 触发touch数据点改变事件
@@ -6117,30 +6224,60 @@ class jmMarkLine extends jmLine {
   move(args) {
     // 事件是挂在graph下的，，但此轴是放在chartArea中的。所以事件判断用graph坐标，但是当前位置要相对于chartArea
     if (this.visible && this.markLineType === 'x') {
-      if (args.position.y <= this.graph.chartArea.position.y) {
-        this.start.y = this.end.y = 0;
-      } else if (args.position.y > this.graph.chartArea.height + this.graph.chartArea.position.y) {
-        this.start.y = this.end.y = this.graph.chartArea.height;
+      // 有操作层的情况下，相对于左上角，否则是chartarea
+      if (this.graph.chartGraph) {
+        if (args.position.y <= this.graph.chartGraph.chartArea.position.y) {
+          this.start.y = this.end.y = this.graph.chartGraph.chartArea.position.y;
+        } else if (args.position.y > this.graph.chartGraph.chartArea.height + this.graph.chartGraph.chartArea.position.y) {
+          this.start.y = this.end.y = this.graph.chartGraph.chartArea.height + this.graph.chartGraph.chartArea.position.y;
+        } else {
+          this.start.y = this.end.y = args.position.y;
+        }
+
+        this.start.x = this.graph.chartGraph.chartArea.position.x;
+        this.end.x = this.start.x + this.graph.chartGraph.chartArea.width;
       } else {
-        this.start.y = this.end.y = args.position.y - this.graph.chartArea.position.y;
+        if (args.position.y <= this.graph.chartArea.position.y) {
+          this.start.y = this.end.y = 0;
+        } else if (args.position.y > this.graph.chartArea.height + this.graph.chartArea.position.y) {
+          this.start.y = this.end.y = this.graph.chartArea.height;
+        } else {
+          this.start.y = this.end.y = args.position.y - this.graph.chartArea.position.y;
+        }
+
+        this.start.x = 0;
+        this.end.x = this.graph.chartArea.width;
       }
 
-      this.start.x = 0;
-      this.end.x = this.graph.chartArea.width;
       this.needUpdate = true;
     }
 
     if (this.visible && this.markLineType === 'y') {
-      if (args.position.x < this.graph.chartArea.position.x) {
-        this.start.x = this.end.x = 0;
-      } else if (args.position.x > this.graph.chartArea.width + this.graph.chartArea.position.x) {
-        this.start.x = this.end.x = this.graph.chartArea.width;
+      // 有操作层的情况下，相对于左上角，否则是chartarea
+      if (this.graph.chartGraph) {
+        if (args.position.x < this.graph.chartGraph.chartArea.position.x) {
+          this.start.x = this.end.x = this.graph.chartGraph.chartArea.position.x;
+        } else if (args.position.x > this.graph.chartGraph.chartArea.width + this.graph.chartGraph.chartArea.position.x) {
+          this.start.x = this.end.x = this.graph.chartGraph.chartArea.width + this.graph.chartGraph.chartArea.position.x;
+        } else {
+          this.start.x = this.end.x = args.position.x;
+        }
+
+        this.start.y = this.graph.chartGraph.chartArea.position.y;
+        this.end.y = this.start.y + this.graph.chartGraph.chartArea.height;
       } else {
-        this.start.x = this.end.x = args.position.x - this.graph.chartArea.position.x;
+        if (args.position.x < this.graph.chartArea.position.x) {
+          this.start.x = this.end.x = 0;
+        } else if (args.position.x > this.graph.chartArea.width + this.graph.chartArea.position.x) {
+          this.start.x = this.end.x = this.graph.chartArea.width;
+        } else {
+          this.start.x = this.end.x = args.position.x - this.graph.chartArea.position.x;
+        }
+
+        this.start.y = 0;
+        this.end.y = this.graph.chartArea.height;
       }
 
-      this.start.y = 0;
-      this.end.y = this.graph.chartArea.height;
       this.needUpdate = true;
     }
   }
@@ -6168,7 +6305,7 @@ class jmMarkLine extends jmLine {
 class jmChart extends jmGraph {
   constructor(container, options) {
     options = options || {};
-    options.autoRefresh = typeof options.autoRefresh === 'undefined' ? true : options.autoRefresh; // 深度复制默认样式，以免被改
+    options.autoRefresh = typeof options.autoRefresh === 'undefined' ? false : options.autoRefresh; // 深度复制默认样式，以免被改
 
     options.style = jmUtils.clone(defaultStyle, options.style, true);
     super(container, options);
@@ -6182,7 +6319,9 @@ class jmChart extends jmGraph {
     this.data = options.data || []; // x轴绑定的字段名
 
     this.xField = options.xField || '';
-    this.init(options);
+    this.init(options); // 创建操作图层
+
+    this.createTouchGraph(this.container, options);
   }
   /**
    * 绑定的数据源
@@ -6199,20 +6338,23 @@ class jmChart extends jmGraph {
      * @type jmControl
      */
 
-    this.chartArea = this.chartArea || this.createShape(jmRect, {
-      style: this.style.chartArea,
-      position: {
-        x: 0,
-        y: 0
-      }
-    });
-    this.children.add(this.chartArea);
+    if (!this.chartArea) {
+      this.chartArea = this.createShape(jmRect, {
+        style: this.style.chartArea,
+        position: {
+          x: 0,
+          y: 0
+        }
+      });
+      this.children.add(this.chartArea);
+    }
     /**
      * 图例
      *
      * @property legend
      * @type jmLegend
      */
+
 
     this.legend = this.legend || this.createShape(jmLegend, {
       style: this.style.legend
@@ -6232,58 +6374,91 @@ class jmChart extends jmGraph {
     //this.chartArea.children.add(this.tooltip);
 
 
-    this.createXAxis({
-      minXValue: options.minXValue,
-      maxXValue: options.maxXValue,
-      format: options.xLabelFormat
-    }); // 生成X轴
-    // 生成标线，可以跟随鼠标或手指滑动
+    this.createXAxis(); // 生成X轴
+  } // 创建一个操作层，以免每次刷新
+
+
+  createTouchGraph(container, options) {
+    if (container.tagName === 'CANVAS') {
+      container = container.parentElement;
+    }
+
+    container.style.position = 'relative';
+    options = this.utils.clone(options, {
+      autoRefresh: true
+    }, true);
+    let graph = this.touchGraph = this; // 生成图层, 当图刷新慢时，需要用一个操作图层来进行滑动等操作重绘
+
+    if (options.touchGraph) {
+      let cn = document.createElement('canvas');
+      cn.width = container.offsetWidth || container.clientWidth;
+      cn.height = container.offsetHeight || container.clientHeight;
+      cn.style.position = 'absolute';
+      cn.style.top = 0;
+      cn.style.left = 0;
+      this.touchGraph = graph = new jmGraph(cn, options);
+      container.appendChild(cn);
+      this.touchGraph.chartGraph = this;
+      this.on('propertyChange', (name, args) => {
+        if (['width', 'height'].includes(name)) {
+          this.touchGraph[name] = args.newValue / this.devicePixelRatio;
+        }
+      });
+    }
+
+    graph.on('beginDraw', () => {
+      // 重置标线，会处理小圆圈问题
+      this.xMarkLine && this.xMarkLine.init();
+      this.yMarkLine && this.yMarkLine.init();
+    }); // 生成标线，可以跟随鼠标或手指滑动
 
     if (this.style.markLine && this.style.markLine.x) {
-      this.xMarkLine = this.createShape(jmMarkLine, {
+      this.xMarkLine = graph.createShape(jmMarkLine, {
         type: 'x',
         style: this.style.markLine
       });
-      this.chartArea.children.add(this.xMarkLine);
+      const area = graph.chartArea || graph;
+      area.children.add(this.xMarkLine);
     }
 
     if (this.style.markLine && this.style.markLine.y) {
-      this.yMarkLine = this.createShape(jmMarkLine, {
+      this.yMarkLine = graph.createShape(jmMarkLine, {
         type: 'y',
         style: this.style.markLine
       });
-      this.chartArea.children.add(this.yMarkLine);
+      const area = graph.chartArea || graph;
+      area.children.add(this.yMarkLine);
     }
 
-    this.on('mousedown touchstart', function (args) {
-      if (this.graph.xMarkLine) {
-        this.graph.xMarkLine.visible = true;
-        this.graph.xMarkLine.move(args);
+    graph.on('mousedown touchstart', args => {
+      if (this.xMarkLine) {
+        this.xMarkLine.visible = true;
+        this.xMarkLine.move(args);
       }
 
-      if (this.graph.yMarkLine) {
-        this.graph.yMarkLine.visible = true;
-        this.graph.yMarkLine.move(args);
+      if (this.yMarkLine) {
+        this.yMarkLine.visible = true;
+        this.yMarkLine.move(args);
       }
     }); // 移动标线
 
-    this.on('mousemove touchmove', function (args) {
-      if (this.graph.xMarkLine && this.graph.xMarkLine.visible) {
-        this.graph.xMarkLine.move(args);
+    graph.on('mousemove touchmove', args => {
+      if (this.xMarkLine && this.xMarkLine.visible) {
+        this.xMarkLine.move(args);
       }
 
-      if (this.graph.yMarkLine && this.graph.yMarkLine.visible) {
-        this.graph.yMarkLine.move(args);
+      if (this.yMarkLine && this.yMarkLine.visible) {
+        this.yMarkLine.move(args);
       }
     }); // 取消移动
 
-    this.on('mouseup touchend touchcancel touchleave', function (args) {
-      if (this.graph.xMarkLine && this.graph.xMarkLine.visible) {
-        this.graph.xMarkLine.cancel(args);
+    graph.on('mouseup touchend touchcancel touchleave', args => {
+      if (this.xMarkLine && this.xMarkLine.visible) {
+        this.xMarkLine.cancel(args);
       }
 
-      if (this.graph.yMarkLine && this.graph.yMarkLine.visible) {
-        this.graph.yMarkLine.cancel(args);
+      if (this.yMarkLine && this.yMarkLine.visible) {
+        this.yMarkLine.cancel(args);
       }
     });
   } // 重置整个图表
@@ -6302,202 +6477,221 @@ class jmChart extends jmGraph {
       }
 
       serie.remove();
+    } // 轴删除
+
+
+    if (this.xAxis) {
+      this.xAxis.remove();
+      delete this.xAxis;
     }
+
+    if (this.yAxises) {
+      for (let i in this.yAxises) {
+        this.yAxises[i].remove();
+      }
+
+      delete this.yAxises;
+    }
+  }
+  /**
+   * 获取颜色
+   *
+   * @method getColor 
+   * @param {int} index 颜色索引
+   */
+
+
+  getColor(index) {
+    //如果颜色超过最大个数，则重新获取	
+    if (index >= this.style.chartColors.length) {
+      index = Math.floor((index - 1) / this.style.chartColors.length);
+    }
+
+    return this.style.chartColors[index];
+  }
+  /**
+   * 绘制当前图表
+   * 先绘制轴等基础信息
+   *
+   * @method beginDraw 
+   */
+
+
+  beginDraw() {
+    //const startTime = Date.now();
+    //重置图例
+    this.legend && this.legend.init(); //先定位图例等信息，确定画图区域
+
+    this.resetAreaPosition();
+
+    if (this.xAxis) {
+      this.xAxis.clear();
+    } //计算Y轴位置
+
+
+    if (this.yAxises) {
+      for (let i in this.yAxises) {
+        this.yAxises[i].clear();
+      }
+    } //console.log('beginDraw1', Date.now() - startTime);
+    //计算柱形图个数
+
+
+    this.barSeriesCount = 0; //初始化图序列，并初始化轴值,生成图例项
+
+    this.series.each(function (i, serie) {
+      //设定边框颜色和数据项图示颜 色
+      serie.style.color = serie.style.color || serie.graph.getColor(i); //如果排版指定非内缩的方式，但出现了柱图，还是会采用内缩一个刻度的方式
+
+      if (serie.graph.style.layout != 'inside') {
+        if (serie.graph.utils.isType(serie, jmBarSeries)) {
+          serie.graph.style.layout = 'inside';
+        }
+      } //对柱图计算,并标记为第几个柱图，用为排列
+
+
+      if (serie.graph.utils.isType(serie, jmBarSeries)) {
+        serie.barIndex = serie.graph.barSeriesCount;
+        serie.graph.barSeriesCount++;
+      }
+
+      serie.reset();
+    }); //console.log('beginDraw2', Date.now() - startTime);
+    //重置图例
+
+    this.legend && this.legend.reset();
+
+    if (this.xAxis) {
+      this.xAxis.reset();
+    } //计算Y轴位置
+
+
+    if (this.yAxises) {
+      for (var i in this.yAxises) {
+        this.yAxises[i].reset();
+      }
+    } //console.log('beginDraw3', Date.now() - startTime);
+    //最后再来初始化图形，这个必须在轴初始化完后才能执行
+
+
+    this.series.each(function (i, serie) {
+      serie.init && serie.init();
+    }); //console.log('beginDraw4', Date.now() - startTime);
+  }
+  /**
+   * 重新定位区域的位置
+   *
+   * @method resetAreaPosition
+   */
+
+
+  resetAreaPosition() {
+    this.chartArea.position.x = (this.style.margin.left || 0) * this.graph.devicePixelRatio;
+    this.chartArea.position.y = (this.style.margin.top || 0) * this.graph.devicePixelRatio;
+    const w = this.width - this.style.margin.right * this.graph.devicePixelRatio - this.chartArea.position.x;
+    const h = this.height - this.style.margin.bottom * this.graph.devicePixelRatio - this.chartArea.position.y;
+    this.chartArea.width = w;
+    this.chartArea.height = h;
+  }
+  /**
+   * 创建轴
+   *
+   * @method createAxis
+   * @for jmChart
+   * @param {string} [type] 轴类型(x/y/radar),默认为x
+   * @param {string} [dataType] 当前轴的数据类型(number/date/string),默认为 number
+   * @param {object} [style] 样式
+   * @return {axis} 轴
+   */
+
+
+  createAxis(options) {
+    // 深度组件默认样式
+    options.style = options.style ? this.utils.clone(this.style.axis, options.style, true) : this.style.axis;
+    const axis = this.createShape(jmAxis, options);
+    this.children.add(axis);
+    return axis;
+  }
+  /**
+   * 生成X轴
+   *
+   * @method createXAxis
+   * @param {string} x轴的数据类型(string/number/date)
+   * @param {bool} 是否从0开始
+   */
+
+
+  createXAxis(options) {
+    if (!this.xAxis) {
+      options = Object.assign({
+        field: this.xField,
+        type: 'x',
+        minXValue: this.options.minXValue,
+        maxXValue: this.options.maxXValue,
+        format: this.options.xLabelFormat
+      }, options || {});
+      this.xAxis = this.createAxis(options);
+    }
+
+    return this.xAxis;
+  }
+  /**
+   * 生成Y轴
+   *
+   * @method createYAxis
+   * @param {int} Y轴索引，可以创建多个Y轴
+   * @param {string} y轴的数据类型(string/number/date)
+   * @param {bool} 是否从0开始
+   */
+
+
+  createYAxis(options) {
+    options.index = options.index || 1;
+    options.type = 'y';
+
+    if (!this.yAxises) {
+      this.yAxises = {};
+    }
+
+    var yaxis = this.yAxises[options.index] || (this.yAxises[options.index] = this.createAxis(options));
+    return yaxis;
+  }
+  /**
+   * 创建图形
+   *
+   * @method createSeries
+   * @for jmChart
+   * @param {string} [type] 图类型，（line/bar/pie/radar）
+   * @param {object} [options] 生成图表选项 {xField, yField, index}
+   * @return {series} 图形
+   */
+
+
+  createSeries(type, options = {}) {
+    if (!this.serieTypes) {
+      this.serieTypes = {
+        'line': jmLineSeries,
+        'bar': jmBarSeries,
+        'pie': jmPieSeries
+      };
+    } //默认样式为类型对应的样式
+
+
+    const style = this.style[type] || this.style['line']; // 深度组件默认样式
+
+    options.style = this.utils.clone(style, options.style, true);
+    if (typeof type == 'string') type = this.serieTypes[type];
+    const serie = this.createShape(type, options);
+
+    if (serie) {
+      this.series.add(serie);
+      this.chartArea.children.add(serie);
+    }
+
+    return serie;
   }
 
 }
-/**
- * 获取颜色
- *
- * @method getColor 
- * @param {int} index 颜色索引
- */
-
-jmChart.prototype.getColor = function (index) {
-  //如果颜色超过最大个数，则重新获取	
-  if (index >= this.style.chartColors.length) {
-    index = Math.floor((index - 1) / this.style.chartColors.length);
-  }
-
-  return this.style.chartColors[index];
-};
-/**
- * 绘制当前图表
- * 先绘制轴等基础信息
- *
- * @method beginDraw 
- */
-
-
-jmChart.prototype.beginDraw = function () {
-  //重置图例
-  this.legend && this.legend.init(); //先定位图例等信息，确定画图区域
-
-  this.resetAreaPosition();
-
-  if (this.xAxis) {
-    this.xAxis.clear();
-  } //计算Y轴位置
-
-
-  if (this.yAxises) {
-    for (var i in this.yAxises) {
-      this.yAxises[i].clear();
-    }
-  } //计算柱形图个数
-
-
-  this.barSeriesCount = 0; //初始化图序列，并初始化轴值,生成图例项
-
-  this.series.each(function (i, serie) {
-    //设定边框颜色和数据项图示颜 色
-    serie.style.color = serie.style.color || serie.graph.getColor(i); //如果排版指定非内缩的方式，但出现了柱图，还是会采用内缩一个刻度的方式
-
-    if (serie.graph.style.layout != 'inside') {
-      if (serie.graph.utils.isType(serie, jmBarSeries)) {
-        serie.graph.style.layout = 'inside';
-      }
-    } //对柱图计算,并标记为第几个柱图，用为排列
-
-
-    if (serie.graph.utils.isType(serie, jmBarSeries)) {
-      serie.barIndex = serie.graph.barSeriesCount;
-      serie.graph.barSeriesCount++;
-    }
-
-    serie.reset();
-  }); //重置图例
-
-  this.legend && this.legend.reset();
-
-  if (this.xAxis) {
-    this.xAxis.reset();
-  } //计算Y轴位置
-
-
-  if (this.yAxises) {
-    for (var i in this.yAxises) {
-      this.yAxises[i].reset();
-    }
-  } //最后再来初始化图形，这个必须在轴初始化完后才能执行
-
-
-  this.series.each(function (i, serie) {
-    serie.init && serie.init();
-  }); // 重置标线，会处理小圆圈问题
-
-  this.xMarkLine && this.xMarkLine.init();
-  this.yMarkLine && this.yMarkLine.init();
-};
-/**
- * 重新定位区域的位置
- *
- * @method resetAreaPosition
- */
-
-
-jmChart.prototype.resetAreaPosition = function () {
-  this.chartArea.position.x = this.style.margin.left || 0;
-  this.chartArea.position.y = this.style.margin.top || 0;
-  var w = this.width - this.style.margin.right - this.chartArea.position.x;
-  var h = this.height - this.style.margin.bottom - this.chartArea.position.y;
-  this.chartArea.width = w;
-  this.chartArea.height = h;
-};
-/**
- * 创建轴
- *
- * @method createAxis
- * @for jmChart
- * @param {string} [type] 轴类型(x/y/radar),默认为x
- * @param {string} [dataType] 当前轴的数据类型(number/date/string),默认为 number
- * @param {object} [style] 样式
- * @return {axis} 轴
- */
-
-
-jmChart.prototype.createAxis = function (options) {
-  // 深度组件默认样式
-  options.style = options.style ? this.utils.clone(this.style.axis, options.style, true) : this.style.axis;
-  const axis = this.createShape(jmAxis, options);
-  this.children.add(axis);
-  return axis;
-};
-/**
- * 生成X轴
- *
- * @method createXAxis
- * @param {string} x轴的数据类型(string/number/date)
- * @param {bool} 是否从0开始
- */
-
-
-jmChart.prototype.createXAxis = function (options) {
-  if (!this.xAxis) {
-    options = Object.assign({
-      field: this.xField,
-      type: 'x'
-    }, options);
-    this.xAxis = this.createAxis(options);
-  }
-
-  return this.xAxis;
-};
-/**
- * 生成Y轴
- *
- * @method createYAxis
- * @param {int} Y轴索引，可以创建多个Y轴
- * @param {string} y轴的数据类型(string/number/date)
- * @param {bool} 是否从0开始
- */
-
-
-jmChart.prototype.createYAxis = function (options) {
-  options.index = options.index || 1;
-  options.type = 'y';
-
-  if (!this.yAxises) {
-    this.yAxises = {};
-  }
-
-  var yaxis = this.yAxises[options.index] || (this.yAxises[options.index] = this.createAxis(options));
-  return yaxis;
-};
-/**
- * 创建图形
- *
- * @method createSeries
- * @for jmChart
- * @param {string} [type] 图类型，（line/bar/pie/radar）
- * @param {object} [options] 生成图表选项 {xField, yField, index}
- * @return {series} 图形
- */
-
-
-jmChart.prototype.createSeries = function (type, options = {}) {
-  if (!this.serieTypes) {
-    this.serieTypes = {
-      'line': jmLineSeries,
-      'bar': jmBarSeries,
-      'pie': jmPieSeries
-    };
-  } //默认样式为类型对应的样式
-
-
-  const style = this.style[type] || this.style['line']; // 深度组件默认样式
-
-  options.style = this.utils.clone(style, options.style, true);
-  if (typeof type == 'string') type = this.serieTypes[type];
-  const serie = this.createShape(type, options);
-
-  if (serie) {
-    this.series.add(serie);
-    this.chartArea.children.add(serie);
-  }
-
-  return serie;
-};
 
 var vchart = {
   props: {
@@ -6539,12 +6733,16 @@ var vchart = {
     this.initChart();
   },
 
+  // 销毁
+  destroyed() {
+    this.chartInstance && this.chartInstance.destory();
+    this.chartInstance && this.chartInstance.touchGraph && this.chartInstance.touchGraph.destory();
+  },
+
   watch: {
     // 数据发生改变，刷新
     chartData: function (newData, oldData) {
-      this.initChart();
-      this.chartInstance.data = newData;
-      this.chartInstance.refresh();
+      this.refresh();
     },
     width: function (newWidth, oldWidth) {
       if (!this.chartInstance) return;
@@ -6564,51 +6762,57 @@ var vchart = {
     initChart() {
       if (this.chartInstance) return;
       this.chartInstance = new jmChart(this.$refs.jmChartContainer, this.options);
-      this.refresh(); // 这里有死循环的问题，但上面 chartInstance不为空就返回了，就没有这个问题了
+      if (this.chartData && this.chartData.length) this.refresh(); // 这里有死循环的问题，但上面 chartInstance不为空就返回了，就没有这个问题了
       // touch改变数据点事件
 
       this.chartInstance.bind('touchPointChange', args => {
         this.$emit('touch-point-change', args);
       }); // touch事件
 
-      this.chartInstance.bind('touchstart mousedown', args => {
+      this.chartInstance.touchGraph.bind('touchstart mousedown', args => {
         this.$emit('touchstart', args);
         this.$emit('mousedown', args);
       });
-      this.chartInstance.bind('touchmove mousemove', args => {
+      this.chartInstance.touchGraph.bind('touchmove mousemove', args => {
         this.$emit('touchmove', args);
         this.$emit('mousemove', args);
       });
-      this.chartInstance.bind('touchend touchcancel mouseup', args => {
+      this.chartInstance.touchGraph.bind('touchend touchcancel mouseup', args => {
         this.$emit('touchend', args);
         this.$emit('mouseup', args);
+      });
+      this.chartInstance.touchGraph.bind('touchleave', args => {
+        this.$emit('touchleave', args);
       });
     },
 
     // 刷新图表
     refresh() {
-      this.initChart(); // 清空当前图形，重新生成
+      this.$nextTick(() => {
+        this.initChart(); // 清空当前图形，重新生成
 
-      this.chartInstance.reset(); // 生成图
+        this.chartInstance.reset(); // 生成图
 
-      if (this.chartSeries.length) {
-        for (let s of this.chartSeries) {
-          if (!s.type) {
-            console.error('必须指定serie type');
-            continue;
+        if (this.chartSeries.length) {
+          for (let s of this.chartSeries) {
+            if (!s.type) {
+              console.error('必须指定serie type');
+              continue;
+            }
+
+            this.chartInstance.createSeries(s.type, s);
           }
-
-          this.chartInstance.createSeries(s.type, s);
         }
-      }
 
-      this.chartInstance.data = this.chartData;
-      this.chartInstance.refresh();
+        this.chartInstance.data = this.chartData;
+        this.chartInstance.refresh();
+      });
     }
 
   },
   template: `<div ref="jmChartContainer" :style="{width: width, height: height}"></div>`
 };
 
-export default jmChart;
-export { jmChart, vchart as vChart };
+exports.default = jmChart;
+exports.jmChart = jmChart;
+exports.vChart = vchart;

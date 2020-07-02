@@ -5,7 +5,7 @@ const sourcemaps = require('rollup-plugin-sourcemaps');
 module.exports = {
     input: './index.js',
     output: {
-      file: 'dist/bundle.esm.js',
+      file: 'dist/jmchart.esm.js',
       /**
        * amd – 异步模块定义，用于像RequireJS这样的模块加载器
       cjs – CommonJS，适用于 Node 和 Browserify/Webpack

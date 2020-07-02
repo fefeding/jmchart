@@ -139,23 +139,23 @@ jmLegend.prototype.reset = function() {
 			case 'left': {
 				this.graph.chartArea.width = this.graph.chartArea.width - this.width;
 				//画图区域向右偏移
-				this.graph.chartArea.position.x = this.position.x + this.width + this.style.margin.right;
+				this.graph.chartArea.position.x = this.position.x + this.width + this.style.margin.right * this.graph.devicePixelRatio;
 				break;
 			}
 			case 'top': {
 				this.graph.chartArea.height = this.graph.chartArea.height - this.height;				
-				this.graph.chartArea.position.y = this.position.y + this.height + this.style.margin.bottom;
+				this.graph.chartArea.position.y = this.position.y + this.height + this.style.margin.bottom * this.graph.devicePixelRatio;
 				break;
 			}
 			case 'bottom': {
 				this.graph.chartArea.height = this.graph.chartArea.height - this.height;
-				this.position.y = this.graph.chartArea.position.y + this.graph.chartArea.height + this.style.margin.top;				
+				this.position.y = this.graph.chartArea.position.y + this.graph.chartArea.height + this.style.margin.top * this.graph.devicePixelRatio;				
 				break;
 			}
 			case 'right': 
 			default: {
 				this.graph.chartArea.width = this.graph.chartArea.width - this.width;
-				this.position.x = this.graph.chartArea.position.x + this.graph.chartArea.width + this.style.margin.left;
+				this.position.x = this.graph.chartArea.position.x + this.graph.chartArea.width + this.style.margin.left * this.graph.devicePixelRatio;
 				break;
 			}
 		}	

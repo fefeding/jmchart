@@ -145,7 +145,7 @@ jmSeries.prototype.createPoints = function(data) {
 	const ystep = this.yAxis.step();	
 
 	this.dataPoints = [];
-	for(var i=0;i < data.length; i++) {
+	for(let i=0;i < data.length; i++) {
 		const s = data[i];
 		
 		const xv = s[this.xAxis.field];
@@ -160,7 +160,7 @@ jmSeries.prototype.createPoints = function(data) {
 		};
 		
 		// 这里的点应相对于chartArea
-		p.x = xstep * i + this.xAxis.labelStart;			
+		p.x = xstep * (data.length === 1? 1: i) + this.xAxis.labelStart;			
 
 		//如果Y值不存在。则此点无效，不画图
 		if(yv == null || typeof yv == 'undefined') {

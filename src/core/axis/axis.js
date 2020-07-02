@@ -33,8 +33,6 @@ export default class jmAxis extends jmArrawLine {
 
 		this.field = options.field || '';
 		this.index = options.index || 0;
-		
-		this.format = options.format || this.format;// 可以重写格式化label参数
 
 		this.init(options);
 	}
@@ -214,25 +212,29 @@ export default class jmAxis extends jmArrawLine {
 		//最多显示标签个数
 		//var count = this.style.xLabel.count || this.data.length;	
 		//字符串轴。则显示每个标签	
-		const top = this.style.xLabel.margin.top || 0;		
-		for(var i=0; i< this.data.length;i++) {	
+		const format = this.options.format || this.format;
+		const top = (this.style.xLabel.margin.top || 0) * this.graph.devicePixelRatio;	
+		for(let i=0; i< this.data.length;i++) {	
 			const d = this.data[i];
 			const v = d[this.field]; 	
 			
-			const w = i * step;
+			// 不显示就不生成label。这里性能影响很大
+			const text = format.call(this, v, d, i); // 格式化label
+			if(!text) continue;
+
+			/// 只有一条数据，就取这条数据就可以了	
+			const w = (this.data.length === 1? 1: i) * step;
+
 			const label = this.graph.createShape(jmLabel, {
 				style: this.style.xLabel
 			});
 			label.data = d; // 当前点的数据结构值			
 
-			label.text = this.format(v, d, i); // 格式化label
-
-			if(!label.text) {
-				label.visible = false;
-			}
+			label.text = text;
 
 			this.labels.push(label);
 			this.children.add(label);
+
 			label.width =  label.testSize().width + 2;
 			label.height = 15;
 
@@ -270,7 +272,7 @@ export default class jmAxis extends jmArrawLine {
 			});
 			
 			//如果进行了旋转，则处理位移
-			var rotation = label.style.rotation;
+			const rotation = label.style.rotation;
 			if(rotation && rotation.angle) {
 				//设定旋转原点为label左上角					
 				rotation.point = pos;
@@ -279,9 +281,9 @@ export default class jmAxis extends jmArrawLine {
 			}
 			else {
 				// 如果标签居中，则把二头的标签左边的左对齐，右边的右对齐
-				if(this.style.align === 'center' && (
-					i === 0 || (i === this.data.length - 1 && this.data.length > 1)
-				)) {
+				if(this.style.align === 'center' && this.data.length > 1 && (
+					i === 0 || i === this.data.length - 1)
+				) {
 					if(i === this.data.length - 1) {
 						pos.x -= label.width;
 					}
@@ -313,32 +315,38 @@ export default class jmAxis extends jmArrawLine {
 			count = mm;
 		}*/
 		let pervalue = (mm / count) || 1;
-		if(pervalue > 1 || pervalue < -1) pervalue = Math.floor(pervalue);
-		else pervalue = Number(pervalue.toFixed(2));
+		if(pervalue > 1 || pervalue < -1) pervalue = Math.floor(pervalue);		
+			
+		const format = this.options.format || this.format;
 
-		for(var p =min;p <= max;p += pervalue) {
-			var v = p;
-			var h = (v - min) * step;
-			var label = this.graph.graph.createShape(jmLabel, {
+		for(let p =min;p <= max;p += pervalue) {
+			const h = (p - min) * step; // 当前点的偏移高度
+			const label = this.graph.graph.createShape(jmLabel, {
 				style: this.style.yLabel
 			});
-			label.text = this.format(v, label); // 格式化label
+			label.text = format.call(this, p, label); // 格式化label
 			this.labels.push(label);
 			this.children.add(label);
 
 			const w = label.testSize().width;
 			const offy = this.height - h; // 刻度的偏移量
+			// label的位置
+			const pos = {
+				x: this.style.yLabel.margin.left * this.graph.devicePixelRatio - this.start.x,
+				y: 0
+			};
+
+			let axiswidth = 0;
 
 			//计算标签位置
 			if(index <= 1) {
 				//轴的宽度
-				var axiswidth = this.style.yLabel.margin.right + w + label.style.length;
+				axiswidth = this.style.yLabel.margin.right * this.graph.devicePixelRatio + w + label.style.length;
 				this.width = Math.max(axiswidth, this.width);
 				
-				var pos = {
-					x: -axiswidth,
-					y: offy - label.height / 2
-				};
+				//pos.x = - axiswidth;
+				pos.y = offy - label.height / 2;
+
 				//在轴上画小标记m表示移至当前点开画
 				this.scalePoints.push({
 					x: this.start.x,
@@ -369,13 +377,12 @@ export default class jmAxis extends jmArrawLine {
 			}
 			else {
 				//轴的宽度
-				var axiswidth = this.style.yLabel.margin.left + w + label.style.length;
+				axiswidth = this.style.yLabel.margin.left * this.graph.devicePixelRatio + w + label.style.length;
 				this.width = Math.max(axiswidth, this.width);
 
-				var pos = {
-					x: this.style.yLabel.margin.left + label.style.length,
-					y: offy - label.height / 2
-				};
+				//pos.x = this.style.yLabel.margin.left * this.graph.devicePixelRatio + label.style.length;
+				pos.y = offy - label.height / 2;
+
 				//在轴上画小标记m表示移至当前点开画
 				this.scalePoints.push({
 					x: this.start.x,
@@ -387,9 +394,30 @@ export default class jmAxis extends jmArrawLine {
 					y: offy + this.end.y
 				});
 			}
+
+			// label对齐方式
+			switch(this.style.yLabel.textAlign) {
+				case 'center': {
+					pos.x = pos.x / 2 - w / 2;
+					break;
+				}
+				case 'right': {
+					if(index <= 1) pos.x = - axiswidth;
+					else {
+						// 轴在最右边时，轴宽减去label宽就是右对齐
+						pos.x = axiswidth - w;
+					}
+					break;
+				}
+				// 默认就是左对齐，无需处理
+				case 'left':
+				default: {
+					break;
+				}
+			}
 			
 			//如果进行了旋转，则处理位移
-			var rotation = label.style.rotation;
+			const rotation = label.style.rotation;
 			if(rotation && rotation.angle) {
 				label.translate = pos;//先位移再旋转
 				label.position = {x: -w / 2, y: 0};
@@ -450,7 +478,13 @@ export default class jmAxis extends jmArrawLine {
 
 		//如果是数字类型，则在最大值基础上加一定的值
 		if(this.dataType == 'number') {
-			var m = this._max;
+			let m = this._max;
+
+			// 如果有指定默认最大值，则不超过它就采用它
+			if(typeof this.maxValue != 'undefined' && m <= this.maxValue)  {
+				return this.maxValue;
+			}
+
 			if(m <= 0) {
 				if(m >= -10) m = 0;
 				else m = -10;
@@ -470,10 +504,7 @@ export default class jmAxis extends jmArrawLine {
 			else {
 				m = Math.ceil(m);
 			}
-			// 如果有指定默认最大值，则不超过它就采用它
-			if(typeof this.maxValue != 'undefined')  {
-				return Math.max(this.maxValue, m);
-			}
+			
 			return m;
 		}	
 
@@ -500,7 +531,13 @@ export default class jmAxis extends jmArrawLine {
 
 		//如果是数字类型，则在最小值基础上减去一定的值
 		if(this.dataType == 'number') {
-			var m = this._min;
+			let m = this._min;
+
+			// 如果有指定默认最小值，则不小于它就采用它
+			if(typeof this.minValue != 'undefined')  {
+				return Math.min(this.minValue, m);
+			}
+
 			if(m >= 0) {
 				if(m <= 10) m = 0;
 				else {
@@ -522,14 +559,11 @@ export default class jmAxis extends jmArrawLine {
 			else {
 				m = Math.floor(m);
 			}
-			// 如果有指定默认最小值，则不小于它就采用它
-			if(typeof this.minValue != 'undefined')  {
-				return Math.min(this.minValue, m);
-			}
+			
 			return m;
 		}
 		//如果为字符串则返回0
-		return this.dataType == 'string'?0:this._min;
+		return this.dataType == 'string'? 0: this._min;
 	}
 
 	/**
@@ -550,23 +584,25 @@ export default class jmAxis extends jmArrawLine {
 	 */
 	step() {
 		if(this.type == 'x') {
-			var w = this.width;
+			const w = this.width;
 
 			//如果排版为内联，则单位占宽减少一个单位,
 			//也就是起始位从一个单位开始
 			if(this.graph.style.layout == 'inside') {
-				var sp =  w / this.max();	
+				const sp =  w / this.max();	
 				this.labelStart = sp / 2;
 				return sp;
 			}	
 			else {
 				this.labelStart = 0;
-			}		
-			return w / (this.max() - 1);					
+			}	
+			let tmp = this.max() - 1;	
+			if(tmp === 0) tmp = 2; // 只有一个数据的情况，就直接居中
+			return w / tmp;					
 				
 		}		
 		else if(this.type == 'y') {
-			var h = this.height;
+			const h = this.height;
 			switch(this.dataType) {					
 				case 'string': {
 					return h / this.max();
@@ -574,7 +610,7 @@ export default class jmAxis extends jmArrawLine {
 				case 'date':
 				case 'number': 
 				default: {
-					var tmp = Math.abs(this.max() - this.min());
+					let tmp = Math.abs(this.max() - this.min());
 					tmp = tmp || 1;
 					return h / tmp;
 				}

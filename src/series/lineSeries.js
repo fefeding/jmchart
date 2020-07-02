@@ -63,7 +63,7 @@ export default class jmLineSeries extends jmSeries {
 
 		let shapePoints = []; // 计算出来的曲线点集合			
 		
-		for(var i=0; i< len;i++) {
+		for(let i=0; i< len;i++) {
 			const p = points[i];
 			
 			//如果当前点无效，则跳致下一点
