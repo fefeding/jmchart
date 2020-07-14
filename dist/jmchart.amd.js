@@ -360,7 +360,8 @@ define(['module', 'exports'], function (module, exports) { 'use strict';
               screenY: evt.screenY,
               x: ox,
               y: oy,
-              isTouch: isTouch
+              isTouch: isTouch,
+              touches
           };
       }
 
@@ -2010,10 +2011,10 @@ define(['module', 'exports'], function (module, exports) { 'use strict';
 
   		//一些特殊属性要先设置，否则会导致顺序不对出现错误的效果
   		if(this.translate) {
-  			__setStyle({translate: this.translate}, 'translate');
+  			__setStyle(this.translate, 'translate');
   		}
   		if(this.transform) {
-  			__setStyle({transform: this.transform}, 'transform');
+  			__setStyle(this.transform, 'transform');
   		}
   		//设置样式
   		for(let k in style) {
@@ -2667,19 +2668,20 @@ define(['module', 'exports'], function (module, exports) { 'use strict';
   		args.path = args.path||[]; //事件冒泡路径
 
   		//先执行子元素事件，如果事件没有被阻断，则向上冒泡
-  		//var stoped = false;
+  		let stoped = false;
   		if(this.children) {
-  			this.children.each(function(j, el) {	
-  				// 如果同级已有命中，则不再需要处理兄弟节点
-  				if(args.target) return false;
+  			this.children.each(function(j, el) {
   				//未被阻止才执行			
   				if(args.cancel !== true) {
   					//如果被阻止冒泡，
-  					//stoped = el.raiseEvent(name,args) === false?true:stoped;
-  					el.raiseEvent(name, args);
+  					stoped = el.raiseEvent(name, args) === false? true: stoped;
+  					// 不再响应其它元素
+  					if(stoped) return false;
   				}
   			}, true);//按逆序处理
   		}
+  		// 如果已被阻止，不再响应上级事件
+  		if(stoped) return false;
   		
   		//获取当前对象的父元素绝对位置
   		//生成当前坐标对应的父级元素的相对位置
@@ -2689,23 +2691,11 @@ define(['module', 'exports'], function (module, exports) { 'use strict';
   		args.position.x = args.position.offsetX - abounds.left;
   		args.position.y = args.position.offsetY - abounds.top;
 
-  		// 相对当前控件的坐标点
-  		/*if(this.absoluteBounds) {
-  			args.curPosition = {
-  				x: args.position.offsetX - this.absoluteBounds.left,
-  				y: args.position.offsetY - this.absoluteBounds.top
-  			};
-  		}
-  		else {
-  			args.curPosition = args.position;
-  		}*/
-
   		// 是否在当前控件内操作
   		const inpos = this.interactive !== false && this.checkPoint(args.position);
   		
   		//事件发生在边界内或健盘事件发生在画布中才触发
-  		// 如果有target 表示当前事件已被命中其它节点，则不再需要判断这里
-  		if(inpos && !args.target) {
+  		if(inpos) {
   			//如果没有指定触发对象，则认为当前为第一触发对象
   			if(!args.target) {
   				args.target = this;
@@ -2715,7 +2705,7 @@ define(['module', 'exports'], function (module, exports) { 'use strict';
 
   			if(!this.focused && (name === 'mousemove' || name === 'touchmove')) {
   				this.focused = true;//表明当前焦点在此控件中
-  				this.raiseEvent(name === 'mousemove'? 'mouseover': 'touchover',args);
+  				this.raiseEvent(name === 'mousemove'? 'mouseover': 'touchover', args);
   			}	
   		}
   		else {
@@ -2729,7 +2719,7 @@ define(['module', 'exports'], function (module, exports) { 'use strict';
   			}	
   		}
   			
-  		return args.cancel == false;//如果被阻止则返回false,否则返回true
+  		return args.cancel === false;//如果被阻止则返回false,否则返回true
   	}
 
   	/**
@@ -2746,16 +2736,16 @@ define(['module', 'exports'], function (module, exports) { 'use strict';
   			//如果返回true则阻断冒泡
   			this.runEventHandle(name, args);//执行事件
 
-  			// 向父节点冒泡事件		
-  			if(args.cancel !== true && this.parent && this.parent.runEventAndPopEvent) {
-  				// 相对位置需要改为父节点的
-  				if(args.position) {
-  					let bounds = this.parent.getBounds();
-  					args.position.x += bounds.left;
-  					args.position.y += bounds.top;
-  				}
-  				this.parent.runEventAndPopEvent(name, args);
-  			}		
+  			// // 向父节点冒泡事件		
+  			// if(args.cancel !== true && this.parent && this.parent.runEventAndPopEvent) {
+  			// 	// 相对位置需要改为父节点的
+  			// 	if(args.position) {
+  			// 		let bounds = this.parent.getBounds();
+  			// 		args.position.x += bounds.left;
+  			// 		args.position.y += bounds.top;
+  			// 	}
+  			// 	this.parent.runEventAndPopEvent(name, args);
+  			// }		
   		}
   	}
 
@@ -5972,7 +5962,7 @@ define(['module', 'exports'], function (module, exports) { 'use strict';
         const linePoint = {
           x: p.x,
           y: this.graph.chartArea.height
-        }; // 如果要动画。则动态改变高度
+        }; // 如果要动画。则动态改变高度, dataChanged或动画没完成才需要执行，否则只是普通刷新s
 
         if (this.enableAnimate && (dataChanged || this.___animateCounter > 0)) {
           const height = Math.abs(p.y - linePoint.y);
@@ -6177,6 +6167,7 @@ define(['module', 'exports'], function (module, exports) { 'use strict';
       // 纵标线，中间标小圆圈
       if (this.markLineType === 'y') {
         const touchPoints = []; // 命中的数据点
+        // chartGraph 表示图表层，有可能当前graph为操作层
 
         const graph = this.graph.chartGraph || this.graph;
         let touchChange = false; // 查找最近的X坐标
@@ -6197,6 +6188,8 @@ define(['module', 'exports'], function (module, exports) { 'use strict';
             radius: (this.style.radius || 5) * this.graph.devicePixelRatio
           });
           this.markArc.center.y = point.y;
+          this.start.x = this.end.x = point.x; // 锁定在有数据点的X轴上
+
           this.children.add(this.markArc);
           this.shapes.add(this.markArc); // x轴改变，表示变换了位置
 

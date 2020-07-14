@@ -49,6 +49,7 @@ export default class jmMarkLine extends jmLine {
         // 纵标线，中间标小圆圈
         if(this.markLineType === 'y') {
             const touchPoints = []; // 命中的数据点
+            // chartGraph 表示图表层，有可能当前graph为操作层
             const graph = this.graph.chartGraph || this.graph;
             let touchChange = false;
             // 查找最近的X坐标
@@ -71,6 +72,8 @@ export default class jmMarkLine extends jmLine {
                 });
 
                 this.markArc.center.y = point.y;
+
+                this.start.x = this.end.x = point.x;// 锁定在有数据点的X轴上
 
                 this.children.add(this.markArc);
                 this.shapes.add(this.markArc);
