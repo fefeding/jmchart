@@ -6171,9 +6171,11 @@
         // chartGraph 表示图表层，有可能当前graph为操作层
 
         const graph = this.graph.chartGraph || this.graph;
+        const isTocuhGraph = graph !== this.graph; // 不在图表图层，在操作图层的情况
+
         let touchChange = false; // 查找最近的X坐标
 
-        const findX = graph !== this.graph ? this.start.x - graph.chartArea.position.x : this.start.x; // 根据线条数生成标点个数
+        const findX = isTocuhGraph ? this.start.x - graph.chartArea.position.x : this.start.x; // 根据线条数生成标点个数
 
         for (let serie of graph.series) {
           // 得有数据描点的才展示圆
@@ -6188,9 +6190,10 @@
             style,
             radius: (this.style.radius || 5) * this.graph.devicePixelRatio
           });
-          this.markArc.center.y = point.y;
-          this.start.x = this.end.x = point.x; // 锁定在有数据点的X轴上
+          this.markArc.center.y = point.y; // 锁定在有数据点的X轴上
+          // 如果在操作图层上， 点的X轴需要加上图表图层区域偏移量
 
+          this.start.x = this.end.x = isTocuhGraph ? point.x + graph.chartArea.position.x : point.x;
           this.children.add(this.markArc);
           this.shapes.add(this.markArc); // x轴改变，表示变换了位置
 
