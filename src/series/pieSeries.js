@@ -158,7 +158,7 @@ export default class jmPieSeries extends jmSeries {
 						center,
 						radius,
 						maxRadius: radius,
-						minRadius: radius * 0.8
+						minRadius: radius - (this.style.arcWidth || radius*0.2)
 					});
 
 					p.shape.getLocation = function() {			

@@ -29,36 +29,22 @@
 			import { jmChart } from '../dist/jmchart.esm.js';
 
 			(function load() {
-				var w = Math.max((window.innerWidth || window.document.body.clientWidth) * 0.9, 600);
-				var h = Math.max((window.innerHeight || window.document.body.clientHeight) * 0.6, 200);			
+				var w = Math.max((window.innerWidth || window.document.body.clientWidth) * 0.8, 300);
+				var h = Math.max((window.innerHeight || window.document.body.clientHeight) * 0.4, 200);			
 				inichart(w,h);
 			})();
 			
 
 			function inichart(w, h) {
-					var chart = new jmChart('mycanvas', {
+					var chart1 = new jmChart('mycanvas1', {
 						width: w,
 						height: h,
 						enableAnimate: false,
                         style: {
-                            // chartColors: [
-							// 	`radial-gradient(50% 50% 0 50% 50% 100%, 
-							// 					#42a4ff 0, 
-							// 					#62A2E0 0.5,
-							// 					#0D64B7 1)`,
-							// 	`radial-gradient(50% 50% 0 50% 50% 100%, 
-							// 					#fa7d7d 0, 
-							// 					#F2ADB2 0.5,
-							// 					#fa7d7d 1)`,
-							// 	`radial-gradient(50% 50% 0 50% 50% 100%, 
-							// 					#007aff 0, 
-							// 					#6CA7E8 0.5,
-							// 					#054893 1)`
-							// ]
                         }
                     });
 					
-					var pie = chart.createSeries('pie', {
+					var pie1 = chart1.createSeries('pie', {
 						field: 'y1',
 						legendFormat: function(options) {
 							return 'test' + options.data.x;
@@ -66,38 +52,78 @@
 						style: {
 							isHollow: true // 是否空心
 						}
+					});
+					
+					var chart2 = new jmChart('mycanvas2', {
+						width: w,
+						height: h,
+						enableAnimate: false,
+                        style: {
+							// 指定一个渐变的样式，这里也可以不指定，会用默认的
+                            chartColors: [
+								`radial-gradient(50% 50% 0 50% 50% 100%, 
+												#42a4ff 0, 
+												#62A2E0 0.5,
+												#0D64B7 1)`,
+								`radial-gradient(50% 50% 0 50% 50% 100%, 
+												#fa7d7d 0, 
+												#F2ADB2 0.5,
+												#fa7d7d 1)`,
+								`radial-gradient(50% 50% 0 50% 50% 100%, 
+												#007aff 0, 
+												#6CA7E8 0.5,
+												#054893 1)`
+							]
+                        }
+                    });
+					
+					var pie2 = chart2.createSeries('pie', {
+						field: 'y1',
+						legendFormat: function(options) {
+							return 'test' + options.data.x;
+						},
+						style: {
+							isHollow: false, // 是否空心
+							arcWidth: 50 // 空心时，圆弧的宽度, 不指定就默认20%半径
+						}
                     });
                     
                     const datacount = 3;
 					function refreshData() {
 						
-							chart.data = [];
+							const data = [];
 							for(var i = 0;i<datacount;i++) {
-								var data = {
+								const row = {
 									x : i,
 									y1 :  Math.random() * 200 - 100
 								};
 								if(i == 3) {
-									data.y = null;
+									row.y = null;
 								}
-								chart.data.push(data);
+								data.push(row);
 							}
 						
+						chart2.data = chart1.data = data;
 						//setTimeout(animate,500);
-						chart.refresh();
-						console.log(chart.data);
+						chart1.refresh();
+
+						chart2.refresh();
+
+						console.log(chart1.data);
 					}
 
 					
 					refreshData();
 
-					chart.utils.bindEvent(document.getElementById('btnRedraw'),'click', refreshData);
+					chart1.utils.bindEvent(document.getElementById('btnRedraw'),'click', refreshData);
 					
 				}
 		</script>
 	</head>
 	<body>
-		<div id="mycanvas">
+		<div id="mycanvas1">
+			</div>
+		<div id="mycanvas2">
 			</div>	
 			<button id="btnRedraw">重绘</button>		
 	</body>

@@ -93,16 +93,16 @@ jmLegend.prototype.append = function(series, shape, options = {}) {
 	};
 	panel.bind('mouseleave', leave);*/
 
-	var legendPosition = this.legendPosition || this.style.legendPosition;
+	const legendPosition = this.legendPosition || this.style.legendPosition;
 	if(legendPosition == 'top' || legendPosition == 'bottom') {
 		//顶部和底部图例横排，每次右移位一个单位图例
-		panel.position.x = this.width + 15;
+		panel.position.x = this.width + 15 * this.graph.devicePixelRatio;
 		this.width = panel.position.x + panel.width; // 把容器宽指定为所有图例宽和
 		this.height = Math.max(panel.height, this.height);
 	}
 	else {
 		//右边和左边图例竖排
-		panel.position.y += this.height + 5;
+		panel.position.y += this.height + 5 * this.graph.devicePixelRatio;
 		this.height = panel.position.y + panel.height;
 		this.width = Math.max(panel.width, this.width);
 	}
