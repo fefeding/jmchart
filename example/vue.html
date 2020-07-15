@@ -55,7 +55,7 @@
                     //width: 800,  // 可以这里指定，也可以VUE属性指定
                     //height: 600,
                     xField: 'x',// X轴对应在数据中的字段名
-                    //enableAnimate: false,
+                    enableAnimate: false,
                     touchGraph: true, // 是否依赖生成操作图层，当点比较多时，性能低下可以把它设为true
                     autoRefresh: false,
                     legendPosition: 'top', // 图例位置 top left right bottom
@@ -143,18 +143,18 @@
                             //curve: true, // 圆滑的曲线,
                             lineWidth: 1,
                             // 填充图形
-                            /*area: {
+                            area: {
                                 // 自定义填充颜色处理
                                 fill: function(style) {
                                     // 根据颜色生成渐变效果
                                     const color = this.graph.utils.hexToRGBA(this.style.stroke);
                                     return `linear-gradient(50% 0 50% 100%, 
                                         rgba(${color.r},${color.g},${color.b}, 0) 1, 
-                                        rgba(${color.r},${color.g},${color.b}, 0) 0.3,
-                                        rgba(${color.r},${color.g},${color.b}, 0.2) 0.1, 
+                                        rgba(${color.r},${color.g},${color.b}, 0) 0.8,
+                                        rgba(${color.r},${color.g},${color.b}, 0.2) 0.5, 
                                         rgba(${color.r},${color.g},${color.b}, 0.8) 0)`;
                                 }
-                            }*/
+                            }
                         }
                     };
 
@@ -183,9 +183,9 @@
                                     const color = this.graph.utils.hexToRGBA(this.style.stroke);
                                     return `linear-gradient(50% 0 50% 100%, 
                                         rgba(${color.r},${color.g},${color.b}, 0) 1, 
-                                        rgba(${color.r},${color.g},${color.b}, 0) 0.5,
-                                        rgba(${color.r},${color.g},${color.b}, 0) 0.3,
-                                        rgba(${color.r},${color.g},${color.b}, 0) 0.1, 
+                                        rgba(${color.r},${color.g},${color.b}, 0) 0.8,
+                                        rgba(${color.r},${color.g},${color.b}, 0.3) 0.5,
+                                        rgba(${color.r},${color.g},${color.b}, 0.5) 0.2, 
                                         rgba(${color.r},${color.g},${color.b}, 0.8) 0)`;
                                 }
                             }
@@ -256,7 +256,7 @@
     
                 function inichart() {
     
-                    const datacount = 365;   
+                    const datacount = 50;   
                     
                     // 动态加入数据
                     function animate() {

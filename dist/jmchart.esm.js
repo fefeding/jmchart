@@ -206,7 +206,7 @@ class jmUtils {
                 if(deep) {
                     let dest = [];
                     for(let i=0; i<source.length; i++) {
-                        dest.push(this.clone(source[i], deep));
+                        dest.push(this.clone(source[i], target[i], deep));
                     }
                     return dest;
                 }
@@ -1257,7 +1257,7 @@ class jmGradient {
 		//color step
 		const pars = ms[3].match(/((rgb(a)?\s*\([\d,\.\s]+\))|(#[a-zA-Z\d]+))\s+([\d\.]+)/ig);
 		if(pars && pars.length) {
-			for(let i=1;i<pars.length;i++) {
+			for(let i=0;i<pars.length;i++) {
 				const par = jmUtils.trim(pars[i]);
 				const spindex = par.lastIndexOf(' ');
 				if(spindex > -1) {			
@@ -5636,66 +5636,25 @@ class jmPieSeries extends jmSeries {
     const ani = typeof this.enableAnimate === 'undefined' ? this.graph.enableAnimate : this.enableAnimate;
     var startAni = 0;
     var cm = Math.PI * 2;
-    const radius = Math.min(center.x - this.style.margin.left - this.style.margin.right * this.graph.devicePixelRatio, center.y - this.style.margin.top * this.graph.devicePixelRatio - this.style.margin.bottom * this.graph.devicePixelRatio);
-    const arc = this.graph.createShape(jmArc, {
-      center: center,
-      radius: radius,
-      anticlockwise: true
-    });
-    const points = this.createPoints();
+    const radius = Math.min(center.x - this.style.margin.left - this.style.margin.right * this.graph.devicePixelRatio, center.y - this.style.margin.top * this.graph.devicePixelRatio - this.style.margin.bottom * this.graph.devicePixelRatio); // const arc = this.graph.createShape(jmArc, {
+    // 	center: center,
+    // 	radius: radius,
+    // 	anticlockwise: true
+    // });
 
-    if (ani) {
-      var endAni = points[0].per * cm;
+    const points = this.createPoints(center, radius);
 
-      function animate(points, start, endAni, cm, arc, index, series) {
-        var p = points[index];
-        var end = arc.endAngle || start;
-        end += 0.3; //完成一个，接替到下一个
+    {
+      const len = points.length;
 
-        if (end > endAni) {
-          end = endAni;
-        } //刷新角度
-
-
-        arc.startAngle = start;
-        arc.endAngle = end; //初始化扇形
-
-        p.shape.points = arc.initPoints();
-        p.shape.points.push(center); //终止当前动画
-
-        if (end == endAni) {
-          index++;
-
-          if (index < points.length) {
-            var nextpoint = points[index];
-
-            if (nextpoint) {
-              endAni = end + nextpoint.per * cm; //继续下一个动画
-
-              nextpoint.shape.animate(animate, 50, points, end, endAni, cm, arc, index, series);
-            } else {
-              console.log('point null');
-            }
-          } //绑定提示框
-          //series.bindTooltip(p.shape,p);
-
-
-          return false;
-        }
-      }
-
-      this.graph.animate(animate, 50, points, startAni, endAni, cm, arc, 0, this);
-    } else {
-      var len = points.length;
-
-      for (var i = 0; i < len; i++) {
-        var p = points[i];
-        var start = startAni;
+      for (let i = 0; i < len; i++) {
+        const p = points[i];
+        const start = startAni;
         startAni += p.per * cm;
-        arc.startAngle = start;
-        arc.endAngle = startAni;
-        p.shape.points = arc.initPoints();
-        p.shape.points.push(center); //绑定提示框
+        p.shape.startAngle = start;
+        p.shape.endAngle = startAni; // p.shape.points = arc.initPoints();
+        // p.shape.points.push(center);			
+        //绑定提示框
         //this.bindTooltip(p.shape, p);
       }
     }
@@ -5707,31 +5666,62 @@ class jmPieSeries extends jmSeries {
    */
 
 
-  createPoints() {
+  createPoints(center, radius) {
     if (!this.data) return [];
     const points = [];
-    var index = 0;
+    let index = 0;
 
     for (var i = 0; i < this.data.length; i++) {
-      var s = this.data[i];
-      var yv = s[this.field]; //如果Y值不存在。则此点无效，不画图
+      const s = this.data[i];
+      const yv = s[this.field]; //如果Y值不存在。则此点无效，不画图
 
       if (yv == null || typeof yv == 'undefined') {
         continue;
       } else {
-        var p = {
+        const p = {
           data: s,
           yValue: yv,
           yLabel: yv,
           style: this.graph.utils.clone(this.style)
-        };
-        p.style.stroke = p.style.color = this.graph.getColor(index);
-        p.style.fill = p.style.color; //计算占比
+        }; //p.style.color = this.graph.getColor(index);
 
-        p.per = Math.abs(p.yValue / this.totalValue);
-        p.shape = this.graph.createPath([], p.style);
-        this.shapes.add(p.shape);
-        this.graph.chartArea.children.add(p.shape);
+        p.style.fill = this.graph.getColor(index);
+
+        if (center && radius) {
+          //计算占比
+          p.per = Math.abs(p.yValue / this.totalValue);
+          p.shape = this.graph.createShape(jmArc, {
+            style: p.style,
+            anticlockwise: true,
+            isFan: true,
+            // 表示画扇形
+            center,
+            radius
+          });
+
+          p.shape.getLocation = function () {
+            const local = this.location = {
+              left: 0,
+              top: 0,
+              width: 0,
+              height: 0,
+              center: this.center,
+              radius: this.radius
+            };
+            local.left = this.center.x - this.radius;
+            local.top = this.center.y - this.radius;
+            local.width = local.height = this.radius * 2;
+            return local;
+          };
+
+          p.shape.getBounds = function () {
+            return this.getLocation();
+          };
+
+          this.shapes.add(p.shape);
+          this.graph.chartArea.children.add(p.shape);
+        }
+
         points.push(p);
         index++;
       }
@@ -5752,11 +5742,11 @@ jmPieSeries.prototype.createLegend = function () {
   if (!points || !points.length) return;
 
   for (let k in points) {
-    const p = this.shapes[k];
+    const p = points[k];
     if (!p) continue; //生成图例前的图标
 
     const style = this.graph.utils.clone(p.style);
-    style.fill = style.color; //delete style.stroke;
+    style.fill = style.fill; //delete style.stroke;
 
     const shape = this.graph.createShape(jmRect, {
       style: style,
