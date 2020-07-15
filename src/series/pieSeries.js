@@ -1,5 +1,6 @@
 import jmRect from 'jmgraph/src/shapes/jmRect.js';
 import jmArc from 'jmgraph/src/shapes/jmArc.js';
+import jmHArc from 'jmgraph/src/shapes/jmHArc.js';
 import jmSeries from './series.js';
 
 /**
@@ -150,16 +151,17 @@ export default class jmPieSeries extends jmSeries {
 					//计算占比
 					p.per = Math.abs(p.yValue / this.totalValue);
 					
-					p.shape = this.graph.createShape(jmArc, {
+					p.shape = this.graph.createShape(this.style.isHollow? jmHArc : jmArc, {
 						style: p.style,
 						anticlockwise: true,
 						isFan: true, // 表示画扇形
 						center,
-						radius
+						radius,
+						maxRadius: radius,
+						minRadius: radius * 0.8
 					});
 
-					p.shape.getLocation = function() {
-			
+					p.shape.getLocation = function() {			
 						const local = this.location = {
 							left: 0,
 							top: 0,
@@ -167,7 +169,7 @@ export default class jmPieSeries extends jmSeries {
 							height: 0,
 							center: this.center,
 							radius: this.radius
-							};
+						};
 
 						local.left = this.center.x - this.radius;
 						local.top = this.center.y - this.radius;
