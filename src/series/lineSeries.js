@@ -2,7 +2,6 @@ import jmBezier from 'jmgraph/src/shapes/jmBezier.js';
 import jmArc from 'jmgraph/src/shapes/jmArc.js';
 import jmPath from 'jmgraph/src/core/jmPath.js';
 import jmSeries from './series.js';
-import utils from '../common/utils.js';
 
 /**
  * 图形基类
@@ -31,24 +30,7 @@ export default class jmLineSeries extends jmSeries {
 	 */
 	init() {
 		//生成描点位
-		let points;	
-
-		// 如果有动画，则需要判断是否改变，不然不需要重新动画
-		let dataChanged = false;
-		if(this.enableAnimate) {
-			// 拷贝一份上次的点集合，用于判断数据是否改变
-			const lastPoints = this.graph.utils.clone(this.dataPoints, true);
-
-			// 重新生成描点
-			points = this.createPoints();
-
-			dataChanged = utils.arrayIsChange(lastPoints, points, (s, t) => {
-				return s.x === t.x && s.y === t.y;
-			});
-		}	
-		else {
-			points = this.createPoints();
-		}
+		const {points, dataChanged}  = super.init();	
 
 		//去除多余的线条
 		//当数据源线条数比现有的少时，删除多余的线条
@@ -61,8 +43,13 @@ export default class jmLineSeries extends jmSeries {
 		//var ani = typeof this.enableAnimate === 'undefined'? this.graph.enableAnimate: this.enableAnimate;
 		this.style.item.stroke = this.style.color;
 
+		// 是否正在动画中
+		const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0 );
+
 		let shapePoints = []; // 计算出来的曲线点集合			
-		
+		let aniIsEnd = true;// 当次是否结束动画
+		const aniCount = (this.style.aniCount || 10);
+
 		for(let i=0; i< len;i++) {
 			const p = points[i];
 			
@@ -78,25 +65,21 @@ export default class jmLineSeries extends jmSeries {
 				y: this.graph.chartArea.height
 			};
 
-			// 如果要动画。则动态改变高度, dataChanged或动画没完成才需要执行，否则只是普通刷新s
-			if(this.enableAnimate && (dataChanged || this.___animateCounter > 0 )) {
+			// 如果要动画。则动态改变高度, dataChanged或动画没完成才需要执行，否则只是普通刷新
+			if(isRunningAni) {
 				const height = Math.abs(p.y - linePoint.y);
-				const step = height / 100;
+				const step = height / aniCount;
 
 				const offHeight = step * this.___animateCounter;// 动态计算当前高度
 
 				// 当次动画完成
 				if(offHeight >= height) {
 					linePoint.y = p.y;
-					this.___animateCounter = 0;
 				}
 				else {
-					this.___animateCounter++;
+					aniIsEnd = false;
+
 					linePoint.y -= offHeight;// 计算高度
-					// next tick 再次刷新
-					setTimeout(()=>{
-						this.needUpdate = true;//需要刷新
-					});
 				}
 			}
 			else {
@@ -139,6 +122,18 @@ export default class jmLineSeries extends jmSeries {
 				}
 			}									
 			shapePoints.push(linePoint);
+		}
+
+		// 如果所有都已经结束，则重置成初始化状态
+		if(aniIsEnd) {
+			this.___animateCounter = 0;
+		}
+		else {	
+			this.___animateCounter++;		
+			// next tick 再次刷新
+			setTimeout(()=>{
+				this.needUpdate = true;//需要刷新
+			});
 		}
 
 		this.points = shapePoints;

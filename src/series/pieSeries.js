@@ -22,15 +22,16 @@ export default class jmPieSeries extends jmSeries {
 		this.yAxis.visible = false;
 	}
 
+	// 重新初始化图形
 	init() {
 	
 		//总和
 		this.totalValue = 0;
 		//计算最大值和最小值
 		if(this.data) {		
-			for(var i in this.data) {
-				var s = this.data[i];							
-				var vy = s[this.field];	
+			for(const i in this.data) {
+				const s = this.data[i];							
+				const vy = s[this.field];	
 				if(vy) {
 					this.totalValue += Math.abs(vy);
 				}	
@@ -41,78 +42,52 @@ export default class jmPieSeries extends jmSeries {
 			x: this.graph.chartArea.width / 2, 
 			y: this.graph.chartArea.height / 2
 		};
-
-		//是否启用动画效果
-		const ani = typeof this.enableAnimate === 'undefined'?this.graph.enableAnimate:this.enableAnimate;
-		
-		var startAni = 0;
-		var cm = Math.PI * 2;
 		
 		const radius = Math.min(center.x - this.style.margin.left - 
 			this.style.margin.right * this.graph.devicePixelRatio,
 			center.y - this.style.margin.top * this.graph.devicePixelRatio - this.style.margin.bottom * this.graph.devicePixelRatio);
-		// const arc = this.graph.createShape(jmArc, {
-		// 	center: center,
-		// 	radius: radius,
-		// 	anticlockwise: true
-		// });
-
-		const points = this.createPoints(center, radius);
-
 		
-		if(false) {
-			// var endAni = points[0].per * cm;
-			// function animate(points,start,endAni,cm,arc,index,series) {
-			// 	var p = points[index];
-			// 	var end = arc.endAngle || start;
-			// 	end += 0.3;
-				
-			// 	//完成一个，接替到下一个
-			// 	if(end > endAni) {
-			// 		end = endAni;				
-			// 	}
 
-			// 	//刷新角度
-			// 	arc.startAngle = start;
-			// 	arc.endAngle = end;
-			// 	//初始化扇形
-			// 	p.shape.points = arc.initPoints();
-			// 	p.shape.points.push(center);
-			// 	//终止当前动画
-			// 	if(end == endAni) {
-			// 		index ++;
-			// 		if(index < points.length) {					
-			// 			var nextpoint = points[index];
-			// 			if(nextpoint) {
-			// 				endAni = end + nextpoint.per * cm;
-			// 				//继续下一个动画
-			// 				nextpoint.shape.animate(animate,50,points,end,endAni,cm,arc,index,series);
-			// 			}
-			// 			else {
-			// 				console.log('point null');
-			// 			}
-			// 		}
-			// 		//绑定提示框
-			// 		//series.bindTooltip(p.shape,p);
-			// 		return false;
-			// 	}
-			// }
-			// this.graph.animate(animate,50, points,startAni,endAni,cm,arc,0,this);
-		}
-		else {
+		//生成描点位
+		// super.init会把参数透传给 createPoints
+		const { points, dataChanged }  = super.init(center, radius);	
+
+		// 是否正在动画中
+		const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0 );
+
+		// 在动画中，则一直刷新
+		if(isRunningAni) {
+			const aniCount = (this.style.aniCount || 20);
+			let aniIsEnd = true;// 当次是否结束动画
 			const len = points.length;
-			for(let i=0; i<len; i++) {
-				const p = points[i];		
-				const start = startAni;
-				startAni += p.per * cm;
+			for(let i=0; i<len; i++) {				
 
-				p.shape.startAngle = start;
-				p.shape.endAngle = startAni;
+				const p = points[i];
+				const step = (p.y - p.shape.startAngle) / aniCount;
 
+				p.shape.endAngle = p.shape.startAngle + this.___animateCounter * step;
+
+				if(p.shape.endAngle >= p.y) {
+					p.shape.endAngle = p.y;
+				}
+				else {
+					aniIsEnd = false;
+				}
 				// p.shape.points = arc.initPoints();
 				// p.shape.points.push(center);			
 				//绑定提示框
 				//this.bindTooltip(p.shape, p);
+			}
+			// 所有动画都完成，则清空计数器
+			if(aniIsEnd) {
+				this.___animateCounter = 0;
+			}
+			else {
+				this.___animateCounter ++;
+				// next tick 再次刷新
+				setTimeout(()=>{
+					this.needUpdate = true;//需要刷新
+				});
 			}
 		}
 	}
@@ -128,6 +103,9 @@ export default class jmPieSeries extends jmSeries {
 		const points = [];
 		let index = 0;
 		
+		let startAni = 0; // 总起始角度
+		let cm = Math.PI * 2;
+
 		for(var i=0;i< this.data.length;i++) {
 			const s = this.data[i];
 			
@@ -142,17 +120,23 @@ export default class jmPieSeries extends jmSeries {
 					data: s,
 					yValue: yv,
 					yLabel: yv,
+					step: Math.abs(yv / this.totalValue),// 每个数值点比
 					style: this.graph.utils.clone(this.style)
 				};
 				//p.style.color = this.graph.getColor(index);
 				p.style.fill = this.graph.getColor(index);
 
+				const start = startAni;// 上一个扇形的结束角度为当前的起始角度
+				// 计算当前结束角度, 同时也是下一个的起始角度
+				p.y = startAni + p.step * cm;
+				startAni = p.y;
+
 				if(center && radius) {
-					//计算占比
-					p.per = Math.abs(p.yValue / this.totalValue);
 					
 					p.shape = this.graph.createShape(this.style.isHollow? jmHArc : jmArc, {
 						style: p.style,
+						startAngle: start,
+						endAngle: p.y,
 						anticlockwise: true,
 						isFan: true, // 表示画扇形
 						center,
@@ -201,7 +185,7 @@ export default class jmPieSeries extends jmSeries {
  * @method createLegend	 
  */
 jmPieSeries.prototype.createLegend = function() {
-
+	
 	const points = this.createPoints();
 	if(!points || !points.length) return;
 	

@@ -1,6 +1,7 @@
 
-import { jmPath, jmList } from 'jmgraph/src/core/jmGraph.js';
+import { jmPath, jmList, jmControl } from 'jmgraph/src/core/jmGraph.js';
 import jmRect from 'jmgraph/src/shapes/jmRect.js';
+import utils from '../common/utils.js';
 
 /**
  * 图形基类
@@ -64,6 +65,35 @@ export default class jmSeries extends jmPath {
 
 	// 图绑定的属性名
 	field = '';
+
+	// 做一些基础初始化工作
+	init(...args) {
+		//生成描点位
+		// 如果有动画，则需要判断是否改变，不然不需要重新动画
+		let dataChanged = false;
+		if(this.enableAnimate) {
+			// 拷贝一份上次的点集合，用于判断数据是否改变
+			const lastPoints = this.graph.utils.clone(this.dataPoints, null, true, (obj) => {
+				if(obj instanceof jmControl) return obj;
+			});
+
+			// 重新生成描点
+			this.dataPoints = this.createPoints(...args);
+
+			dataChanged = utils.arrayIsChange(lastPoints, this.dataPoints, (s, t) => {
+				return s.x === t.x && s.y === t.y;
+			});
+
+			if(dataChanged) this.___animateCounter = 0;// 数据改变。动画重新开始
+		}	
+		else {
+			this.dataPoints = this.createPoints(...args);
+		}
+		return {
+			dataChanged,
+			points: this.dataPoints
+		};
+	}
 
 	/**
 	 * 根据X轴坐标，获取它最近的数据描点

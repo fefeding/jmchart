@@ -189,12 +189,25 @@
        * @param {object} source 被复制的对象
        * @param {object} target 可选，如果指定就表示复制给这个对象，如果为boolean它就是deep参数
        * @param {boolean} deep 是否深度复制，如果为true,数组内的每个对象都会被复制
+       * @param {function} copyHandler 复制对象回调，如果返回undefined，就走后面的逻辑，否则到这里中止
        * @return {object} 参数source的拷贝对象
        */
-      static clone(source, target, deep = false) {
+      static clone(source, target, deep = false, copyHandler = null, deepIndex = 0) {
+          // 如果有指定回调，则用回调处理，否则走后面的复制逻辑
+          if(typeof copyHandler === 'function') {
+              const obj = copyHandler(source, deep, deepIndex);
+              if(obj) return obj;
+          }
+          deepIndex++; // 每执行一次，需要判断最大拷贝深度        
+
           if(typeof target === 'boolean') {
               deep = target;
               target = undefined;
+          }
+
+          // 超过100拷贝深度，直接返回
+          if(deepIndex > 100) {
+              return target;
           }
 
           if(source && typeof source === 'object') {
@@ -209,7 +222,7 @@
                   if(deep) {
                       let dest = [];
                       for(let i=0; i<source.length; i++) {
-                          dest.push(this.clone(source[i], target[i], deep));
+                          dest.push(this.clone(source[i], target[i], deep, copyHandler, deepIndex));
                       }
                       return dest;
                   }
@@ -217,9 +230,10 @@
               }
               target.constructor = source.constructor;
               for(let k in source) {
+                  if(k === 'constructor') continue;
                   // 如果不是对象和空，则采用target的属性
                   if(typeof target[k] === 'object' || typeof target[k] === 'undefined') {                    
-                      target[k] = this.clone(source[k], target[k], deep);
+                      target[k] = this.clone(source[k], target[k], deep, copyHandler, deepIndex);
                   }
               }
               return target;
@@ -5115,6 +5129,28 @@
     }
   };
 
+  var utils = {
+    /**
+     * 对比二个数组数据是否改变
+     * @param {Array} source 被对比的数、组
+     * @param {Array} target 对比数组
+     * @param {Function} compare 比较函数
+     */
+    arrayIsChange(source, target, compare) {
+      if (!source || !target) return true;
+      if (source.length !== target.length) return true;
+
+      if (typeof compare === 'function') {
+        for (let i = 0; i < source.length; i++) {
+          if (!compare(source[i], target[i])) return true;
+        }
+
+        return false;
+      } else return source == target;
+    }
+
+  };
+
   /**
    * 图形基类
    *
@@ -5176,11 +5212,39 @@
      */
 
 
+    // 做一些基础初始化工作
+    init(...args) {
+      //生成描点位
+      // 如果有动画，则需要判断是否改变，不然不需要重新动画
+      let dataChanged = false;
+
+      if (this.enableAnimate) {
+        // 拷贝一份上次的点集合，用于判断数据是否改变
+        const lastPoints = this.graph.utils.clone(this.dataPoints, null, true, obj => {
+          if (obj instanceof jmControl) return obj;
+        }); // 重新生成描点
+
+        this.dataPoints = this.createPoints(...args);
+        dataChanged = utils.arrayIsChange(lastPoints, this.dataPoints, (s, t) => {
+          return s.x === t.x && s.y === t.y;
+        });
+        if (dataChanged) this.___animateCounter = 0; // 数据改变。动画重新开始
+      } else {
+        this.dataPoints = this.createPoints(...args);
+      }
+
+      return {
+        dataChanged,
+        points: this.dataPoints
+      };
+    }
     /**
      * 根据X轴坐标，获取它最近的数据描点
      * 离点最近的一个描点
      * @param {number} x  X轴坐标
      */
+
+
     getDataPointByX(x) {
       if (!this.dataPoints) return null; // 获取最近的那个
 
@@ -5303,28 +5367,6 @@
     this.graph.legend.append(this, shape);
   };
 
-  var utils = {
-    /**
-     * 对比二个数组数据是否改变
-     * @param {Array} source 被对比的数、组
-     * @param {Array} target 对比数组
-     * @param {Function} compare 比较函数
-     */
-    arrayIsChange(source, target, compare) {
-      if (!source || !target) return true;
-      if (source.length !== target.length) return true;
-
-      if (typeof compare === 'function') {
-        for (let i = 0; i < source.length; i++) {
-          if (!compare(source[i], target[i])) return true;
-        }
-
-        return false;
-      } else return source == target;
-    }
-
-  };
-
   /**
    * 柱图
    *
@@ -5349,100 +5391,95 @@
 
 
     init() {
-      const data = this.data;
+      //生成描点位
+      const {
+        points,
+        dataChanged
+      } = super.init();
+      const len = points.length; //设定其填充颜色
 
-      if (data) {
-        //生成描点位
-        let points; // 如果有动画，则需要判断是否改变，不然不需要重新动画
+      this.style.fill = this.style.color; //计算每个柱子占宽
+      //每项柱子占宽除以柱子个数,默认最大宽度为30		
 
-        let dataChanged = false;
+      this.barTotalWidth = this.xAxis.width / len * (this.style.perWidth || 0.4);
+      this.barWidth = this.barTotalWidth / this.graph.barSeriesCount;
+      const maxBarWidth = this.graph.barMaxWidth || 50;
 
-        if (this.enableAnimate) {
-          // 拷贝一份上次的点集合，用于判断数据是否改变
-          const lastPoints = this.graph.utils.clone(this.dataPoints, true); // 重新生成描点
+      if (this.barWidth > maxBarWidth) {
+        this.barWidth = maxBarWidth;
+        this.barTotalWidth = maxBarWidth * this.graph.barSeriesCount;
+      } // 是否正在动画中
 
-          points = this.createPoints(data);
-          dataChanged = utils.arrayIsChange(lastPoints, points, (s, t) => {
-            return s.x === t.x && s.y === t.y;
-          });
-        } else {
-          points = this.createPoints(data);
+
+      const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0);
+      let aniIsEnd = true; // 当次是否结束动画
+
+      const aniCount = this.style.aniCount || 10;
+
+      for (let i = 0; i < len; i++) {
+        //const label = this.xAxis.labels[i];
+        const point = points[i]; //如果当前点无效，则跳致下一点
+
+        if (typeof point.y === 'undefined' || point.y === null) {
+          continue;
         }
 
-        const len = points.length; //设定其填充颜色
+        const sp = this.shapes.add(this.graph.createPath(null, this.graph.utils.clone(this.style)));
+        this.children.add(sp); //绑定提示框
+        //this.bindTooltip(sp, point);
+        //首先确定p1和p4,因为他们是底脚。会固定
 
-        this.style.fill = this.style.color; //计算每个柱子占宽
-        //每项柱子占宽除以柱子个数,默认最大宽度为30		
+        const p1 = {
+          x: point.x - this.barTotalWidth / 2 + this.barWidth * this.barIndex,
+          y: this.graph.chartArea.height
+        };
+        const p4 = {
+          x: p1.x + this.barWidth,
+          y: p1.y
+        };
+        const p2 = {
+          x: p1.x,
+          y: p1.y
+        };
+        const p3 = {
+          x: p4.x,
+          y: p1.y
+        }; // 如果要动画。则动态改变高度
 
-        this.barTotalWidth = this.xAxis.width / len * (this.style.perWidth || 0.4);
-        this.barWidth = this.barTotalWidth / this.graph.barSeriesCount;
-        const maxBarWidth = this.graph.barMaxWidth || 50;
+        if (isRunningAni) {
+          const height = Math.abs(point.y - p1.y);
+          const step = height / aniCount;
+          const offHeight = step * this.___animateCounter; // 动态计算当前高度
+          // 当次动画完成
 
-        if (this.barWidth > maxBarWidth) {
-          this.barWidth = maxBarWidth;
-          this.barTotalWidth = maxBarWidth * this.graph.barSeriesCount;
-        }
-
-        for (let i = 0; i < len; i++) {
-          //const label = this.xAxis.labels[i];
-          const point = points[i]; //如果当前点无效，则跳致下一点
-
-          if (typeof point.y === 'undefined' || point.y === null) {
-            continue;
-          }
-
-          const sp = this.shapes.add(this.graph.createPath(null, this.graph.utils.clone(this.style)));
-          this.children.add(sp); //绑定提示框
-          //this.bindTooltip(sp, point);
-          //首先确定p1和p4,因为他们是底脚。会固定
-
-          const p1 = {
-            x: point.x - this.barTotalWidth / 2 + this.barWidth * this.barIndex,
-            y: this.graph.chartArea.height
-          };
-          const p4 = {
-            x: p1.x + this.barWidth,
-            y: p1.y
-          };
-          const p2 = {
-            x: p1.x,
-            y: p1.y
-          };
-          const p3 = {
-            x: p4.x,
-            y: p1.y
-          }; // 如果要动画。则动态改变高度
-
-          if (this.enableAnimate && (dataChanged || this.___animateCounter > 0)) {
-            const height = Math.abs(point.y - p1.y);
-            const step = height / 100;
-            const offHeight = step * this.___animateCounter; // 动态计算当前高度
-            // 当次动画完成
-
-            if (offHeight >= height) {
-              p2.y = point.y;
-              this.___animateCounter = 0;
-            } else {
-              this.___animateCounter++;
-              p2.y = p1.y - offHeight; // 计算高度
-              // next tick 再次刷新
-
-              setTimeout(() => {
-                this.needUpdate = true; //需要刷新
-              });
-            }
-
-            p3.y = p2.y;
-          } else {
+          if (offHeight >= height) {
             p2.y = point.y;
-            p3.y = point.y;
+          } else {
+            aniIsEnd = false; // 只要有一个没完成，就还没有完成动画
+
+            p2.y = p1.y - offHeight; // 计算高度
           }
 
-          sp.points.push(p1);
-          sp.points.push(p2);
-          sp.points.push(p3);
-          sp.points.push(p4);
+          p3.y = p2.y;
+        } else {
+          p2.y = point.y;
+          p3.y = point.y;
         }
+
+        sp.points.push(p1);
+        sp.points.push(p2);
+        sp.points.push(p3);
+        sp.points.push(p4);
+      }
+
+      if (aniIsEnd) {
+        this.___animateCounter = 0;
+      } else {
+        this.___animateCounter++; // next tick 再次刷新
+
+        setTimeout(() => {
+          this.needUpdate = true; //需要刷新
+        });
       }
     }
 
@@ -5722,16 +5759,17 @@
       super(options);
       this.xAxis.visible = false;
       this.yAxis.visible = false;
-    }
+    } // 重新初始化图形
+
 
     init() {
       //总和
       this.totalValue = 0; //计算最大值和最小值
 
       if (this.data) {
-        for (var i in this.data) {
-          var s = this.data[i];
-          var vy = s[this.field];
+        for (const i in this.data) {
+          const s = this.data[i];
+          const vy = s[this.field];
 
           if (vy) {
             this.totalValue += Math.abs(vy);
@@ -5742,31 +5780,48 @@
       const center = {
         x: this.graph.chartArea.width / 2,
         y: this.graph.chartArea.height / 2
-      }; //是否启用动画效果
+      };
+      const radius = Math.min(center.x - this.style.margin.left - this.style.margin.right * this.graph.devicePixelRatio, center.y - this.style.margin.top * this.graph.devicePixelRatio - this.style.margin.bottom * this.graph.devicePixelRatio); //生成描点位
+      // super.init会把参数透传给 createPoints
 
-      const ani = typeof this.enableAnimate === 'undefined' ? this.graph.enableAnimate : this.enableAnimate;
-      var startAni = 0;
-      var cm = Math.PI * 2;
-      const radius = Math.min(center.x - this.style.margin.left - this.style.margin.right * this.graph.devicePixelRatio, center.y - this.style.margin.top * this.graph.devicePixelRatio - this.style.margin.bottom * this.graph.devicePixelRatio); // const arc = this.graph.createShape(jmArc, {
-      // 	center: center,
-      // 	radius: radius,
-      // 	anticlockwise: true
-      // });
+      const {
+        points,
+        dataChanged
+      } = super.init(center, radius); // 是否正在动画中
 
-      const points = this.createPoints(center, radius);
+      const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0); // 在动画中，则一直刷新
 
-      {
+      if (isRunningAni) {
+        const aniCount = this.style.aniCount || 20;
+        let aniIsEnd = true; // 当次是否结束动画
+
         const len = points.length;
 
         for (let i = 0; i < len; i++) {
           const p = points[i];
-          const start = startAni;
-          startAni += p.per * cm;
-          p.shape.startAngle = start;
-          p.shape.endAngle = startAni; // p.shape.points = arc.initPoints();
+          const step = (p.y - p.shape.startAngle) / aniCount;
+          p.shape.endAngle = p.shape.startAngle + this.___animateCounter * step;
+
+          if (p.shape.endAngle >= p.y) {
+            p.shape.endAngle = p.y;
+          } else {
+            aniIsEnd = false;
+          } // p.shape.points = arc.initPoints();
           // p.shape.points.push(center);			
           //绑定提示框
           //this.bindTooltip(p.shape, p);
+
+        } // 所有动画都完成，则清空计数器
+
+
+        if (aniIsEnd) {
+          this.___animateCounter = 0;
+        } else {
+          this.___animateCounter++; // next tick 再次刷新
+
+          setTimeout(() => {
+            this.needUpdate = true; //需要刷新
+          });
         }
       }
     }
@@ -5781,6 +5836,9 @@
       if (!this.data) return [];
       const points = [];
       let index = 0;
+      let startAni = 0; // 总起始角度
+
+      let cm = Math.PI * 2;
 
       for (var i = 0; i < this.data.length; i++) {
         const s = this.data[i];
@@ -5793,16 +5851,23 @@
             data: s,
             yValue: yv,
             yLabel: yv,
+            step: Math.abs(yv / this.totalValue),
+            // 每个数值点比
             style: this.graph.utils.clone(this.style)
           }; //p.style.color = this.graph.getColor(index);
 
           p.style.fill = this.graph.getColor(index);
+          const start = startAni; // 上一个扇形的结束角度为当前的起始角度
+          // 计算当前结束角度, 同时也是下一个的起始角度
+
+          p.y = startAni + p.step * cm;
+          startAni = p.y;
 
           if (center && radius) {
-            //计算占比
-            p.per = Math.abs(p.yValue / this.totalValue);
             p.shape = this.graph.createShape(this.style.isHollow ? jmHArc : jmArc, {
               style: p.style,
+              startAngle: start,
+              endAngle: p.y,
               anticlockwise: true,
               isFan: true,
               // 表示画扇形
@@ -6024,23 +6089,11 @@
 
     init() {
       //生成描点位
-      let points; // 如果有动画，则需要判断是否改变，不然不需要重新动画
-
-      let dataChanged = false;
-
-      if (this.enableAnimate) {
-        // 拷贝一份上次的点集合，用于判断数据是否改变
-        const lastPoints = this.graph.utils.clone(this.dataPoints, true); // 重新生成描点
-
-        points = this.createPoints();
-        dataChanged = utils.arrayIsChange(lastPoints, points, (s, t) => {
-          return s.x === t.x && s.y === t.y;
-        });
-      } else {
-        points = this.createPoints();
-      } //去除多余的线条
+      const {
+        points,
+        dataChanged
+      } = super.init(); //去除多余的线条
       //当数据源线条数比现有的少时，删除多余的线条
-
 
       const len = points.length; //设定其填充颜色
       //if(!this.style.fill) this.style.fill = jmUtils.toColor(this.style.stroke,null,null,20);	
@@ -6048,8 +6101,14 @@
       this.style.stroke = this.style.color; //是否启用动画效果
       //var ani = typeof this.enableAnimate === 'undefined'? this.graph.enableAnimate: this.enableAnimate;
 
-      this.style.item.stroke = this.style.color;
+      this.style.item.stroke = this.style.color; // 是否正在动画中
+
+      const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0);
       let shapePoints = []; // 计算出来的曲线点集合			
+
+      let aniIsEnd = true; // 当次是否结束动画
+
+      const aniCount = this.style.aniCount || 10;
 
       for (let i = 0; i < len; i++) {
         const p = points[i]; //如果当前点无效，则跳致下一点
@@ -6063,25 +6122,19 @@
         const linePoint = {
           x: p.x,
           y: this.graph.chartArea.height
-        }; // 如果要动画。则动态改变高度, dataChanged或动画没完成才需要执行，否则只是普通刷新s
+        }; // 如果要动画。则动态改变高度, dataChanged或动画没完成才需要执行，否则只是普通刷新
 
-        if (this.enableAnimate && (dataChanged || this.___animateCounter > 0)) {
+        if (isRunningAni) {
           const height = Math.abs(p.y - linePoint.y);
-          const step = height / 100;
+          const step = height / aniCount;
           const offHeight = step * this.___animateCounter; // 动态计算当前高度
           // 当次动画完成
 
           if (offHeight >= height) {
             linePoint.y = p.y;
-            this.___animateCounter = 0;
           } else {
-            this.___animateCounter++;
+            aniIsEnd = false;
             linePoint.y -= offHeight; // 计算高度
-            // next tick 再次刷新
-
-            setTimeout(() => {
-              this.needUpdate = true; //需要刷新
-            });
           }
         } else {
           linePoint.y = p.y;
@@ -6127,6 +6180,17 @@
         }
 
         shapePoints.push(linePoint);
+      } // 如果所有都已经结束，则重置成初始化状态
+
+
+      if (aniIsEnd) {
+        this.___animateCounter = 0;
+      } else {
+        this.___animateCounter++; // next tick 再次刷新
+
+        setTimeout(() => {
+          this.needUpdate = true; //需要刷新
+        });
       }
 
       this.points = shapePoints;

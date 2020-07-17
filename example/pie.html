@@ -39,7 +39,8 @@
 					var chart1 = new jmChart('mycanvas1', {
 						width: w,
 						height: h,
-						enableAnimate: false,
+						enableAnimate: true,
+						autoRefresh: true,
                         style: {
                         }
                     });
@@ -57,7 +58,8 @@
 					var chart2 = new jmChart('mycanvas2', {
 						width: w,
 						height: h,
-						enableAnimate: false,
+						enableAnimate: true,
+						autoRefresh: true,// 启用动画，建议指定自动动画，否则需要自已写刷新代码
                         style: {
 							// 指定一个渐变的样式，这里也可以不指定，会用默认的
                             chartColors: [
@@ -105,8 +107,7 @@
 						
 						chart2.data = chart1.data = data;
 						//setTimeout(animate,500);
-						chart1.refresh();
-
+						chart1.refresh(); // 默认刷新一次
 						chart2.refresh();
 
 						console.log(chart1.data);
@@ -117,6 +118,12 @@
 
 					chart1.utils.bindEvent(document.getElementById('btnRedraw'),'click', refreshData);
 					
+					// // 自动刷新代码
+					// function update() {
+					// 	if(chart1.needUpdate) chart1.redraw();
+					// 	requestAnimationFrame(update);
+					// }
+					// requestAnimationFrame(update);
 				}
 		</script>
 	</head>
