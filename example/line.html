@@ -55,7 +55,7 @@
 					});
 					
 					
-					var line1 = chart.createSeries('bar', {
+					var bar1 = chart.createSeries('bar', {
 						field: 'y1',
 						// 图例格式化，如果不给定，则采用legendLabel
 						legendFormat: function(options) {
@@ -64,7 +64,18 @@
 						yLabelFormat: (v, label) => {
 							return v.toFixed(0);
 						}
-					});			
+					});		
+					
+					var bar2 = chart.createSeries('bar', {
+						field: 'y8',
+						// 图例格式化，如果不给定，则采用legendLabel
+						legendFormat: function(options) {
+							return '图4';
+						},
+						yLabelFormat: (v, label) => {
+							return v.toFixed(0);
+						}
+					});	
 
 					var line2 = chart.createSeries('line', {
 						field: 'y2',
@@ -75,7 +86,20 @@
 						maxYValue: 200 ,
 						style: {
 							// 画圆滑的曲线 
-							curve: true
+							curve: true,// 填充图形
+                            /*area: {
+                                // 自定义填充颜色处理
+                                fill: function(style) {
+                                    // 根据颜色生成渐变效果
+                                    const color = this.graph.utils.hexToRGBA(this.style.stroke);
+                                    return `linear-gradient(50% 0 50% 100%, 
+                                        rgba(${color.r},${color.g},${color.b}, 0) 1, 
+                                        rgba(${color.r},${color.g},${color.b}, 0) 0.8,
+                                        rgba(${color.r},${color.g},${color.b}, 0.3) 0.5,
+                                        rgba(${color.r},${color.g},${color.b}, 0.5) 0.2, 
+                                        rgba(${color.r},${color.g},${color.b}, 0.8) 0)`;
+                                }
+                            }*/
 						},
 						legendFormat: function(options) {
 							return '图例2';
@@ -89,7 +113,7 @@
 						legendLabel: '图例3'
 					});						
 		
-					const datacount = 6;
+					const datacount = 10;
 					function animate() {
 						if(true) {
 							chart.data = [];

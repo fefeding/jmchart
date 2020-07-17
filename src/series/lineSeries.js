@@ -44,7 +44,8 @@ export default class jmLineSeries extends jmSeries {
 		this.style.item.stroke = this.style.color;
 
 		// 是否正在动画中
-		const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0 );
+		// 如果数据点多于100 个，暂时不启用动画，太慢了
+		const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0 ) && len < 100;
 
 		let shapePoints = []; // 计算出来的曲线点集合			
 		let aniIsEnd = true;// 当次是否结束动画

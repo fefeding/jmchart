@@ -42,7 +42,8 @@ export default class jmBarSeries extends jmSeries {
 		}
 		
 		// 是否正在动画中
-		const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0 );		
+		// 如果数据点多于100 个，暂时不启用动画，太慢了
+		const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0 ) && len < 100;		
 		let aniIsEnd = true;// 当次是否结束动画
 		const aniCount = (this.style.aniCount || 10);
 

@@ -5410,9 +5410,10 @@ class jmBarSeries extends jmSeries {
       this.barWidth = maxBarWidth;
       this.barTotalWidth = maxBarWidth * this.graph.barSeriesCount;
     } // 是否正在动画中
+    // 如果数据点多于100 个，暂时不启用动画，太慢了
 
 
-    const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0);
+    const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0) && len < 100;
     let aniIsEnd = true; // 当次是否结束动画
 
     const aniCount = this.style.aniCount || 10;
@@ -6103,8 +6104,9 @@ class jmLineSeries extends jmSeries {
     //var ani = typeof this.enableAnimate === 'undefined'? this.graph.enableAnimate: this.enableAnimate;
 
     this.style.item.stroke = this.style.color; // 是否正在动画中
+    // 如果数据点多于100 个，暂时不启用动画，太慢了
 
-    const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0);
+    const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0) && len < 100;
     let shapePoints = []; // 计算出来的曲线点集合			
 
     let aniIsEnd = true; // 当次是否结束动画
