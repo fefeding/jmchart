@@ -6564,61 +6564,63 @@ class jmChart extends jmGraph {
       });
     }
 
-    graph.on('beginDraw', () => {
-      // 重置标线，会处理小圆圈问题
-      this.xMarkLine && this.xMarkLine.init();
-      this.yMarkLine && this.yMarkLine.init();
-    }); // 生成标线，可以跟随鼠标或手指滑动
+    if (this.style.markLine) {
+      graph.on('beginDraw', () => {
+        // 重置标线，会处理小圆圈问题
+        this.xMarkLine && this.xMarkLine.init();
+        this.yMarkLine && this.yMarkLine.init();
+      }); // 生成标线，可以跟随鼠标或手指滑动
 
-    if (this.style.markLine && this.style.markLine.x) {
-      this.xMarkLine = graph.createShape(jmMarkLine, {
-        type: 'x',
-        style: this.style.markLine
+      if (this.style.markLine && this.style.markLine.x) {
+        this.xMarkLine = graph.createShape(jmMarkLine, {
+          type: 'x',
+          style: this.style.markLine
+        });
+        const area = graph.chartArea || graph;
+        area.children.add(this.xMarkLine);
+      }
+
+      if (this.style.markLine && this.style.markLine.y) {
+        this.yMarkLine = graph.createShape(jmMarkLine, {
+          type: 'y',
+          style: this.style.markLine
+        });
+        const area = graph.chartArea || graph;
+        area.children.add(this.yMarkLine);
+      }
+
+      graph.on('mousedown touchstart', args => {
+        if (this.xMarkLine) {
+          this.xMarkLine.visible = true;
+          this.xMarkLine.move(args);
+        }
+
+        if (this.yMarkLine) {
+          this.yMarkLine.visible = true;
+          this.yMarkLine.move(args);
+        }
+      }); // 移动标线
+
+      graph.on('mousemove touchmove', args => {
+        if (this.xMarkLine && this.xMarkLine.visible) {
+          this.xMarkLine.move(args);
+        }
+
+        if (this.yMarkLine && this.yMarkLine.visible) {
+          this.yMarkLine.move(args);
+        }
+      }); // 取消移动
+
+      graph.on('mouseup touchend touchcancel touchleave', args => {
+        if (this.xMarkLine && this.xMarkLine.visible) {
+          this.xMarkLine.cancel(args);
+        }
+
+        if (this.yMarkLine && this.yMarkLine.visible) {
+          this.yMarkLine.cancel(args);
+        }
       });
-      const area = graph.chartArea || graph;
-      area.children.add(this.xMarkLine);
     }
-
-    if (this.style.markLine && this.style.markLine.y) {
-      this.yMarkLine = graph.createShape(jmMarkLine, {
-        type: 'y',
-        style: this.style.markLine
-      });
-      const area = graph.chartArea || graph;
-      area.children.add(this.yMarkLine);
-    }
-
-    graph.on('mousedown touchstart', args => {
-      if (this.xMarkLine) {
-        this.xMarkLine.visible = true;
-        this.xMarkLine.move(args);
-      }
-
-      if (this.yMarkLine) {
-        this.yMarkLine.visible = true;
-        this.yMarkLine.move(args);
-      }
-    }); // 移动标线
-
-    graph.on('mousemove touchmove', args => {
-      if (this.xMarkLine && this.xMarkLine.visible) {
-        this.xMarkLine.move(args);
-      }
-
-      if (this.yMarkLine && this.yMarkLine.visible) {
-        this.yMarkLine.move(args);
-      }
-    }); // 取消移动
-
-    graph.on('mouseup touchend touchcancel touchleave', args => {
-      if (this.xMarkLine && this.xMarkLine.visible) {
-        this.xMarkLine.cancel(args);
-      }
-
-      if (this.yMarkLine && this.yMarkLine.visible) {
-        this.yMarkLine.cancel(args);
-      }
-    });
   } // 重置整个图表
 
 
