@@ -145,6 +145,9 @@ export default class jmPieSeries extends jmSeries {
 						minRadius: radius - (this.style.arcWidth || radius*0.2)
 					});
 
+					/**
+					 * 因为jmgraph是按图形形状来计算所占区域和大小的， 这里我们把扇形占区域改为整个图圆。这样计算大小和渐变时才好闭合。
+					 */
 					p.shape.getLocation = function() {			
 						const local = this.location = {
 							left: 0,
