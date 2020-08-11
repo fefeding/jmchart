@@ -1,5 +1,5 @@
 import jmBezier from 'jmgraph/src/shapes/jmBezier.js';
-import jmArc from 'jmgraph/src/shapes/jmArc.js';
+import jmCircle from 'jmgraph/src/shapes/jmCircle.js';
 import jmPath from 'jmgraph/src/core/jmPath.js';
 import jmSeries from './series.js';
 
@@ -89,7 +89,7 @@ export default class jmLineSeries extends jmSeries {
 
 			// 是否显示数值点圆
 			if(this.style.showItem) {
-				const pointShape = this.graph.createShape(jmArc,{
+				const pointShape = this.graph.createShape(jmCircle, {
 					style: this.style.item,
 					center: linePoint,
 					radius: this.style.radius || 3
@@ -123,6 +123,9 @@ export default class jmLineSeries extends jmSeries {
 				}
 			}									
 			shapePoints.push(linePoint);
+
+			// 生成关健值标注
+			this.createKeyPoint(linePoint, p);
 		}
 
 		// 如果所有都已经结束，则重置成初始化状态

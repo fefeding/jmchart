@@ -1,5 +1,5 @@
 import { jmList } from 'jmgraph/src/core/jmGraph.js';
-import  jmArc from 'jmgraph/src/shapes/jmArc.js';
+import  jmCircle from 'jmgraph/src/shapes/jmCircle.js';
 import  jmLine from 'jmgraph/src/shapes/jmLine.js';
 
 /**
@@ -67,7 +67,7 @@ export default class jmMarkLine extends jmLine {
                 const style = graph.utils.clone(this.style, {
                     stroke: serie.style.color || serie.style.stroke                    
                 }, true);
-                this.markArc = graph.createShape(jmArc, {
+                this.markArc = graph.createShape(jmCircle, {
                     style,
                     radius: (this.style.radius || 5) * this.graph.devicePixelRatio
                 });

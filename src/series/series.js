@@ -1,6 +1,7 @@
 
 import { jmPath, jmList, jmControl } from 'jmgraph/src/core/jmGraph.js';
 import jmRect from 'jmgraph/src/shapes/jmRect.js';
+import jmCircle from 'jmgraph/src/shapes/jmCircle.js';
 import utils from '../common/utils.js';
 
 /**
@@ -63,6 +64,16 @@ export default class jmSeries extends jmPath {
 	 */
 	shapes = new jmList();
 
+	/**
+	 * 关健点集合
+	 */
+	keyPoints = [];
+
+	/**
+	 * 标注集合
+	 */
+	labels = [];
+
 	// 图绑定的属性名
 	field = '';
 
@@ -123,102 +134,163 @@ export default class jmSeries extends jmPath {
 		}
 		return null;
 	}
-};
 
-/**
- * 重置属性
- * 根据数据源计算轴的属性
- *
- * @method reset
- */
-jmSeries.prototype.reset = function() {	
-	//是否启用动画效果
-	this.enableAnimate = typeof this.enableAnimate === 'undefined'?this.graph.enableAnimate:this.enableAnimate;
-
-	// 重置所有图形
-	var shape;
-	while(shape = this.shapes.shift()) {
-		shape && shape.remove();
-	}
-	
-	//生成图例  这里要放到shape清理后面
-	this.createLegend();
-
-	// 计算最大最小值
-	// 当前需要先更新axis的边界值，轴好画图
-	for(var i=0; i< this.data.length;i++) {	
-		const v = this.data[i][this.field]; 
-		this.yAxis.max(v);
-		this.yAxis.min(v);
-
-		const xv = this.data[i][this.xAxis.field]; 
-		this.xAxis.max(xv);
-		this.xAxis.min(xv);
-	}
-
-	return this.chartInfo = {
-		xAxis: this.xAxis,
-		yAxis: this.yAxis
-	};
-}
-
-/**
- * 生成序列图描点
- *
- * @method createPoints
- */
-jmSeries.prototype.createPoints = function(data) {
-	data = data || this.data;		
-	if(!data) return;
-
-	const xstep = this.xAxis.step();
-	const ystep = this.yAxis.step();	
-
-	this.dataPoints = [];
-	for(let i=0;i < data.length; i++) {
-		const s = data[i];
 		
-		const xv = s[this.xAxis.field];
-		const yv = s[this.field];
+	/**
+	 * 重置属性
+	 * 根据数据源计算轴的属性
+	 *
+	 * @method reset
+	 */
+	reset() {	
+		//是否启用动画效果
+		this.enableAnimate = typeof this.enableAnimate === 'undefined'?this.graph.enableAnimate:this.enableAnimate;
 
-		const p = {				
-			data: s,
-			xValue: xv,
-			xLabel: xv,
-			yValue: yv,
-			yLabel: yv
-		};
-		
-		// 这里的点应相对于chartArea
-		p.x = xstep * (data.length === 1? 1: i) + this.xAxis.labelStart;			
-
-		//如果Y值不存在。则此点无效，不画图
-		if(yv == null || typeof yv == 'undefined') {
-			p.m = true;
+		// 重置所有图形
+		var shape;
+		while(shape = this.shapes.shift()) {
+			shape && shape.remove();
 		}
-		else {
-			if(this.yAxis.dataType != 'number') {
-				yv = i;
-			}
-			p.y = this.graph.chartArea.height - (yv - this.yAxis.min()) * ystep;
-		}			
-		this.dataPoints.push(p);							
-	}
-	return this.dataPoints;
-}
+		
+		//生成图例  这里要放到shape清理后面
+		this.createLegend();
 
-/**
- * 生成图例
- *
- * @method createLegend
- */
-jmSeries.prototype.createLegend = function() {
-	//生成图例前的图标
-	const style = this.graph.utils.clone(this.style);
-	style.fill = style.color;	
-	//delete style.stroke;
-	const shape = this.graph.createShape(jmRect,{
-		style
-	});
-	this.graph.legend.append(this, shape);
-}
+		// 计算最大最小值
+		// 当前需要先更新axis的边界值，轴好画图
+		for(var i=0; i< this.data.length;i++) {	
+			const v = this.data[i][this.field]; 
+			this.yAxis.max(v);
+			this.yAxis.min(v);
+
+			const xv = this.data[i][this.xAxis.field]; 
+			this.xAxis.max(xv);
+			this.xAxis.min(xv);
+		}
+
+		return this.chartInfo = {
+			xAxis: this.xAxis,
+			yAxis: this.yAxis
+		};
+	}
+
+	/**
+	 * 生成序列图描点
+	 *
+	 * @method createPoints
+	 */
+	createPoints(data) {
+		data = data || this.data;		
+		if(!data) return;
+
+		const xstep = this.xAxis.step();
+		const ystep = this.yAxis.step();	
+
+		this.dataPoints = [];
+		for(let i=0;i < data.length; i++) {
+			const s = data[i];
+			
+			const xv = s[this.xAxis.field];
+			const yv = s[this.field];
+
+			const p = {				
+				data: s,
+				xValue: xv,
+				xLabel: xv,
+				yValue: yv,
+				yLabel: yv
+			};
+			
+			// 这里的点应相对于chartArea
+			p.x = xstep * (data.length === 1? 1: i) + this.xAxis.labelStart;			
+
+			//如果Y值不存在。则此点无效，不画图
+			if(yv == null || typeof yv == 'undefined') {
+				p.m = true;
+			}
+			else {
+				if(this.yAxis.dataType != 'number') {
+					yv = i;
+				}
+				p.y = this.graph.chartArea.height - (yv - this.yAxis.min()) * ystep;
+			}			
+			this.dataPoints.push(p);							
+		}
+		return this.dataPoints;
+	}
+
+	/**
+	 * 生成图例
+	 *
+	 * @method createLegend
+	 */
+	createLegend() {
+		//生成图例前的图标
+		const style = this.graph.utils.clone(this.style);
+		style.fill = style.color;	
+		//delete style.stroke;
+		const shape = this.graph.createShape(jmRect,{
+			style
+		});
+		this.graph.legend.append(this, shape);
+	}
+
+	/**
+	 * 添加关健点
+	 * @param {object} options 关健点的参数，
+	 * {
+	 * xValue 对应的X轴值
+	 * 	radius: 大小,
+	 * style: {
+	 * stroke: 边颜色
+	 * fill: 填充色
+	 * }
+	 * }
+	 */
+	addKeyPoint(options) {
+		if(!options) return;
+		this.keyPoints.push(options);
+		return options;
+	}
+
+	/**
+	 * 添加标注
+	 * @param {object} options 参数，
+	 * {
+	 * xValue 对应的X轴值
+	 * text 显示文案
+	 * width: 宽,
+	 * height: 高
+	 * 可以参考jmLabel样式
+	 * style: {
+	 * stroke: 边颜色
+	 * fill: 填充色
+	 * font: 字体
+	 * }
+	 * }
+	 */
+	addLabel(options) {
+		if(!options) return;
+		this.labels.push(options);
+		return options;
+	}
+
+	// 在关健点生成高亮点
+	createKeyPoint(position, point) {
+		for(const opt of this.keyPoints) {
+			if(opt.xValue !== point.xValue) return;
+
+			const pointShape = this.graph.createShape(jmCircle, {
+				style: Object.assign(opt.style||{}, {
+					stroke: this.style.stroke,
+					fill: this.style.stroke
+				}),
+				center: position,
+				radius: opt.radius || 5
+			});
+		
+			pointShape.zIndex = 20;	
+			this.graph.chartArea.children.add(pointShape);
+			this.shapes.add(pointShape);
+		}
+	}
+};

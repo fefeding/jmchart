@@ -106,12 +106,24 @@
 						}
 					});		
 					
-
+					
 
 					var line3 = chart.createSeries('line', {
 						field: 'y3',
-						legendLabel: '图例3'
-					});						
+						legendLabel: '图例3',
+						style: {
+							showItem: false
+						}
+					});	
+					
+					line3.addKeyPoint({
+						xValue: 3,
+						radius: 5,
+						style: {
+							//stroke: '',
+							//fill: ''
+						}
+					});
 		
 					const datacount = 10;
 					function animate() {
