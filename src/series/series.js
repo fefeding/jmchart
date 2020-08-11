@@ -2,6 +2,7 @@
 import { jmPath, jmList, jmControl } from 'jmgraph/src/core/jmGraph.js';
 import jmRect from 'jmgraph/src/shapes/jmRect.js';
 import jmCircle from 'jmgraph/src/shapes/jmCircle.js';
+import jmLabel from 'jmgraph/src/shapes/jmLabel.js';
 import utils from '../common/utils.js';
 
 /**
@@ -280,10 +281,10 @@ export default class jmSeries extends jmPath {
 			if(opt.xValue !== point.xValue) return;
 
 			const pointShape = this.graph.createShape(jmCircle, {
-				style: Object.assign(opt.style||{}, {
+				style: Object.assign({
 					stroke: this.style.stroke,
 					fill: this.style.stroke
-				}),
+				}, opt.style||{}),
 				center: position,
 				radius: opt.radius || 5
 			});
@@ -291,6 +292,41 @@ export default class jmSeries extends jmPath {
 			pointShape.zIndex = 20;	
 			this.graph.chartArea.children.add(pointShape);
 			this.shapes.add(pointShape);
+		}
+	}
+
+	// 在关健点生成标注
+	createLabel(position, point) {
+		for(const opt of this.labels) {
+			if(opt.xValue !== point.xValue || !opt.text) return;
+
+			const label = this.graph.createShape(jmLabel, {
+				style: Object.assign({
+					stroke: this.style.stroke,
+					fill: this.style.stroke,
+					textAlign: 'center',
+					textBaseline: 'middle',
+					border: {
+						top: true,
+						left: true,
+						right: true,
+						bottom: true,
+						style: {
+							fill: '#000'
+						}
+					}
+				}, opt.style||{}),
+				text: opt.text,
+				position: Object.assign({}, position)
+			});
+
+			const size = label.testSize();
+			label.position.y -= (size.height + 10);
+			label.position.x -= size.width / 2;
+		
+			label.zIndex = 20;	
+			this.graph.chartArea.children.add(label);
+			this.shapes.add(label);
 		}
 	}
 };

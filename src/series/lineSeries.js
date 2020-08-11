@@ -126,6 +126,8 @@ export default class jmLineSeries extends jmSeries {
 
 			// 生成关健值标注
 			this.createKeyPoint(linePoint, p);
+			// 生成标注
+			this.createLabel(linePoint, p);
 		}
 
 		// 如果所有都已经结束，则重置成初始化状态

@@ -116,12 +116,28 @@
 						}
 					});	
 					
+					// 增加关健点
 					line3.addKeyPoint({
 						xValue: 3,
 						radius: 5,
 						style: {
 							//stroke: '',
 							//fill: ''
+						}
+					});
+					// 增加标注
+					line3.addLabel({
+						xValue: 3,
+						text: '买入',
+						style: {
+								stroke: 'red',
+								fill: 'green',
+								border: {
+								top: true,
+								left: true,
+								right: true,
+								bottom: true
+							}
 						}
 					});
 		

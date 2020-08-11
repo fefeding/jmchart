@@ -5617,16 +5617,48 @@ class jmSeries extends jmPath {
     for (const opt of this.keyPoints) {
       if (opt.xValue !== point.xValue) return;
       const pointShape = this.graph.createShape(jmCircle, {
-        style: Object.assign(opt.style || {}, {
+        style: Object.assign({
           stroke: this.style.stroke,
           fill: this.style.stroke
-        }),
+        }, opt.style || {}),
         center: position,
         radius: opt.radius || 5
       });
       pointShape.zIndex = 20;
       this.graph.chartArea.children.add(pointShape);
       this.shapes.add(pointShape);
+    }
+  } // 在关健点生成标注
+
+
+  createLabel(position, point) {
+    for (const opt of this.labels) {
+      if (opt.xValue !== point.xValue || !opt.text) return;
+      const label = this.graph.createShape(jmLabel, {
+        style: Object.assign({
+          stroke: this.style.stroke,
+          fill: this.style.stroke,
+          textAlign: 'center',
+          textBaseline: 'middle',
+          border: {
+            top: true,
+            left: true,
+            right: true,
+            bottom: true,
+            style: {
+              fill: '#000'
+            }
+          }
+        }, opt.style || {}),
+        text: opt.text,
+        position: Object.assign({}, position)
+      });
+      const size = label.testSize();
+      label.position.y -= size.height + 10;
+      label.position.x -= size.width / 2;
+      label.zIndex = 20;
+      this.graph.chartArea.children.add(label);
+      this.shapes.add(label);
     }
   }
 
@@ -6301,7 +6333,9 @@ class jmLineSeries extends jmSeries {
 
       shapePoints.push(linePoint); // 生成关健值标注
 
-      this.createKeyPoint(linePoint, p);
+      this.createKeyPoint(linePoint, p); // 生成标注
+
+      this.createLabel(linePoint, p);
     } // 如果所有都已经结束，则重置成初始化状态
 
 
