@@ -2188,7 +2188,7 @@ System.register([], function (exports, module) {
       			//处理百分比参数
       			if(jmUtils.checkPercent(local.radius)) {
       				local.radius = jmUtils.percentToNumber(local.radius) * Math.min(parentBounds.width, parentBounds.height);
-      			}		
+      			}
       		}
       		return local;
       	}
@@ -5131,363 +5131,6 @@ System.register([], function (exports, module) {
         }
       };
 
-      var utils = {
-        /**
-         * 对比二个数组数据是否改变
-         * @param {Array} source 被对比的数、组
-         * @param {Array} target 对比数组
-         * @param {Function} compare 比较函数
-         */
-        arrayIsChange(source, target, compare) {
-          if (!source || !target) return true;
-          if (source.length !== target.length) return true;
-
-          if (typeof compare === 'function') {
-            for (let i = 0; i < source.length; i++) {
-              if (!compare(source[i], target[i])) return true;
-            }
-
-            return false;
-          } else return source == target;
-        }
-
-      };
-
-      /**
-       * 图形基类
-       *
-       * @class jmSeries
-       * @module jmChart
-       * @param {jmChart} chart 当前图表
-       * @param {array} mappings 图形字段映射
-       * @param {style} style 样式
-       */
-      //构造线图
-
-      class jmSeries extends jmPath {
-        constructor(options) {
-          super(options);
-
-          _defineProperty(this, "legendLabel", '');
-
-          _defineProperty(this, "shapes", new jmList());
-
-          _defineProperty(this, "field", '');
-
-          this.options = options;
-          this.field = options.field || '';
-          this.index = options.index || 1;
-          this.legendLabel = options.legendLabel || '';
-          this.___animateCounter = 0; // 动画计数
-
-          this.xAxis = this.graph.createXAxis(); // 生成X轴
-          // 生成当前Y轴
-
-          this.yAxis = this.yAxis || this.graph.createYAxis({
-            index: this.index,
-            format: options.yLabelFormat
-          }); // 初始化一些参数， 因为这里有多个Y轴的可能，所以每次都需要重调一次init
-
-          this.yAxis.init({
-            field: this.field,
-            minYValue: options.minYValue,
-            maxYValue: options.maxYValue
-          });
-        }
-        /**
-         * 关联访问的是chart的数据源
-         */
-
-
-        get data() {
-          return this.graph.data;
-        }
-
-        set data(d) {
-          this.graph.data = d;
-        }
-        /**
-         * 图例名称
-         *
-         * @property legendLabel
-         * @type string
-         */
-
-
-        // 做一些基础初始化工作
-        init(...args) {
-          //生成描点位
-          // 如果有动画，则需要判断是否改变，不然不需要重新动画
-          let dataChanged = false;
-
-          if (this.enableAnimate) {
-            // 拷贝一份上次的点集合，用于判断数据是否改变
-            const lastPoints = this.graph.utils.clone(this.dataPoints, null, true, obj => {
-              if (obj instanceof jmControl) return obj;
-            }); // 重新生成描点
-
-            this.dataPoints = this.createPoints(...args);
-            dataChanged = utils.arrayIsChange(lastPoints, this.dataPoints, (s, t) => {
-              return s.x === t.x && s.y === t.y;
-            });
-            if (dataChanged) this.___animateCounter = 0; // 数据改变。动画重新开始
-          } else {
-            this.dataPoints = this.createPoints(...args);
-          }
-
-          return {
-            dataChanged,
-            points: this.dataPoints
-          };
-        }
-        /**
-         * 根据X轴坐标，获取它最近的数据描点
-         * 离点最近的一个描点
-         * @param {number} x  X轴坐标
-         */
-
-
-        getDataPointByX(x) {
-          if (!this.dataPoints) return null; // 获取最近的那个
-
-          let prePoint = undefined;
-       // 跟上一个点和下一个点的距离，哪个近用哪个
-
-          for (let i = 0; i < this.dataPoints.length; i++) {
-            const p = this.dataPoints[i];
-            if (p.x == x) return p; // 上一个点
-
-            if (p.x < x) {
-              if (i === this.dataPoints.length - 1) return p;
-              prePoint = p;
-            } // 下一个点
-
-
-            if ( p.x > x) {
-              // 没有上一个，只能返回这个了
-              if (prePoint && x - prePoint.x < p.x - x) return prePoint;else return p;
-            }
-          }
-
-          return null;
-        }
-
-      }
-      /**
-       * 重置属性
-       * 根据数据源计算轴的属性
-       *
-       * @method reset
-       */
-
-      jmSeries.prototype.reset = function () {
-        //是否启用动画效果
-        this.enableAnimate = typeof this.enableAnimate === 'undefined' ? this.graph.enableAnimate : this.enableAnimate; // 重置所有图形
-
-        var shape;
-
-        while (shape = this.shapes.shift()) {
-          shape && shape.remove();
-        } //生成图例  这里要放到shape清理后面
-
-
-        this.createLegend(); // 计算最大最小值
-        // 当前需要先更新axis的边界值，轴好画图
-
-        for (var i = 0; i < this.data.length; i++) {
-          const v = this.data[i][this.field];
-          this.yAxis.max(v);
-          this.yAxis.min(v);
-          const xv = this.data[i][this.xAxis.field];
-          this.xAxis.max(xv);
-          this.xAxis.min(xv);
-        }
-
-        return this.chartInfo = {
-          xAxis: this.xAxis,
-          yAxis: this.yAxis
-        };
-      };
-      /**
-       * 生成序列图描点
-       *
-       * @method createPoints
-       */
-
-
-      jmSeries.prototype.createPoints = function (data) {
-        data = data || this.data;
-        if (!data) return;
-        const xstep = this.xAxis.step();
-        const ystep = this.yAxis.step();
-        this.dataPoints = [];
-
-        for (let i = 0; i < data.length; i++) {
-          const s = data[i];
-          const xv = s[this.xAxis.field];
-          const yv = s[this.field];
-          const p = {
-            data: s,
-            xValue: xv,
-            xLabel: xv,
-            yValue: yv,
-            yLabel: yv
-          }; // 这里的点应相对于chartArea
-
-          p.x = xstep * (data.length === 1 ? 1 : i) + this.xAxis.labelStart; //如果Y值不存在。则此点无效，不画图
-
-          if (yv == null || typeof yv == 'undefined') {
-            p.m = true;
-          } else {
-            if (this.yAxis.dataType != 'number') {
-              yv = i;
-            }
-
-            p.y = this.graph.chartArea.height - (yv - this.yAxis.min()) * ystep;
-          }
-
-          this.dataPoints.push(p);
-        }
-
-        return this.dataPoints;
-      };
-      /**
-       * 生成图例
-       *
-       * @method createLegend
-       */
-
-
-      jmSeries.prototype.createLegend = function () {
-        //生成图例前的图标
-        const style = this.graph.utils.clone(this.style);
-        style.fill = style.color; //delete style.stroke;
-
-        const shape = this.graph.createShape(jmRect, {
-          style
-        });
-        this.graph.legend.append(this, shape);
-      };
-
-      /**
-       * 柱图
-       *
-       * @class jmBarSeries
-       * @module jmChart
-       * @param {jmChart} chart 当前图表
-       * @param {array} mappings 图形字段映射
-       * @param {style} style 样式
-       */
-      //构造函数
-
-      class jmBarSeries extends jmSeries {
-        constructor(options) {
-          super(options);
-        }
-        /**
-         * 绘制当前图形
-         *
-         * @method beginDraw
-         * @for jmBarSeries
-         */
-
-
-        init() {
-          //生成描点位
-          const {
-            points,
-            dataChanged
-          } = super.init();
-          const len = points.length; //设定其填充颜色
-
-          this.style.fill = this.style.color; //计算每个柱子占宽
-          //每项柱子占宽除以柱子个数,默认最大宽度为30		
-
-          this.barTotalWidth = this.xAxis.width / len * (this.style.perWidth || 0.4);
-          this.barWidth = this.barTotalWidth / this.graph.barSeriesCount;
-          const maxBarWidth = this.graph.barMaxWidth || 50;
-
-          if (this.barWidth > maxBarWidth) {
-            this.barWidth = maxBarWidth;
-            this.barTotalWidth = maxBarWidth * this.graph.barSeriesCount;
-          } // 是否正在动画中
-          // 如果数据点多于100 个，暂时不启用动画，太慢了
-
-
-          const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0) && len < 100;
-          let aniIsEnd = true; // 当次是否结束动画
-
-          const aniCount = this.style.aniCount || 10;
-
-          for (let i = 0; i < len; i++) {
-            //const label = this.xAxis.labels[i];
-            const point = points[i]; //如果当前点无效，则跳致下一点
-
-            if (typeof point.y === 'undefined' || point.y === null) {
-              continue;
-            }
-
-            const sp = this.shapes.add(this.graph.createPath(null, this.graph.utils.clone(this.style)));
-            this.children.add(sp); //绑定提示框
-            //this.bindTooltip(sp, point);
-            //首先确定p1和p4,因为他们是底脚。会固定
-
-            const p1 = {
-              x: point.x - this.barTotalWidth / 2 + this.barWidth * this.barIndex,
-              y: this.graph.chartArea.height
-            };
-            const p4 = {
-              x: p1.x + this.barWidth,
-              y: p1.y
-            };
-            const p2 = {
-              x: p1.x,
-              y: p1.y
-            };
-            const p3 = {
-              x: p4.x,
-              y: p1.y
-            }; // 如果要动画。则动态改变高度
-
-            if (isRunningAni) {
-              const height = Math.abs(point.y - p1.y);
-              const step = height / aniCount;
-              const offHeight = step * this.___animateCounter; // 动态计算当前高度
-              // 当次动画完成
-
-              if (offHeight >= height) {
-                p2.y = point.y;
-              } else {
-                aniIsEnd = false; // 只要有一个没完成，就还没有完成动画
-
-                p2.y = p1.y - offHeight; // 计算高度
-              }
-
-              p3.y = p2.y;
-            } else {
-              p2.y = point.y;
-              p3.y = point.y;
-            }
-
-            sp.points.push(p1);
-            sp.points.push(p2);
-            sp.points.push(p3);
-            sp.points.push(p4);
-          }
-
-          if (aniIsEnd) {
-            this.___animateCounter = 0;
-          } else {
-            this.___animateCounter++; // next tick 再次刷新
-
-            setTimeout(() => {
-              this.needUpdate = true; //需要刷新
-            });
-          }
-        }
-
-      }
-
       /**
        * 圆弧图型 继承自jmPath
        *
@@ -5636,6 +5279,512 @@ System.register([], function (exports, module) {
       		}
       		return this.points;
       	}
+      }
+
+      /**
+       * 画规则的圆弧
+       *
+       * @class jmCircle
+       * @extends jmArc
+       * @param {object} params 圆的参数:center=圆中心,radius=圆半径,优先取此属性，如果没有则取宽和高,width=圆宽,height=圆高
+       */
+      class jmCircle extends jmArc {		
+      	
+      	constructor(params, t='jmCircle') {
+      		super(params, t);		
+      	}
+      	/**
+      	 * 初始化图形点
+      	 * 
+      	 * @method initPoint
+      	 * @private
+      	 * @for jmCircle
+      	 */
+      	initPoints() {			
+      		let location = this.getLocation();
+      		
+      		if(!location.radius) {
+      			location.radius = Math.min(location.width , location.height) / 2;
+      		}
+      		this.points = [];
+      		this.points.push({x:location.center.x - location.radius,y:location.center.y - location.radius});
+      		this.points.push({x:location.center.x + location.radius,y:location.center.y - location.radius});
+      		this.points.push({x:location.center.x + location.radius,y:location.center.y + location.radius});
+      		this.points.push({x:location.center.x - location.radius,y:location.center.y + location.radius});
+      	}
+
+      	/**
+      	 * 重写基类画图，此处为画一个完整的圆 
+      	 *
+      	 * @method draw
+      	 */
+      	draw() {
+      		let bounds = this.parent && this.parent.absoluteBounds?this.parent.absoluteBounds:this.absoluteBounds;	
+      		let location = this.getLocation();
+      		
+      		if(!location.radius) {
+      			location.radius = Math.min(location.width , location.height) / 2;
+      		}
+      		let start = this.startAngle;
+      		let end = this.endAngle;
+      		let anticlockwise = this.anticlockwise;
+      		//context.arc(x,y,r,sAngle,eAngle,counterclockwise);
+      		this.context.arc(location.center.x + bounds.left,location.center.y + bounds.top, location.radius, start,end,anticlockwise);
+      	}
+      }
+
+      var utils = {
+        /**
+         * 对比二个数组数据是否改变
+         * @param {Array} source 被对比的数、组
+         * @param {Array} target 对比数组
+         * @param {Function} compare 比较函数
+         */
+        arrayIsChange(source, target, compare) {
+          if (!source || !target) return true;
+          if (source.length !== target.length) return true;
+
+          if (typeof compare === 'function') {
+            for (let i = 0; i < source.length; i++) {
+              if (!compare(source[i], target[i])) return true;
+            }
+
+            return false;
+          } else return source == target;
+        }
+
+      };
+
+      /**
+       * 图形基类
+       *
+       * @class jmSeries
+       * @module jmChart
+       * @param {jmChart} chart 当前图表
+       * @param {array} mappings 图形字段映射
+       * @param {style} style 样式
+       */
+      //构造线图
+
+      class jmSeries extends jmPath {
+        constructor(options) {
+          super(options);
+
+          _defineProperty(this, "legendLabel", '');
+
+          _defineProperty(this, "shapes", new jmList());
+
+          _defineProperty(this, "keyPoints", []);
+
+          _defineProperty(this, "labels", []);
+
+          _defineProperty(this, "field", '');
+
+          this.options = options;
+          this.field = options.field || '';
+          this.index = options.index || 1;
+          this.legendLabel = options.legendLabel || '';
+          this.___animateCounter = 0; // 动画计数
+
+          this.xAxis = this.graph.createXAxis(); // 生成X轴
+          // 生成当前Y轴
+
+          this.yAxis = this.yAxis || this.graph.createYAxis({
+            index: this.index,
+            format: options.yLabelFormat
+          }); // 初始化一些参数， 因为这里有多个Y轴的可能，所以每次都需要重调一次init
+
+          this.yAxis.init({
+            field: this.field,
+            minYValue: options.minYValue,
+            maxYValue: options.maxYValue
+          });
+        }
+        /**
+         * 关联访问的是chart的数据源
+         */
+
+
+        get data() {
+          return this.graph.data;
+        }
+
+        set data(d) {
+          this.graph.data = d;
+        }
+        /**
+         * 图例名称
+         *
+         * @property legendLabel
+         * @type string
+         */
+
+
+        // 做一些基础初始化工作
+        init(...args) {
+          //生成描点位
+          // 如果有动画，则需要判断是否改变，不然不需要重新动画
+          let dataChanged = false;
+
+          if (this.enableAnimate) {
+            // 拷贝一份上次的点集合，用于判断数据是否改变
+            const lastPoints = this.graph.utils.clone(this.dataPoints, null, true, obj => {
+              if (obj instanceof jmControl) return obj;
+            }); // 重新生成描点
+
+            this.dataPoints = this.createPoints(...args);
+            dataChanged = utils.arrayIsChange(lastPoints, this.dataPoints, (s, t) => {
+              return s.x === t.x && s.y === t.y;
+            });
+            if (dataChanged) this.___animateCounter = 0; // 数据改变。动画重新开始
+          } else {
+            this.dataPoints = this.createPoints(...args);
+          }
+
+          return {
+            dataChanged,
+            points: this.dataPoints
+          };
+        }
+        /**
+         * 根据X轴坐标，获取它最近的数据描点
+         * 离点最近的一个描点
+         * @param {number} x  X轴坐标
+         */
+
+
+        getDataPointByX(x) {
+          if (!this.dataPoints) return null; // 获取最近的那个
+
+          let prePoint = undefined;
+       // 跟上一个点和下一个点的距离，哪个近用哪个
+
+          for (let i = 0; i < this.dataPoints.length; i++) {
+            const p = this.dataPoints[i];
+            if (p.x == x) return p; // 上一个点
+
+            if (p.x < x) {
+              if (i === this.dataPoints.length - 1) return p;
+              prePoint = p;
+            } // 下一个点
+
+
+            if ( p.x > x) {
+              // 没有上一个，只能返回这个了
+              if (prePoint && x - prePoint.x < p.x - x) return prePoint;else return p;
+            }
+          }
+
+          return null;
+        }
+        /**
+         * 重置属性
+         * 根据数据源计算轴的属性
+         *
+         * @method reset
+         */
+
+
+        reset() {
+          //是否启用动画效果
+          this.enableAnimate = typeof this.enableAnimate === 'undefined' ? this.graph.enableAnimate : this.enableAnimate; // 重置所有图形
+
+          var shape;
+
+          while (shape = this.shapes.shift()) {
+            shape && shape.remove();
+          } //生成图例  这里要放到shape清理后面
+
+
+          this.createLegend(); // 计算最大最小值
+          // 当前需要先更新axis的边界值，轴好画图
+
+          for (var i = 0; i < this.data.length; i++) {
+            const v = this.data[i][this.field];
+            this.yAxis.max(v);
+            this.yAxis.min(v);
+            const xv = this.data[i][this.xAxis.field];
+            this.xAxis.max(xv);
+            this.xAxis.min(xv);
+          }
+
+          return this.chartInfo = {
+            xAxis: this.xAxis,
+            yAxis: this.yAxis
+          };
+        }
+        /**
+         * 生成序列图描点
+         *
+         * @method createPoints
+         */
+
+
+        createPoints(data) {
+          data = data || this.data;
+          if (!data) return;
+          const xstep = this.xAxis.step();
+          const ystep = this.yAxis.step();
+          this.dataPoints = [];
+
+          for (let i = 0; i < data.length; i++) {
+            const s = data[i];
+            const xv = s[this.xAxis.field];
+            const yv = s[this.field];
+            const p = {
+              data: s,
+              xValue: xv,
+              xLabel: xv,
+              yValue: yv,
+              yLabel: yv
+            }; // 这里的点应相对于chartArea
+
+            p.x = xstep * (data.length === 1 ? 1 : i) + this.xAxis.labelStart; //如果Y值不存在。则此点无效，不画图
+
+            if (yv == null || typeof yv == 'undefined') {
+              p.m = true;
+            } else {
+              if (this.yAxis.dataType != 'number') {
+                yv = i;
+              }
+
+              p.y = this.graph.chartArea.height - (yv - this.yAxis.min()) * ystep;
+            }
+
+            this.dataPoints.push(p);
+          }
+
+          return this.dataPoints;
+        }
+        /**
+         * 生成图例
+         *
+         * @method createLegend
+         */
+
+
+        createLegend() {
+          //生成图例前的图标
+          const style = this.graph.utils.clone(this.style);
+          style.fill = style.color; //delete style.stroke;
+
+          const shape = this.graph.createShape(jmRect, {
+            style
+          });
+          this.graph.legend.append(this, shape);
+        }
+        /**
+         * 添加关健点
+         * @param {object} options 关健点的参数，
+         * {
+         * xValue 对应的X轴值
+         * 	radius: 大小,
+         * style: {
+         * stroke: 边颜色
+         * fill: 填充色
+         * }
+         * }
+         */
+
+
+        addKeyPoint(options) {
+          if (!options) return;
+          this.keyPoints.push(options);
+          return options;
+        }
+        /**
+         * 添加标注
+         * @param {object} options 参数，
+         * {
+         * xValue 对应的X轴值
+         * text 显示文案
+         * width: 宽,
+         * height: 高
+         * 可以参考jmLabel样式
+         * style: {
+         * stroke: 边颜色
+         * fill: 填充色
+         * font: 字体
+         * }
+         * }
+         */
+
+
+        addLabel(options) {
+          if (!options) return;
+          this.labels.push(options);
+          return options;
+        } // 在关健点生成高亮点
+
+
+        createKeyPoint(position, point) {
+          for (const opt of this.keyPoints) {
+            if (opt.xValue !== point.xValue) return;
+            const pointShape = this.graph.createShape(jmCircle, {
+              style: Object.assign({
+                stroke: this.style.stroke,
+                fill: this.style.stroke
+              }, opt.style || {}),
+              center: position,
+              radius: opt.radius || 5
+            });
+            pointShape.zIndex = 20;
+            this.graph.chartArea.children.add(pointShape);
+            this.shapes.add(pointShape);
+          }
+        } // 在关健点生成标注
+
+
+        createLabel(position, point) {
+          for (const opt of this.labels) {
+            if (opt.xValue !== point.xValue || !opt.text) return;
+            const label = this.graph.createShape(jmLabel, {
+              style: Object.assign({
+                stroke: this.style.stroke,
+                fill: this.style.stroke,
+                textAlign: 'center',
+                textBaseline: 'middle',
+                border: {
+                  top: true,
+                  left: true,
+                  right: true,
+                  bottom: true,
+                  style: {
+                    fill: '#000'
+                  }
+                }
+              }, opt.style || {}),
+              text: opt.text,
+              position: Object.assign({}, position)
+            });
+            const size = label.testSize();
+            label.position.y -= size.height + 10;
+            label.position.x -= size.width / 2;
+            label.zIndex = 20;
+            this.graph.chartArea.children.add(label);
+            this.shapes.add(label);
+          }
+        }
+
+      }
+
+      /**
+       * 柱图
+       *
+       * @class jmBarSeries
+       * @module jmChart
+       * @param {jmChart} chart 当前图表
+       * @param {array} mappings 图形字段映射
+       * @param {style} style 样式
+       */
+      //构造函数
+
+      class jmBarSeries extends jmSeries {
+        constructor(options) {
+          super(options);
+        }
+        /**
+         * 绘制当前图形
+         *
+         * @method beginDraw
+         * @for jmBarSeries
+         */
+
+
+        init() {
+          //生成描点位
+          const {
+            points,
+            dataChanged
+          } = super.init();
+          const len = points.length; //设定其填充颜色
+
+          this.style.fill = this.style.color; //计算每个柱子占宽
+          //每项柱子占宽除以柱子个数,默认最大宽度为30		
+
+          this.barTotalWidth = this.xAxis.width / len * (this.style.perWidth || 0.4);
+          this.barWidth = this.barTotalWidth / this.graph.barSeriesCount;
+          const maxBarWidth = this.graph.barMaxWidth || 50;
+
+          if (this.barWidth > maxBarWidth) {
+            this.barWidth = maxBarWidth;
+            this.barTotalWidth = maxBarWidth * this.graph.barSeriesCount;
+          } // 是否正在动画中
+          // 如果数据点多于100 个，暂时不启用动画，太慢了
+
+
+          const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0) && len < 100;
+          let aniIsEnd = true; // 当次是否结束动画
+
+          const aniCount = this.style.aniCount || 10;
+
+          for (let i = 0; i < len; i++) {
+            //const label = this.xAxis.labels[i];
+            const point = points[i]; //如果当前点无效，则跳致下一点
+
+            if (typeof point.y === 'undefined' || point.y === null) {
+              continue;
+            }
+
+            const sp = this.shapes.add(this.graph.createPath(null, this.graph.utils.clone(this.style)));
+            this.children.add(sp); //绑定提示框
+            //this.bindTooltip(sp, point);
+            //首先确定p1和p4,因为他们是底脚。会固定
+
+            const p1 = {
+              x: point.x - this.barTotalWidth / 2 + this.barWidth * this.barIndex,
+              y: this.graph.chartArea.height
+            };
+            const p4 = {
+              x: p1.x + this.barWidth,
+              y: p1.y
+            };
+            const p2 = {
+              x: p1.x,
+              y: p1.y
+            };
+            const p3 = {
+              x: p4.x,
+              y: p1.y
+            }; // 如果要动画。则动态改变高度
+
+            if (isRunningAni) {
+              const height = Math.abs(point.y - p1.y);
+              const step = height / aniCount;
+              const offHeight = step * this.___animateCounter; // 动态计算当前高度
+              // 当次动画完成
+
+              if (offHeight >= height) {
+                p2.y = point.y;
+              } else {
+                aniIsEnd = false; // 只要有一个没完成，就还没有完成动画
+
+                p2.y = p1.y - offHeight; // 计算高度
+              }
+
+              p3.y = p2.y;
+            } else {
+              p2.y = point.y;
+              p3.y = point.y;
+            }
+
+            sp.points.push(p1);
+            sp.points.push(p2);
+            sp.points.push(p3);
+            sp.points.push(p4);
+          }
+
+          if (aniIsEnd) {
+            this.___animateCounter = 0;
+          } else {
+            this.___animateCounter++; // next tick 再次刷新
+
+            setTimeout(() => {
+              this.needUpdate = true; //需要刷新
+            });
+          }
+        }
+
       }
 
       /**
@@ -5879,6 +6028,9 @@ System.register([], function (exports, module) {
                   maxRadius: radius,
                   minRadius: radius - (this.style.arcWidth || radius * 0.2)
                 });
+                /**
+                 * 因为jmgraph是按图形形状来计算所占区域和大小的， 这里我们把扇形占区域改为整个图圆。这样计算大小和渐变时才好闭合。
+                 */
 
                 p.shape.getLocation = function () {
                   const local = this.location = {
@@ -6146,7 +6298,7 @@ System.register([], function (exports, module) {
 
 
             if (this.style.showItem) {
-              const pointShape = this.graph.createShape(jmArc, {
+              const pointShape = this.graph.createShape(jmCircle, {
                 style: this.style.item,
                 center: linePoint,
                 radius: this.style.radius || 3
@@ -6183,7 +6335,11 @@ System.register([], function (exports, module) {
               }
             }
 
-            shapePoints.push(linePoint);
+            shapePoints.push(linePoint); // 生成关健值标注
+
+            this.createKeyPoint(linePoint, p); // 生成标注
+
+            this.createLabel(linePoint, p);
           } // 如果所有都已经结束，则重置成初始化状态
 
 
@@ -6354,7 +6510,7 @@ System.register([], function (exports, module) {
               const style = graph.utils.clone(this.style, {
                 stroke: serie.style.color || serie.style.stroke
               }, true);
-              this.markArc = graph.createShape(jmArc, {
+              this.markArc = graph.createShape(jmCircle, {
                 style,
                 radius: (this.style.radius || 5) * this.graph.devicePixelRatio
               });

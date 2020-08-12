@@ -2184,7 +2184,6 @@ class jmControl extends jmProperty {
 			if(jmUtils.checkPercent(local.radius)) {
 				local.radius = jmUtils.percentToNumber(local.radius) * Math.min(parentBounds.width, parentBounds.height);
 			}
-			local.radius *=  this.graph.devicePixelRatio;
 		}
 		return local;
 	}
