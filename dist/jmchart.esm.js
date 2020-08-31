@@ -5473,6 +5473,22 @@ class jmSeries extends jmPath {
     return null;
   }
   /**
+   * 根据X轴值获取数据点
+   * @param {number} xValue  X轴值
+   */
+
+
+  getDataPointByXValue(xValue) {
+    if (!this.dataPoints) return null;
+
+    for (let i = 0; i < this.dataPoints.length; i++) {
+      const p = this.dataPoints[i];
+      if (p.xValue == xValue) return p;
+    }
+
+    return null;
+  }
+  /**
    * 重置属性
    * 根据数据源计算轴的属性
    *

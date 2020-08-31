@@ -23,6 +23,9 @@
 			box-shadow: 0 0 3px #000;
 			border-radius: 6px;
 		}*/
+        .floatdiv {
+            position:absolute;background:red;top:0;left:0;
+        }
 		</style>
 		
 	</head>
@@ -37,10 +40,16 @@
                 v-on:touchend="touchend"
                 v-on:touchleave="touchleave"
                 :width="width" :height="height">
+                
             </v-chart>
+
+            <div :style="{top: floattop, left: flaotleft}" class="floatdiv">浮窗</div>
+
             <button @click="visible=!visible">显示/隐藏</button>
 
             <button @click="changeField">换field</button>
+
+            <button @click="showTooltip">展示浮窗</button>
             <br />
             <div style="color: #ccc; font-size: 12px; overflow: hidden">
                 {{ touchDataInfo }}
@@ -206,7 +215,9 @@
                         ],
                         width: '100%',
                         height: '50%',
-                        touchDataInfo: ''
+                        touchDataInfo: '',
+                        floattop: '0px',
+                        flaotleft: '0px'
                     },
                     components: {
                         vChart
@@ -239,6 +250,15 @@
                                 ser1
                             ];
                             this.$refs.mychart.refresh();// 改变基础属性需要重刷
+                        },
+                        showTooltip() {
+                            const point = this.$refs.mychart.chartInstance.series[0].getDataPointByXValue('2019-05-25');
+                            console.log(point);
+                            const chartarea = this.$refs.mychart.chartInstance.chartArea.getBounds();
+                            const x = chartarea.left + point.x;
+                            const y = chartarea.top + point.y;
+                            this.floattop = y + 'px';
+                            this.flaotleft = x + 'px';
                         }
                     }
                 });
@@ -263,7 +283,7 @@
                         
                         for(let i =0; i<datacount; i++) {
                             const d = {
-                                x :  '2019-05-02',
+                                x :  '2019-05-' + i,
                                 y1:  Math.random()/2 + 1,
                                 y2:  Math.random(),
                                 y3:  Math.random(),
