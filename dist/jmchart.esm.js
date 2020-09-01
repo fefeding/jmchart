@@ -4644,16 +4644,18 @@ class jmAxis extends jmArrawLine {
     this.scalePoints = []; // 刻度点集合
 
     let count = this.labelCount;
-    const mm = max - min;
+    const mm = max * 10000 - min * 10000;
     /*if(mm <= 10) {
     	count = mm;
     }*/
+    // mm 放大10000倍，这里结果也需要除于10000
 
-    let pervalue = mm / count || 1;
+    let pervalue = Math.floor(mm / count) / 10000 || 1;
     if (pervalue > 1 || pervalue < -1) pervalue = Math.floor(pervalue);
     const format = this.options.format || this.format;
 
     for (let p = min; p <= max; p += pervalue) {
+      if (p > max) p = max;
       const h = (p - min) * step; // 当前点的偏移高度
 
       const label = this.graph.graph.createShape(jmLabel, {
@@ -4867,7 +4869,7 @@ class jmAxis extends jmArrawLine {
       let m = this._min; // 如果有指定默认最小值，则不小于它就采用它
 
       if (typeof this.minValue != 'undefined') {
-        return Math.min(this.minValue, m);
+        return typeof m !== 'undefined' ? Math.min(this.minValue, m) : this.minValue;
       }
 
       if (m >= 0) {

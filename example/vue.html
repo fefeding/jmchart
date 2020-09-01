@@ -15,6 +15,7 @@
 		}
         #app {
             height: 100%;
+            margin: 10px;
         }
 		/*div.jm-tooltip {
 			background-color: rgba(255,255,255,0.8);
@@ -139,7 +140,7 @@
                         legendLabel: '图例2',
                         // 最大值和最小值，如果不指定会自动计算，
                         // 如果指定了也只是指定了最大或最小边界，如果有数值超过它，依然以事实数值为准
-                        minYValue: 1,
+                        minYValue: 0.95,
                         //maxYValue: 1.5,
                         // 格式化y轴标签值
                         yLabelFormat: function(v) {
@@ -174,7 +175,7 @@
                         // 最大值和最小值，如果不指定会自动计算，
                         // 如果指定了也只是指定了最大或最小边界，如果有数值超过它，依然以事实数值为准
                         //minYValue: 0,
-                        maxYValue: 1.5,
+                        maxYValue: 1.15,
                         lineWidth: 1,
                         // 格式化y轴标签值
                         yLabelFormat: (v) => {
@@ -284,7 +285,7 @@
                         for(let i =0; i<datacount; i++) {
                             const d = {
                                 x :  '2019-05-' + i,
-                                y1:  Math.random()/2 + 1,
+                                y1:  Math.random()/2 + 0.5,
                                 y2:  Math.random(),
                                 y3:  Math.random(),
                             };
