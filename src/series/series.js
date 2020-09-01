@@ -34,6 +34,7 @@ export default class jmSeries extends jmPath {
 			index: this.index,
 			format: options.yLabelFormat
 		});
+		
 		// 初始化一些参数， 因为这里有多个Y轴的可能，所以每次都需要重调一次init
 		this.yAxis.init({
 			field: this.field,
