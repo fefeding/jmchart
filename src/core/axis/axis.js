@@ -482,7 +482,7 @@ export default class jmAxis extends jmArrawLine {
 
 		//如果是数字类型，则在最大值基础上加一定的值
 		if(this.dataType == 'number') {
-			let m = this._max;
+			m = this._max;
 
 			// 如果有指定默认最大值，则不超过它就采用它
 			if(typeof this.maxValue != 'undefined' && m <= this.maxValue)  {
@@ -535,7 +535,7 @@ export default class jmAxis extends jmArrawLine {
 
 		//如果是数字类型，则在最小值基础上减去一定的值
 		if(this.dataType == 'number') {
-			let m = this._min;
+			m = this._min;
 
 			// 如果有指定默认最小值，则不小于它就采用它
 			if(typeof this.minValue != 'undefined')  {

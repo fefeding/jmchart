@@ -4821,7 +4821,7 @@ define(['module', 'exports'], function (module, exports) { 'use strict';
 
 
       if (this.dataType == 'number') {
-        let m = this._max; // 如果有指定默认最大值，则不超过它就采用它
+        m = this._max; // 如果有指定默认最大值，则不超过它就采用它
 
         if (typeof this.maxValue != 'undefined' && m <= this.maxValue) {
           return this.maxValue;
@@ -4870,7 +4870,7 @@ define(['module', 'exports'], function (module, exports) { 'use strict';
 
 
       if (this.dataType == 'number') {
-        let m = this._min; // 如果有指定默认最小值，则不小于它就采用它
+        m = this._min; // 如果有指定默认最小值，则不小于它就采用它
 
         if (typeof this.minValue != 'undefined') {
           return typeof m !== 'undefined' ? Math.min(this.minValue, m) : this.minValue;
