@@ -253,13 +253,22 @@
                             this.$refs.mychart.refresh();// 改变基础属性需要重刷
                         },
                         showTooltip() {
-                            const point = this.$refs.mychart.chartInstance.series[0].getDataPointByXValue('2019-05-25');
+                            let point = this.$refs.mychart.chartInstance.series[0].getDataPointByXValue('2019-05-25');
                             console.log(point);
+
+                            
+
                             const chartarea = this.$refs.mychart.chartInstance.chartArea.getBounds();
-                            const x = chartarea.left + point.x;
-                            const y = chartarea.top + point.y;
-                            this.floattop = y + 'px';
-                            this.flaotleft = x + 'px';
+                            let x = chartarea.left + point.x;
+                            let y = chartarea.top + point.y;
+
+                            const p2 = this.$refs.mychart.chartInstance.pointToPixes({
+                                x,
+                                y
+                            });
+
+                            this.floattop = p2.y + 'px';
+                            this.flaotleft = p2.x + 'px';
                         }
                     }
                 });
