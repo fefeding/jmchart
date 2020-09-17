@@ -55,6 +55,7 @@ export default {
         width: function(newWidth, oldWidth) {
             if(!this.chartInstance) return;            
             this.$nextTick(()=>{
+                if(!this.chartInstance || !this.$refs.jmChartContainer) return;          
                 this.chartInstance.width = this.$refs.jmChartContainer.clientWidth||this.$refs.jmChartContainer.offsetWidth;
                 //this.chartInstance.refresh();
             });
@@ -62,6 +63,7 @@ export default {
         height: function(newHeight, oldHeight) {
             if(!this.chartInstance) return;
             this.$nextTick(()=>{
+                if(!this.chartInstance || !this.$refs.jmChartContainer) return;          
                 this.chartInstance.height = this.$refs.jmChartContainer.clientHeight||this.$refs.jmChartContainer.offsetHeight;
                 //this.chartInstance.refresh();
             });
