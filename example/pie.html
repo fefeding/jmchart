@@ -39,7 +39,7 @@
 					var chart1 = new jmChart('mycanvas1', {
 						width: w,
 						height: h,
-						enableAnimate: true,
+						enableAnimate: false,
 						autoRefresh: true,
                         style: {
 							markLine: false // 不展示标线
@@ -48,11 +48,32 @@
 					
 					var pie1 = chart1.createSeries('pie', {
 						field: 'y1',
+						anticlockwise: false, //是否逆时针
 						legendFormat: function(options) {
 							return 'test' + options.data.x;
 						},
+						labelFormat: function(point) {
+							return (point.step * 100).toFixed(2) + '%';
+						},
 						style: {
-							isHollow: true // 是否空心
+							isHollow: true, // 是否空心
+							arcWidth: 80, // 圆弧宽
+							label: {
+								show: true, // 默认就是true
+								stroke: 'red',
+								fill: '#ccc',
+								textAlign: 'center',
+								textBaseline: 'middle',
+								border: {
+									top: true,
+									left: true,
+									right: true,
+									bottom: true,
+									style: {
+										fill: '#000'
+									}
+								}
+							}
 						}
 					});
 					
@@ -83,6 +104,7 @@
 					
 					var pie2 = chart2.createSeries('pie', {
 						field: 'y1',
+						anticlockwise: true, //是否逆时针
 						legendFormat: function(options) {
 							return 'test' + options.data.x;
 						},
@@ -92,11 +114,11 @@
 						}
                     });
                     
-                    const datacount = 3;
+                    const datacount = 4;
 					function refreshData() {
 						
 							const data = [];
-							for(var i = 0;i<datacount;i++) {
+							/*for(var i = 0;i<datacount;i++) {
 								const row = {
 									x : i,
 									y1 :  Math.random() * 200 - 100
@@ -105,7 +127,27 @@
 									row.y = null;
 								}
 								data.push(row);
-							}
+							}*/
+
+							data.push({
+									x : 0,
+									y1 :  50
+								});
+
+							data.push({
+								x : 1,
+								y1 :  50 / (datacount - 1)
+							});
+
+							data.push({
+								x : 2,
+								y1 :  50 / (datacount - 1)
+							});
+
+							data.push({
+								x : 3,
+								y1 :  50 / (datacount - 1)
+							});
 						
 						chart2.data = chart1.data = data;
 						//setTimeout(animate,500);

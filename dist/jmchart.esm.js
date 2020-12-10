@@ -6049,7 +6049,7 @@ class jmPieSeries extends jmSeries {
             style: p.style,
             startAngle: start,
             endAngle: p.y,
-            anticlockwise: true,
+            anticlockwise: this.options.anticlockwise,
             isFan: true,
             // 表示画扇形
             center,
@@ -6082,6 +6082,7 @@ class jmPieSeries extends jmSeries {
 
           this.shapes.add(p.shape);
           this.graph.chartArea.children.add(p.shape);
+          this.createLabel(p); // 生成标签
         }
 
         points.push(p);
@@ -6090,6 +6091,52 @@ class jmPieSeries extends jmSeries {
     }
 
     return points;
+  } // 生成柱图的标注
+
+
+  createLabel(point) {
+    if (this.style.label && this.style.label.show === false) return;
+    const text = this.options.labelFormat ? this.options.labelFormat(point) : point.step;
+    const self = this;
+    const label = this.graph.createShape(jmLabel, {
+      style: this.style.label,
+      text: text,
+      position: function () {
+        if (!this.parent || !this.parent.points || !this.parent.points.length) return {
+          x: 0,
+          y: 0
+        }; // 动态计算位置
+
+        const parentRect = this.parent.getBounds(); //const rect = this.getBounds.call(this.parent);
+        // 圆弧的中间位，离圆心最近和最完的二个点
+
+        let centerMaxPoint = this.parent.points[Math.floor(this.parent.points.length / 2)];
+        let centerMinPoint = this.parent.center; // 如果是空心圆，则要计算 1/4 和 3/4位的点。顺时针和逆时针二个点大小不一样，这里只取，大小计算时处理
+
+        if (self.style.isHollow) {
+          centerMaxPoint = this.parent.points[Math.floor(this.parent.points.length * 0.25)];
+          centerMinPoint = this.parent.points[Math.floor(this.parent.points.length * 0.75)];
+        }
+
+        const centerMinX = Math.min(centerMaxPoint.x, centerMinPoint.x);
+        const centerMaxX = Math.max(centerMaxPoint.x, centerMinPoint.x);
+        const centerMinY = Math.min(centerMaxPoint.y, centerMinPoint.y);
+        const centerMaxY = Math.max(centerMaxPoint.y, centerMinPoint.y); // 中心点
+
+        const center = {
+          x: (centerMaxX - centerMinX) / 2 + centerMinX,
+          y: (centerMaxY - centerMinY) / 2 + centerMinY
+        };
+        const size = this.testSize(); // 取图形中间的二个点
+        // rect是相对于图形坐标点形图的图形的左上角，而parentRect是图形重新指定的整圆区域。减去整圆区域左上角就是相对于整圆区域坐标
+
+        return {
+          x: center.x - parentRect.left - size.width / 2,
+          y: center.y - parentRect.top - size.height / 2
+        };
+      }
+    });
+    point.shape.children.add(label);
   }
 
 }
