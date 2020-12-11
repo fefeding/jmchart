@@ -86,14 +86,14 @@ export default class jmSeries extends jmPath {
 		let dataChanged = false;
 		if(this.enableAnimate) {
 			// 拷贝一份上次的点集合，用于判断数据是否改变
-			const lastPoints = this.graph.utils.clone(this.dataPoints, null, true, (obj) => {
+			this.lastPoints = this.graph.utils.clone(this.dataPoints, null, true, (obj) => {
 				if(obj instanceof jmControl) return obj;
 			});
 
 			// 重新生成描点
 			this.dataPoints = this.createPoints(...args);
 
-			dataChanged = utils.arrayIsChange(lastPoints, this.dataPoints, (s, t) => {
+			dataChanged = utils.arrayIsChange(this.lastPoints, this.dataPoints, (s, t) => {
 				return s.x === t.x && s.y === t.y;
 			});
 

@@ -119,13 +119,19 @@ export default class jmPieSeries extends jmSeries {
 			else {
 				const p = {				
 					data: s,
+					x: i,
 					yValue: yv,
 					yLabel: yv,
 					step: Math.abs(yv / this.totalValue),// 每个数值点比
 					style: this.graph.utils.clone(this.style)
 				};
 				//p.style.color = this.graph.getColor(index);
-				p.style.fill = this.graph.getColor(index);
+				if(p.style.color && typeof p.style.color === 'function') {
+					p.style.fill = p.style.color.call(this, p);
+				}
+				else {
+					p.style.fill = this.graph.getColor(index);
+				}
 
 				const start = startAni;// 上一个扇形的结束角度为当前的起始角度
 				// 计算当前结束角度, 同时也是下一个的起始角度
@@ -171,6 +177,23 @@ export default class jmPieSeries extends jmSeries {
 
 					this.shapes.add(p.shape);
 					this.graph.chartArea.children.add(p.shape);
+
+					// 如果有点击事件
+					if(this.options.onClick) {
+						p.shape.on('click', (e) => {
+							this.options.onClick.call(this, p, e);
+						});
+					}
+					if(this.options.onOver) {
+						p.shape.on('mouseover touchover', (e) => {
+							this.options.onOver.call(this, p, e);
+						});
+					}
+					if(this.options.onLeave) {
+						p.shape.on('mouseleave touchleave', (e) => {
+							this.options.onLeave.call(this, p, e);
+						});
+					}
 
 					this.createLabel(p);// 生成标签
 				}

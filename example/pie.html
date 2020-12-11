@@ -53,15 +53,41 @@
 							return 'test' + options.data.x;
 						},
 						labelFormat: function(point) {
-							return (point.step * 100).toFixed(2) + '%';
+							//return (point.step * 100).toFixed(2) + '%';
+							return point.data.name;
 						},
+						// 点击事件
+						onClick: function(point, e) {
+							refreshData(point.data.name);
+						},
+						/*onOver: function(point, e) {
+							point.data.overColor = '#D8E404';
+							this.needUpdate = true;
+
+							// 每隔一段时间检查是否在图形上，否则认为离开
+							clearTimeout(point.data.___event_check_handler);
+							point.data.___event_check_handler = setTimeout(() => {
+								if(point.data.overColor) {
+									point.data.overColor = '';
+									this.needUpdate = true;
+								}
+							}, 200);
+						},
+						onLeave: function(point, e) {
+							point.data.overColor = '';// 去除当前色
+							this.needUpdate = true;
+						},*/
 						style: {
 							isHollow: true, // 是否空心
 							arcWidth: 80, // 圆弧宽
+							// 指定颜色获取方式，不指定就会使用默认的
+							color: function(point) {
+								return point.data.overColor || point.data.color || this.graph.getColor(point.x);
+							},
 							label: {
 								show: true, // 默认就是true
-								stroke: 'red',
-								fill: '#ccc',
+								stroke: '#ccc',
+								fill: 'blue',
 								textAlign: 'center',
 								textBaseline: 'middle',
 								border: {
@@ -108,50 +134,87 @@
 						legendFormat: function(options) {
 							return 'test' + options.data.x;
 						},
+						labelFormat: function(point) {
+							return (point.step * 100).toFixed(2) + '%';
+						},
 						style: {
 							isHollow: false, // 是否空心
 							arcWidth: 50 // 空心时，圆弧的宽度, 不指定就默认20%半径
 						}
                     });
                     
-                    const datacount = 4;
-					function refreshData() {
-						
-							const data = [];
-							/*for(var i = 0;i<datacount;i++) {
-								const row = {
-									x : i,
-									y1 :  Math.random() * 200 - 100
-								};
-								if(i == 3) {
-									row.y = null;
+					const datacount = 4;
+
+					// 把圆分成一百份，  只有选中的第一个才点半圆 50
+					const otherNum = 50 / (datacount - 1);
+					const selectNum = 50;
+
+					let data1 = [
+						{
+							x : 0,
+							name: 'test1',
+							color: '#249FDA',
+							y1 :  selectNum
+						},
+						{
+							x : 1,
+							name: 'test2',
+							color: '#EA3B7C',
+							y1 :  otherNum
+						},
+						{
+							x : 2,
+							name: 'test3',
+							color: '#8EBC00',
+							y1 :  otherNum
+						},
+						{
+							x : 3,
+							name: 'test4',
+							color: '#309B46',
+							y1 :  otherNum
+						}
+					];	
+
+					function refreshData(selectName) {
+						// 选择没有改变，不处理
+						if(selectName === data1[0].name) return;
+
+						// 第一个图，当选中某个项后，它移到第一个，其它项顺移
+						const data1Tmp = [];
+						for(let i=0; i<data1.length; i++) {
+							if(data1[i].name == selectName) {
+								data1Tmp.push(data1[i]);
+								data1[i].y1 = selectNum;
+
+								for(let j=i+1;j<data1.length;j++) {
+									data1[j].y1 = otherNum;
+									data1Tmp.push(data1[j]);
 								}
-								data.push(row);
-							}*/
+								for(let j=0;j<i;j++) {
+									data1[j].y1 = otherNum;
+									data1Tmp.push(data1[j]);
+								}
+								break;
+							}
+						}
+						if(data1Tmp.length) data1 = data1Tmp;
 
-							data.push({
-									x : 0,
-									y1 :  50
-								});
+						chart1.data = data1;
+						chart1.refresh(); 
 
-							data.push({
-								x : 1,
-								y1 :  50 / (datacount - 1)
-							});
-
-							data.push({
-								x : 2,
-								y1 :  50 / (datacount - 1)
-							});
-
-							data.push({
-								x : 3,
-								y1 :  50 / (datacount - 1)
-							});
 						
-						chart2.data = chart1.data = data;
+						const data2 = [];
+						for(let i=0; i< datacount;i++) {
+							data2.push({
+								x : i,
+								name: 'test' + i,
+								y1 :  Math.random() * 100
+							});
+						}
+						chart2.data = data2;
 						//setTimeout(animate,500);
-						chart1.refresh(); // 默认刷新一次
+						// 默认刷新一次
 						chart2.refresh();
 
 						console.log(chart1.data);
