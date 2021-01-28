@@ -57,7 +57,7 @@
 							return point.data.name;
 						},
 						// 点击事件
-						onClick: function(point, e) {
+						onClick: function(point, e) {							
 							refreshData(point.data.name);
 						},
 						/*onOver: function(point, e) {
@@ -81,8 +81,14 @@
 							isHollow: true, // 是否空心
 							arcWidth: 80, // 圆弧宽
 							// 指定颜色获取方式，不指定就会使用默认的
-							color: function(point) {
-								return point.data.overColor || point.data.color || this.graph.getColor(point.x);
+							color: function(point) {								
+								const color = point.data.color || this.graph.getColor(point.x);
+								if(!point.data.selected) {
+								// 如果没有被选中，则给个透明度
+									const colorRGBA = this.graph.utils.hexToRGBA(color);
+                                    return `rgba(${colorRGBA.r},${colorRGBA.g},${colorRGBA.b}, 0.5)`;
+                                }
+								return color;
 							},
 							label: {
 								show: true, // 默认就是true
@@ -154,7 +160,8 @@
 							x : 0,
 							name: 'test1',
 							color: '#249FDA',
-							y1 :  selectNum
+							y1 :  selectNum,
+							selected: true
 						},
 						{
 							x : 1,
@@ -183,10 +190,11 @@
 						// 第一个图，当选中某个项后，它移到第一个，其它项顺移
 						const data1Tmp = [];
 						for(let i=0; i<data1.length; i++) {
+							data1[i].selected = false;
 							if(data1[i].name == selectName) {
 								data1Tmp.push(data1[i]);
 								data1[i].y1 = selectNum;
-
+								
 								for(let j=i+1;j<data1.length;j++) {
 									data1[j].y1 = otherNum;
 									data1Tmp.push(data1[j]);
@@ -195,10 +203,16 @@
 									data1[j].y1 = otherNum;
 									data1Tmp.push(data1[j]);
 								}
+
+								data1[i].selected = true;
 								break;
 							}
 						}
 						if(data1Tmp.length) data1 = data1Tmp;
+						// 默认选中第一个
+						if(!selectName) {
+							data1[0].selected = true;
+						}
 
 						chart1.data = data1;
 						chart1.refresh(); 
