@@ -147,6 +147,19 @@
 							shadow: function() {								
 								return `2, 2, 10, ${this.style.stroke}`;
 							},
+							area: {
+                                // 自定义填充颜色处理
+                                fill: function(style) {
+                                    // 根据颜色生成渐变效果
+                                    const color = this.graph.utils.hexToRGBA(this.style.stroke);
+                                    return `linear-gradient(50% 0 50% 100%, 
+                                        rgba(${color.r},${color.g},${color.b}, 0) 1, 
+                                        rgba(${color.r},${color.g},${color.b}, 0) 0.8,
+                                        rgba(${color.r},${color.g},${color.b}, 0.3) 0.5,
+                                        rgba(${color.r},${color.g},${color.b}, 0.5) 0.2, 
+                                        rgba(${color.r},${color.g},${color.b}, 0.8) 0)`;
+                                }
+                            }
 						}
 					});	
 					var line5 = chart.createSeries('line', {
