@@ -56,12 +56,12 @@
 							//return (point.step * 100).toFixed(2) + '%';
 							return point.data.name;
 						},
-						/*radius: function(p, radius, index) {
-							if(p.data.name === 'test1') {
+						radius: function(p, radius, index) {
+							if(p.data.selected) {
 								return radius + 10;
 							}
 							return radius;
-						},*/
+						},
 						center: function(p, center, index) {
 							// 如果被选中
 							if(p.data.selected) {
