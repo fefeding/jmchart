@@ -291,7 +291,7 @@ export default class jmSeries extends jmPath {
 	}
 
 	// 在关健点生成高亮点
-	createKeyPoint(position, point) {
+	createKeyPoint(point) {
 		for(const opt of this.keyPoints) {
 			if(opt.xValue !== point.xValue) return;
 
@@ -300,7 +300,7 @@ export default class jmSeries extends jmPath {
 					stroke: this.style.stroke,
 					fill: this.style.stroke
 				}, opt.style||{}),
-				center: position,
+				center: point,
 				radius: opt.radius || 5
 			});
 		
@@ -311,7 +311,7 @@ export default class jmSeries extends jmPath {
 	}
 
 	// 在关健点生成标注
-	createLabel(position, point) {
+	createLabel(point) {
 		for(const opt of this.labels) {
 			if(opt.xValue !== point.xValue || !opt.text) return;
 
@@ -332,7 +332,7 @@ export default class jmSeries extends jmPath {
 					}
 				}, opt.style||{}),
 				text: opt.text,
-				position: Object.assign({}, position)
+				position: point
 			});
 
 			const size = label.testSize();

@@ -46,7 +46,7 @@ export default class jmLineSeries extends jmSeries {
 
 		// 是否正在动画中
 		// 如果数据点多于100 个，暂时不启用动画，太慢了
-		const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0 ) && len < 100;
+		const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0 );
 
 		let shapePoints = []; // 计算出来的曲线点集合			
 		let aniIsEnd = true;// 当次是否结束动画
@@ -61,38 +61,17 @@ export default class jmLineSeries extends jmSeries {
 				continue;
 			}
 
-			// 当前线条描点，如果有动画是不一样的
-			const linePoint = {
-				x: p.x,
-				y: this.graph.chartArea.height
-			};
-
-			// 如果要动画。则动态改变高度, dataChanged或动画没完成才需要执行，否则只是普通刷新
 			if(isRunningAni) {
-				const height = Math.abs(p.y - linePoint.y);
-				const step = height / aniCount;
-
-				const offHeight = step * this.___animateCounter;// 动态计算当前高度
-
-				// 当次动画完成
-				if(offHeight >= height) {
-					linePoint.y = p.y;
+				if(i > this.___animateCounter) {
+					break;
 				}
-				else {
-					aniIsEnd = false;
-
-					linePoint.y -= offHeight;// 计算高度
-				}
-			}
-			else {
-				linePoint.y = p.y;		
 			}
 
 			// 是否显示数值点圆
 			if(this.style.showItem) {
 				const pointShape = this.graph.createShape(jmCircle, {
 					style: this.style.item,
-					center: linePoint,
+					center: p,
 					radius: this.style.radius || 3
 				});
 			
@@ -105,9 +84,9 @@ export default class jmLineSeries extends jmSeries {
 				const startPoint = shapePoints[shapePoints.length - 1];
 				if(startPoint && startPoint.y != undefined && startPoint.y != null) {
 					//如果需要画曲线，则计算贝塞尔曲线坐标				
-					const p1 = {x: startPoint.x + (linePoint.x - startPoint.x) / 5, y: startPoint.y};
-					const p2 = {x: startPoint.x + (linePoint.x - startPoint.x) / 2, y: linePoint.y - (linePoint.y - startPoint.y) / 2};
-					const p3 = {x: linePoint.x - (linePoint.x - startPoint.x) / 5, y: linePoint.y};
+					const p1 = {x: startPoint.x + (p.x - startPoint.x) / 5, y: startPoint.y};
+					const p2 = {x: startPoint.x + (p.x - startPoint.x) / 2, y: p.y - (p.y - startPoint.y) / 2};
+					const p3 = {x: p.x - (p.x - startPoint.x) / 5, y: p.y};
 
 					//圆滑线条使用的贝塞尔对象
 					this.__bezier = this.__bezier || this.graph.createShape(jmBezier);
@@ -116,7 +95,7 @@ export default class jmLineSeries extends jmSeries {
 						p1,
 						p2,
 						p3,
-						linePoint
+						p
 					];//设置控制点
 
 					const bzpoints = this.__bezier.initPoints();
@@ -132,25 +111,26 @@ export default class jmLineSeries extends jmSeries {
 						style: this.style,						
 					});	
 					this.__line.start = startPoint;
-					this.__line.end = linePoint;			
+					this.__line.end = p;			
 
 					const dots = this.__line.initPoints();
 					shapePoints = shapePoints.concat(dots);					
 				}
-			}								
-			shapePoints.push(linePoint);
+			}
+
+			shapePoints.push(p);
 
 			// 生成关健值标注
-			this.createKeyPoint(linePoint, p);
+			this.createKeyPoint(p);
 			// 生成标注
-			this.createLabel(linePoint, p);
+			this.createLabel(p);
 		}
 
 		// 如果所有都已经结束，则重置成初始化状态
-		if(aniIsEnd) {
+		if(this.___animateCounter >= len - 1) {
 			this.___animateCounter = 0;
 		}
-		else {	
+		else if(isRunningAni) {	
 			this.___animateCounter++;		
 			// next tick 再次刷新
 			setTimeout(()=>{

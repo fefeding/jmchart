@@ -56,6 +56,27 @@
 							//return (point.step * 100).toFixed(2) + '%';
 							return point.data.name;
 						},
+						radius: function(p, radius, index) {
+							if(p.data.name === 'test1') {
+								return radius + 10;
+							}
+							return radius;
+						},
+						center: function(p, center, index) {
+							if(p.data.name === 'test1') {
+								// 根据中心角度，偏移离中心偏移一个量
+								const mradius = 10;
+								// 逆时针需要反过来
+								const angle = (p.endAngle - p.startAngle) / 2 * (p.anticlockwise? 1: -1);
+								if(angle !== 0) {
+									return {
+										x: center.x + Math.cos(angle) * mradius,
+										y: center.y - Math.sin(angle) * mradius
+									}
+								}
+							}
+							return center;
+						},
 						// 点击事件
 						onClick: function(point, e) {							
 							refreshData(point.data.name);
@@ -80,8 +101,10 @@
 						style: {
 							isHollow: true, // 是否空心
 							arcWidth: 80, // 圆弧宽
+							marginAngle: 0.02,// 间隔角度
 							// 指定颜色获取方式，不指定就会使用默认的
-							color: function(point) {								
+							color: function(point) {	
+								if(!point || !point.data) return;							
 								const color = point.data.color || this.graph.getColor(point.x);
 								if(!point.data.selected) {
 								// 如果没有被选中，则给个透明度
@@ -143,8 +166,30 @@
 						labelFormat: function(point) {
 							return (point.step * 100).toFixed(2) + '%';
 						},
+						/*radius: function(p, radius, index) {
+							if(p.data.name === 'test0') {
+								return radius + 20;
+							}
+							return radius;
+						},*/
+						center: function(p, center, index) {
+							if(p.data.name === 'test0') {
+								// 根据中心角度，偏移离中心偏移一个量
+								const mradius = 20;
+								// 逆时针需要反过来
+								const angle = (p.endAngle - p.startAngle) / 2 * (p.anticlockwise? 1: -1);
+								if(angle !== 0) {
+									return {
+										x: center.x + Math.cos(angle) * mradius,
+										y: center.y - Math.sin(angle) * mradius
+									}
+								}
+							}
+							return center;
+						},
 						style: {
 							isHollow: false, // 是否空心
+							marginAngle: 0,// 间隔角度
 							arcWidth: 50 // 空心时，圆弧的宽度, 不指定就默认20%半径
 						}
                     });

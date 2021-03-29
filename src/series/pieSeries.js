@@ -106,6 +106,10 @@ export default class jmPieSeries extends jmSeries {
 		
 		let startAni = 0; // 总起始角度
 		let cm = Math.PI * 2;
+		//规定应该逆时针还是顺时针绘图 false  顺时针，true 逆时针
+		const anticlockwise = this.options.anticlockwise || false;
+		// 每项之间的间隔角度  顺时钟为正，否则为负
+		const marginAngle = (Number(this.style.marginAngle) || 0);
 
 		for(var i=0;i< this.data.length;i++) {
 			const s = this.data[i];
@@ -123,7 +127,8 @@ export default class jmPieSeries extends jmSeries {
 					yValue: yv,
 					yLabel: yv,
 					step: Math.abs(yv / this.totalValue),// 每个数值点比
-					style: this.graph.utils.clone(this.style)
+					style: this.graph.utils.clone(this.style),
+					anticlockwise
 				};
 				//p.style.color = this.graph.getColor(index);
 				if(p.style.color && typeof p.style.color === 'function') {
@@ -137,19 +142,41 @@ export default class jmPieSeries extends jmSeries {
 				// 计算当前结束角度, 同时也是下一个的起始角度
 				p.y = startAni + p.step * cm;
 				startAni = p.y;
+				p.startAngle = start + marginAngle;
+				p.endAngle = p.y;
 
 				if(center && radius) {
-					
+					const arcWidth = this.style.arcWidth || radius*0.2;
+					let curRadius = radius;
+					// 如果有指定动态半径，则调用
+					if(typeof this.options.radius === 'function') {
+						curRadius = this.options.radius.call(this, p, radius, i);
+					}
+					let maxRadius = curRadius;
+					// 如果有指定动态半径，则调用
+					if(typeof this.options.maxRadius === 'function') {
+						maxRadius = this.options.maxRadius.call(this, p, maxRadius, i);
+					}
+					let minRadius = curRadius - arcWidth;
+					// 如果有指定动态半径，则调用
+					if(typeof this.options.minRadius === 'function') {
+						minRadius = this.options.minRadius.call(this, p, minRadius, i);
+					}
+					let curCenter = center;
+					// 如果有指定动态半径，则调用
+					if(typeof this.options.center === 'function') {
+						curCenter = this.options.center.call(this, p, curCenter, i);
+					}
 					p.shape = this.graph.createShape(this.style.isHollow? jmHArc : jmArc, {
 						style: p.style,
-						startAngle: start,
-						endAngle: p.y,
-						anticlockwise: this.options.anticlockwise,
+						startAngle: p.startAngle,
+						endAngle: p.endAngle,
+						anticlockwise: anticlockwise,
 						isFan: true, // 表示画扇形
-						center,
-						radius,
-						maxRadius: radius,
-						minRadius: radius - (this.style.arcWidth || radius*0.2)
+						center: curCenter,
+						radius: curRadius,
+						maxRadius,
+						minRadius
 					});
 
 					/**
@@ -162,12 +189,12 @@ export default class jmPieSeries extends jmSeries {
 							width: 0,
 							height: 0,
 							center: this.center,
-							radius: this.radius
+							radius: curRadius
 						};
 
-						local.left = this.center.x - this.radius;
-						local.top = this.center.y - this.radius;
-						local.width = local.height = this.radius * 2;
+						local.left = this.center.x - curRadius;
+						local.top = this.center.y - curRadius;
+						local.width = local.height = curRadius * 2;
 						
 						return local;
 					}
