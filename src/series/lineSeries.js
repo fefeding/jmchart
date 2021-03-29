@@ -1,5 +1,6 @@
 import jmBezier from 'jmgraph/src/shapes/jmBezier.js';
 import jmCircle from 'jmgraph/src/shapes/jmCircle.js';
+import jmLine from 'jmgraph/src/shapes/jmLine.js';
 import jmPath from 'jmgraph/src/core/jmPath.js';
 import jmSeries from './series.js';
 
@@ -121,7 +122,22 @@ export default class jmLineSeries extends jmSeries {
 					const bzpoints = this.__bezier.initPoints();
 					shapePoints = shapePoints.concat(bzpoints);					
 				}
-			}									
+			}
+			// 如果是虚线
+			else if(this.style.lineType === 'dotted') {
+				const startPoint = shapePoints[shapePoints.length - 1];
+				if(startPoint && startPoint.y != undefined && startPoint.y != null) {
+					//使用线条来画虚线效果
+					this.__line = this.__line || this.graph.createShape(jmLine, {
+						style: this.style,						
+					});	
+					this.__line.start = startPoint;
+					this.__line.end = linePoint;			
+
+					const dots = this.__line.initPoints();
+					shapePoints = shapePoints.concat(dots);					
+				}
+			}								
 			shapePoints.push(linePoint);
 
 			// 生成关健值标注

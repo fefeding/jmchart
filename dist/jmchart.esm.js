@@ -513,7 +513,7 @@ class jmUtils {
     /**
      * @method judge 判断点是否在多边形中
      * @param {point} dot {{x,y}} 需要判断的点
-     * @param {array} coordinates {{x,y}[]} 多边形点坐标的数组，为保证图形能够闭合，起点和终点必须相等。
+     * @param {array} coordinates {{x,y}} 多边形点坐标的数组，为保证图形能够闭合，起点和终点必须相等。
      *        比如三角形需要四个点表示，第一个点和最后一个点必须相同。 
      * @param  {number} 是否为实心 1= 是
      * @returns {boolean} 结果 true=在形状内
@@ -1910,7 +1910,9 @@ class jmControl extends jmProperty {
 		let __setStyle = (style, name, mpkey) => {
 			//let styleValue = style[mpkey||name]||style;
 			if(style) {				
-				
+				if(typeof style === 'function') {
+					style = style.call(this);
+				}
 				let t = typeof style;	
 				let mpname = this.jmStyleMap[mpkey || name];
 
@@ -5404,7 +5406,7 @@ class jmSeries extends jmPath {
 
     this.yAxis = this.yAxis || this.graph.createYAxis({
       index: this.index,
-      format: options.yLabelFormat
+      format: options.yLabelFormat || this.graph.options.yLabelFormat
     }); // 初始化一些参数， 因为这里有多个Y轴的可能，所以每次都需要重调一次init
 
     this.yAxis.init({
@@ -6434,7 +6436,23 @@ class jmLineSeries extends jmSeries {
 
           shapePoints = shapePoints.concat(bzpoints);
         }
-      }
+      } // 如果是虚线
+      else if (this.style.lineType === 'dotted') {
+          const startPoint = shapePoints[shapePoints.length - 1];
+
+          if (startPoint && startPoint.y != undefined && startPoint.y != null) {
+            //使用线条来画虚线效果
+            this.__line = this.__line || this.graph.createShape(jmLine, {
+              style: this.style
+            });
+            this.__line.start = startPoint;
+            this.__line.end = linePoint;
+
+            const dots = this.__line.initPoints();
+
+            shapePoints = shapePoints.concat(dots);
+          }
+        }
 
       shapePoints.push(linePoint); // 生成关健值标注
 
@@ -7053,10 +7071,17 @@ class jmChart extends jmGraph {
       options = Object.assign({
         field: this.xField,
         type: 'x',
-        minXValue: this.options.minXValue,
-        maxXValue: this.options.maxXValue,
         format: this.options.xLabelFormat
       }, options || {});
+
+      if (typeof this.options.minXValue !== 'undefined') {
+        options.minXValue = typeof options.minXValue === 'undefined' ? this.options.minXValue : Math.min(this.options.minXValue, options.minXValue);
+      }
+
+      if (typeof this.options.maxXValue !== 'undefined') {
+        options.maxXValue = typeof options.maxXValue === 'undefined' ? this.options.maxXValue : Math.max(this.options.maxXValue, options.maxXValue);
+      }
+
       this.xAxis = this.createAxis(options);
     }
 
@@ -7073,11 +7098,22 @@ class jmChart extends jmGraph {
 
 
   createYAxis(options) {
-    options.index = options.index || 1;
-    options.type = 'y';
-
     if (!this.yAxises) {
       this.yAxises = {};
+    }
+
+    options = Object.assign({
+      index: 1,
+      type: 'y',
+      format: this.options.yLabelFormat
+    }, options || {});
+
+    if (typeof this.options.minYValue !== 'undefined') {
+      options.minYValue = typeof options.minYValue === 'undefined' ? this.options.minYValue : Math.min(this.options.minYValue, options.minYValue);
+    }
+
+    if (typeof this.options.maxYValue !== 'undefined') {
+      options.maxYValue = typeof options.maxYValue === 'undefined' ? this.options.maxYValue : Math.max(this.options.maxYValue, options.maxYValue);
     }
 
     var yaxis = this.yAxises[options.index] || (this.yAxises[options.index] = this.createAxis(options));

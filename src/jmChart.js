@@ -349,10 +349,15 @@ export default class jmChart extends jmgraph.jmGraph  {
 			options = Object.assign({
 				field: this.xField,
 				type: 'x',
-				minXValue: this.options.minXValue,
-				maxXValue: this.options.maxXValue,
 				format: this.options.xLabelFormat
 			}, options || {});
+			
+			if(typeof this.options.minXValue !== 'undefined') {
+				options.minXValue = typeof options.minXValue === 'undefined'?this.options.minXValue:Math.min(this.options.minXValue, options.minXValue);
+			}
+			if(typeof this.options.maxXValue !== 'undefined') {
+				options.maxXValue =  typeof options.maxXValue === 'undefined'?this.options.maxXValue:Math.max(this.options.maxXValue, options.maxXValue);
+			}
 			this.xAxis = this.createAxis(options);
 		}
 		return this.xAxis;
@@ -366,13 +371,23 @@ export default class jmChart extends jmgraph.jmGraph  {
 	 * @param {string} y轴的数据类型(string/number/date)
 	 * @param {bool} 是否从0开始
 	 */ 
-	createYAxis(options) {
-		options.index = options.index ||1;
-		options.type = 'y';
+	createYAxis(options) {	
 
 		if(!this.yAxises) {
 			this.yAxises = {};		
 		}
+		options = Object.assign({
+			index: 1,
+			type: 'y',
+			format: this.options.yLabelFormat,
+		}, options || {});
+		if(typeof this.options.minYValue !== 'undefined') {
+			options.minYValue = typeof options.minYValue === 'undefined'?this.options.minYValue:Math.min(this.options.minYValue, options.minYValue);
+		}
+		if(typeof this.options.maxYValue !== 'undefined') {
+			options.maxYValue =  typeof options.maxYValue === 'undefined'?this.options.maxYValue:Math.max(this.options.maxYValue, options.maxYValue);
+		}
+		
 		var yaxis = this.yAxises[options.index] || (this.yAxises[options.index] = this.createAxis(options));
 		return yaxis;
 	}

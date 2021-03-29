@@ -43,7 +43,15 @@
 						// 最大和最小X值，  这里一般不用指定，除非硬是需要
 						minXValue : 0,
 						maxXValue : 10,
-						autoRefresh: true
+						minYValue: -100,
+						maxYValue: 400,
+						autoRefresh: true,
+						yLabelFormat: (value, shape)=>{
+							return value + '%';
+						},
+						xLabelFormat: (value, data, index)=>{
+							return value + 'x';
+						}
 					});
 					chart.legend.legendPosition = 'top';
 					chart.legend.visible = true;
@@ -53,32 +61,9 @@
 					chart.on('touchPointChange', function(args) {
 						console.log(args);
 					});
-					
-					
-					var bar1 = chart.createSeries('bar', {
+/*
+					var line1 = chart.createSeries('line', {
 						field: 'y1',
-						// 图例格式化，如果不给定，则采用legendLabel
-						legendFormat: function(options) {
-							return '图1';
-						},
-						yLabelFormat: (v, label) => {
-							return v.toFixed(0);
-						}
-					});		
-					
-					var bar2 = chart.createSeries('bar', {
-						field: 'y8',
-						// 图例格式化，如果不给定，则采用legendLabel
-						legendFormat: function(options) {
-							return '图4';
-						},
-						yLabelFormat: (v, label) => {
-							return v.toFixed(0);
-						}
-					});	
-
-					var line2 = chart.createSeries('line', {
-						field: 'y2',
 						//index: 2, // 指定Y轴索引，如是档指定就会共用左边的Y轴，
 						// 最大值和最小值，如果不指定会自动计算，
 						// 如果指定了也只是指定了最大或最小边界，如果有数值超过它，依然以事实数值为准
@@ -87,7 +72,7 @@
 						style: {
 							// 画圆滑的曲线 
 							curve: true,// 填充图形
-                            /*area: {
+                            area: {
                                 // 自定义填充颜色处理
                                 fill: function(style) {
                                     // 根据颜色生成渐变效果
@@ -99,7 +84,7 @@
                                         rgba(${color.r},${color.g},${color.b}, 0.5) 0.2, 
                                         rgba(${color.r},${color.g},${color.b}, 0.8) 0)`;
                                 }
-                            }*/
+                            }
 						},
 						legendFormat: function(options) {
 							return '图例2';
@@ -108,16 +93,16 @@
 					
 					
 
-					var line3 = chart.createSeries('line', {
-						field: 'y3',
+					var line2 = chart.createSeries('line', {
+						field: 'y2',
 						legendLabel: '图例3',
 						style: {
 							showItem: false
 						}
 					});	
-					
+				*/	
 					// 增加关健点
-					line3.addKeyPoint({
+					/*line1.addKeyPoint({
 						xValue: 3,
 						radius: 5 * chart.graph.devicePixelRatio,
 						style: {
@@ -126,7 +111,7 @@
 						}
 					});
 					// 增加标注
-					line3.addLabel({
+					line1.addLabel({
 						xValue: 3,
 						text: '买入',
 						style: {
@@ -139,7 +124,43 @@
 								bottom: true
 							}
 						}
-					});
+					});*/
+
+					var line3 = chart.createSeries('line', {
+						field: 'y8',
+						legendLabel: '图例8',
+						style: {
+							showItem: false,
+							lineWidth: 3,
+							lineType: 'dotted', // 虚线
+							shadow: function() {								
+								return `2, 2, 10, ${this.style.stroke}`;
+							},
+						}
+					});	
+					var line4 = chart.createSeries('line', {
+						field: 'y9',
+						legendLabel: '图例9',
+						style: {
+							showItem: false,
+							lineWidth: 3,
+							shadow: function() {								
+								return `2, 2, 10, ${this.style.stroke}`;
+							},
+						}
+					});	
+					var line5 = chart.createSeries('line', {
+						field: 'y10',
+						legendLabel: '图例10',
+						style: {
+							showItem: false,
+							lineWidth: 3,
+							lineType: 'dotted', // 虚线
+							shadow: function() {								
+								return `2, 2, 10, ${this.style.stroke}`;
+							},
+						}
+					});	
 		
 					const datacount = 10;
 					function animate() {
@@ -155,9 +176,9 @@
 									y5:Math.random() * 200 + 50,
 									y6:Math.random() * 200 + 50,
 									y7:i,
-									y8:Math.random() * 200 - 50,
-									y9:Math.random() * 200 - 50,
-									y10:Math.random() * 200 - 50
+									y8: i * 30,
+									y9: i * 25,
+									y10:  i * 20
 								};
 								if(i == 3) {
 									data.y = null;

@@ -32,7 +32,7 @@ export default class jmSeries extends jmPath {
 		// 生成当前Y轴
 		this.yAxis = this.yAxis || this.graph.createYAxis({
 			index: this.index,
-			format: options.yLabelFormat
+			format: options.yLabelFormat || this.graph.options.yLabelFormat
 		});
 		
 		// 初始化一些参数， 因为这里有多个Y轴的可能，所以每次都需要重调一次init

@@ -14,7 +14,7 @@ import  jmLine from 'jmgraph/src/shapes/jmLine.js';
  */
 
 export default class jmAxis extends jmArrawLine {
-	constructor(options) {
+	constructor(options) {		
 		super(options);
 
 		//初始化不显示箭头
@@ -328,6 +328,7 @@ export default class jmAxis extends jmArrawLine {
 			const label = this.graph.graph.createShape(jmLabel, {
 				style: this.style.yLabel
 			});
+			
 			label.text = format.call(this, p, label); // 格式化label
 			this.labels.push(label);
 			this.children.add(label);
