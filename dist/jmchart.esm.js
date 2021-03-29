@@ -6401,9 +6401,10 @@ class jmLineSeries extends jmSeries {
     // 如果数据点多于100 个，暂时不启用动画，太慢了
 
     const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0);
-    let shapePoints = []; // 计算出来的曲线点集合			
+    let shapePoints = []; // 计算出来的曲线点集合	
 
-    const aniCount = this.style.aniCount || 10;
+    const aniCount = this.style.aniCount || 20;
+    const aniStep = Math.floor(len / aniCount) || 1; // 每次动画播放点个数
 
     for (let i = 0; i < len; i++) {
       const p = points[i]; //如果当前点无效，则跳致下一点
@@ -6485,7 +6486,7 @@ class jmLineSeries extends jmSeries {
     if (this.___animateCounter >= len - 1) {
       this.___animateCounter = 0;
     } else if (isRunningAni) {
-      this.___animateCounter++; // next tick 再次刷新
+      this.___animateCounter += aniStep; // next tick 再次刷新
 
       setTimeout(() => {
         this.needUpdate = true; //需要刷新

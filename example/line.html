@@ -50,7 +50,8 @@
 							return value + '%';
 						},
 						xLabelFormat: (value, data, index)=>{
-							return value + 'x';
+							if(index % 5 === 0) return value + 'x';
+							return '';
 						}
 					});
 					chart.legend.legendPosition = 'top';
@@ -175,7 +176,7 @@
 						}
 					});	
 		
-					const datacount = 10;
+					const datacount = 100;
 					function animate() {
 						if(true) {
 							chart.data = [];
