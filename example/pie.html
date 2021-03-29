@@ -56,18 +56,18 @@
 							//return (point.step * 100).toFixed(2) + '%';
 							return point.data.name;
 						},
-						radius: function(p, radius, index) {
+						/*radius: function(p, radius, index) {
 							if(p.data.name === 'test1') {
 								return radius + 10;
 							}
 							return radius;
-						},
+						},*/
 						center: function(p, center, index) {
-							if(p.data.name === 'test1') {
+							if(p.data.name === 'test3') {
 								// 根据中心角度，偏移离中心偏移一个量
 								const mradius = 10;
 								// 逆时针需要反过来
-								const angle = (p.endAngle - p.startAngle) / 2 * (p.anticlockwise? 1: -1);
+								const angle = ((p.endAngle - p.startAngle) / 2 + p.startAngle) * (p.anticlockwise? 1: -1);
 								if(angle !== 0) {
 									return {
 										x: center.x + Math.cos(angle) * mradius,
@@ -173,11 +173,11 @@
 							return radius;
 						},*/
 						center: function(p, center, index) {
-							if(p.data.name === 'test0') {
+							if(p.data.name === 'test1') {
 								// 根据中心角度，偏移离中心偏移一个量
 								const mradius = 20;
 								// 逆时针需要反过来
-								const angle = (p.endAngle - p.startAngle) / 2 * (p.anticlockwise? 1: -1);
+								const angle = ((p.endAngle - p.startAngle) / 2 + p.startAngle) * (p.anticlockwise? 1: -1);
 								if(angle !== 0) {
 									return {
 										x: center.x + Math.cos(angle) * mradius,
