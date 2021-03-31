@@ -65,9 +65,9 @@
                     //width: 800,  // 可以这里指定，也可以VUE属性指定
                     //height: 600,
                     xField: 'x',// X轴对应在数据中的字段名
-                    enableAnimate: false,
+                    enableAnimate: true,
                     touchGraph: true, // 是否依赖生成操作图层，当点比较多时，性能低下可以把它设为true
-                    autoRefresh: false,
+                    autoRefresh: true,
                     legendPosition: 'top', // 图例位置 top left right bottom
                     legendVisible: false, // 不显示图例
                     // 最大和最小X值，  这里一般不用指定，除非硬是需要
@@ -152,6 +152,7 @@
                             //color: '#C79156', // 自定义颜色，如果不指定就会采用默认的
                             curve: true, // 圆滑的曲线,
                             lineWidth: 1,
+                            aniCount: 100, // 动画最多刷新多少次, 越大越平顺但越慢
                             // 填充图形
                             area: {
                                 // 自定义填充颜色处理
@@ -250,6 +251,8 @@
                             ]: [
                                 ser1
                             ];
+                            // 可以停用动画
+                            //ser1.enableAnimate = false;
                             this.$refs.mychart.refresh();// 改变基础属性需要重刷
                         },
                         showTooltip() {

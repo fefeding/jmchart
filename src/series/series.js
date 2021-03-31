@@ -53,6 +53,17 @@ export default class jmSeries extends jmPath {
 		this.graph.data = d;
 	}
 
+	//是否启用动画效果
+	get enableAnimate() {
+		if(typeof this.options.enableAnimate !== 'undefined') return !!this.options.enableAnimate;
+		else {
+			return this.graph.enableAnimate;
+		}
+	}
+	set enableAnimate(v) {
+		this.options.enableAnimate = v;
+	}
+
 	/**
 	 * 图例名称
 	 *
@@ -92,7 +103,6 @@ export default class jmSeries extends jmPath {
 
 			// 重新生成描点
 			this.dataPoints = this.createPoints(...args);
-
 			dataChanged = utils.arrayIsChange(this.lastPoints, this.dataPoints, (s, t) => {
 				return s.x === t.x && s.y === t.y;
 			});
@@ -158,10 +168,7 @@ export default class jmSeries extends jmPath {
 	 *
 	 * @method reset
 	 */
-	reset() {	
-		//是否启用动画效果
-		this.enableAnimate = typeof this.enableAnimate === 'undefined'?this.graph.enableAnimate:this.enableAnimate;
-
+	reset() {
 		// 重置所有图形
 		var shape;
 		while(shape = this.shapes.shift()) {

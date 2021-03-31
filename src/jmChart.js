@@ -22,13 +22,20 @@ export default class jmChart extends jmgraph.jmGraph  {
 
 	constructor(container, options) {
 		options = options||{};
-		options.autoRefresh = typeof options.autoRefresh === 'undefined'? false: options.autoRefresh;
+
+		const enableAnimate = !!options.enableAnimate;
+		options.autoRefresh = typeof options.autoRefresh === 'undefined'? enableAnimate: options.autoRefresh;
+
+		if(enableAnimate && !options.autoRefresh) {
+			console.warn('开启了动画，却没有开户自动刷新');
+		}
 
 		 // 深度复制默认样式，以免被改
 		options.style = jmgraph.jmUtils.clone(defaultStyle, options.style, true);
 
 		super(container, options);
 
+		this.enableAnimate = enableAnimate;
 		this.data = options.data || [];
 		// x轴绑定的字段名
 		this.xField = options.xField || '';	
@@ -56,8 +63,6 @@ export default class jmChart extends jmgraph.jmGraph  {
 
 	// 初始化图表
 	init(options) {
-
-		this.enableAnimate = !!options.enableAnimate;
 
 		/**
 		 * 绘图区域

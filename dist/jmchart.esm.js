@@ -5432,6 +5432,17 @@ class jmSeries extends jmPath {
 
   set data(d) {
     this.graph.data = d;
+  } //是否启用动画效果
+
+
+  get enableAnimate() {
+    if (typeof this.options.enableAnimate !== 'undefined') return !!this.options.enableAnimate;else {
+      return this.graph.enableAnimate;
+    }
+  }
+
+  set enableAnimate(v) {
+    this.options.enableAnimate = v;
   }
   /**
    * 图例名称
@@ -5523,9 +5534,7 @@ class jmSeries extends jmPath {
 
 
   reset() {
-    //是否启用动画效果
-    this.enableAnimate = typeof this.enableAnimate === 'undefined' ? this.graph.enableAnimate : this.enableAnimate; // 重置所有图形
-
+    // 重置所有图形
     var shape;
 
     while (shape = this.shapes.shift()) {
@@ -6769,7 +6778,13 @@ class jmMarkLine extends jmLine {
 class jmChart extends jmGraph {
   constructor(container, options) {
     options = options || {};
-    options.autoRefresh = typeof options.autoRefresh === 'undefined' ? false : options.autoRefresh; // 深度复制默认样式，以免被改
+    const enableAnimate = !!options.enableAnimate;
+    options.autoRefresh = typeof options.autoRefresh === 'undefined' ? enableAnimate : options.autoRefresh;
+
+    if (enableAnimate && !options.autoRefresh) {
+      console.warn('开启了动画，却没有开户自动刷新');
+    } // 深度复制默认样式，以免被改
+
 
     options.style = jmUtils.clone(defaultStyle, options.style, true);
     super(container, options);
@@ -6780,6 +6795,7 @@ class jmChart extends jmGraph {
 
     _defineProperty(this, "enableAnimate", false);
 
+    this.enableAnimate = enableAnimate;
     this.data = options.data || []; // x轴绑定的字段名
 
     this.xField = options.xField || '';
@@ -6794,14 +6810,12 @@ class jmChart extends jmGraph {
 
   // 初始化图表
   init(options) {
-    this.enableAnimate = !!options.enableAnimate;
     /**
      * 绘图区域
      *
      * @property chartArea
      * @type jmControl
      */
-
     if (!this.chartArea) {
       this.chartArea = this.createShape(jmRect, {
         style: this.style.chartArea,
