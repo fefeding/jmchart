@@ -8,6 +8,7 @@ import jmBarSeries from './series/barSeries.js';
 import jmPieSeries from './series/pieSeries.js';
 
 import jmLineSeries from './series/lineSeries.js';
+import jmStackLineSeries from './series/stackLineSeries.js';
 import jmMarkLine from './core/axis/markLine';
 
 /**
@@ -411,7 +412,8 @@ export default class jmChart extends jmgraph.jmGraph  {
 			this.serieTypes = {
 				'line' : jmLineSeries,
 				'bar' : jmBarSeries,
-				'pie' : jmPieSeries
+				'pie' : jmPieSeries,
+				'stackLine' : jmStackLineSeries
 			};		
 		}
 

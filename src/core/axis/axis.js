@@ -127,7 +127,7 @@ export default class jmAxis extends jmArrawLine {
 				this.end.y = bounds.bottom;					
 				break;
 			}
-			case 'y' : {
+			case 'y' : {				
 				const index = this.index || 1;					
 				const xoffset = bounds.left;
 

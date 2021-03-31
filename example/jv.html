@@ -31,15 +31,15 @@
 		<script type="module">
 			import jmChart from '../dist/jmchart.esm.js';
 			(function load() {
-				var w = Math.max((window.innerWidth || window.document.body.clientWidth) * 0.8, 400);
-				var h = Math.min((window.innerHeight || window.document.body.clientHeight) * 0.5, 280);			
+				var w = Math.max((window.innerWidth || window.document.body.clientWidth) * 0.8, 500);
+				var h = Math.min((window.innerHeight || window.document.body.clientHeight) * 0.5, 500);			
 				inichart(w,h);
 			})();
 			
 
 			function inichart(w, h) {
 
-                    const datacount = 6;
+                    const datacount = 50;
 
 					const chart = new jmChart('mycanvas', {
 						width: w,
@@ -51,13 +51,15 @@
 						// 最大和最小X值，  这里一般不用指定，除非硬是需要
 						minXValue : 0,
 						maxXValue : 10,
+						minYValue: -100,
+						maxYValue: 400,
                         // 格式化x标签值
                         xLabelFormat: (v, item, index) => {
                             // 只展示第一个和最后一个
-                            if(index == 0 || index == datacount - 1) {
-                                return v + '';
+                            if(index % 5 === 0) {
+                                return v;
                             }
-                            return v+'';
+                            return '';
                         },
                         style: {
                             // x轴 Y轴隐藏
@@ -74,22 +76,21 @@
                                 stroke: 'transparent'
                             },
                             margin: {
-                                top: 10,
-                                left: 30,
+                                top: 30,
+                                left: 50,
                                 right: 10,
                                 bottom: 30
                             }
                         }
 					});				
 
-					const line = chart.createSeries('line', {
-						field: 'y1',
+					const line = chart.createSeries('stackLine', {
+						fields: [
+							'y1', 'y2'
+						],
 						//index: 2, // 指定Y轴索引，如是档指定就会共用左边的Y轴，  
 						legendLabel: '图例2',
-						// 最大值和最小值，如果不指定会自动计算，
-						// 如果指定了也只是指定了最大或最小边界，如果有数值超过它，依然以事实数值为准
-						minYValue: 1,
-                        maxYValue: 5 ,
+						
                         // 格式化x轴标签值
                         yLabelFormat: (v) => {
                             return v.toFixed? (v.toFixed(0) + '%') : v;
@@ -97,9 +98,16 @@
                         style: {
                             // 不显示小圆点
 							showItem: false,
-							color: '#C79156',
+							color: '#F7BB98',													
 							// 填充图形
-							area: true
+							area: {
+								fill: function(style) {
+									return this.style.color;
+								},
+								shadow: function() {								
+									return `0, 0, 20, #000`;
+								},	
+							}
                         }
 					});
 					
@@ -109,8 +117,8 @@
                         for(var i = 0;i<datacount;i++) {
                             const d = {
                                 x : '0909' + i,
-                                y1 :  Math.random() * 6,
-                                y2:  Math.random() * 200 + 50,
+                                y1 :  i * 5 + Math.random(),
+                                y2:  i * 8 + Math.random()
                             };
                             
                             chart.data.push(d);
@@ -122,36 +130,11 @@
 					}
 					
 					animate();
-
-					chart.utils.bindEvent(document.getElementById('btnRedraw'),'click',function() {
-							chart.data = [];
-							//datacount = Math.random() * 10 + 4;
-							for(var i = 0;i<datacount;i++) {
-								var data = {
-									x : i,
-									y1 : Math.random() * 200 + 100,
-									y2:Math.random() * 200,
-									y3:Math.random() * 200 + 50,
-									y4:Math.random() * 200 + 50,
-									y5:Math.random() * 200 + 50,
-									y6:Math.random() * 200 - 50,
-									y7:Math.random() * 200 + 50,
-									y8:Math.random() * 200 - 50,
-									y9:Math.random() * 200 - 50,
-									y10:Math.random() * 200 - 50
-								};
-								chart.data.push(data);
-							}
-							chart.refresh();
-							//chart2.refresh();
-						});
-					
 				}
 		</script>
 	</head>
 	<body>
 		<div id="mycanvas">
 			</div>	
-			<button id="btnRedraw">重绘</button>		
 	</body>
 </html>

@@ -8,7 +8,7 @@
 		<style>
 		html,body {
 			margin:0;
-			padding:0;
+			padding:10px;
 			width:100%;
 			height:100%;
 		}
@@ -52,6 +52,11 @@
 						xLabelFormat: (value, data, index)=>{
 							if(index % 5 === 0) return value + 'x';
 							return '';
+						},
+						style: {
+							margin: {
+								left: 50
+							}
 						}
 					});
 					chart.legend.legendPosition = 'top';
@@ -133,6 +138,7 @@
 						style: {
 							showItem: false,
 							lineWidth: 3,
+							//curve: true,
 							lineType: 'dotted', // 虚线
 							shadow: function() {								
 								return `2, 2, 10, ${this.style.stroke}`;

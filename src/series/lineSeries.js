@@ -31,7 +31,10 @@ export default class jmLineSeries extends jmSeries {
 	 */
 	init() {
 		//生成描点位
-		const {points, dataChanged}  = super.init();	
+		const {
+			points, 
+			dataChanged
+		}  = this.initDataPoint();	
 
 		//去除多余的线条
 		//当数据源线条数比现有的少时，删除多余的线条
@@ -49,7 +52,7 @@ export default class jmLineSeries extends jmSeries {
 		const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0 );
 
 		let shapePoints = []; // 计算出来的曲线点集合	
-		const aniCount = (this.style.aniCount || 20);
+		const aniCount = (this.style.aniCount || 10);
 		const aniStep = Math.floor(len / aniCount) || 1;// 每次动画播放点个数
 
 		for(let i=0; i< len;i++) {
@@ -69,53 +72,15 @@ export default class jmLineSeries extends jmSeries {
 
 			// 是否显示数值点圆
 			if(this.style.showItem) {
-				const pointShape = this.graph.createShape(jmCircle, {
-					style: this.style.item,
-					center: p,
-					radius: this.style.radius || 3
-				});
-			
-				pointShape.zIndex = (pointShape.style.zIndex || 1) + 1;	
-				this.graph.chartArea.children.add(pointShape);
-				this.shapes.add(pointShape);
+				this.createPointItem(p);
 			}
-			
+			// 平滑曲线
 			if(this.style.curve) {
-				const startPoint = shapePoints[shapePoints.length - 1];
-				if(startPoint && startPoint.y != undefined && startPoint.y != null) {
-					//如果需要画曲线，则计算贝塞尔曲线坐标				
-					const p1 = {x: startPoint.x + (p.x - startPoint.x) / 5, y: startPoint.y};
-					const p2 = {x: startPoint.x + (p.x - startPoint.x) / 2, y: p.y - (p.y - startPoint.y) / 2};
-					const p3 = {x: p.x - (p.x - startPoint.x) / 5, y: p.y};
-
-					//圆滑线条使用的贝塞尔对象
-					this.__bezier = this.__bezier || this.graph.createShape(jmBezier);
-					this.__bezier.cpoints = [
-						startPoint,
-						p1,
-						p2,
-						p3,
-						p
-					];//设置控制点
-
-					const bzpoints = this.__bezier.initPoints();
-					shapePoints = shapePoints.concat(bzpoints);					
-				}
+				shapePoints = this.createCurePoints(shapePoints, p);
 			}
 			// 如果是虚线
 			else if(this.style.lineType === 'dotted') {
-				const startPoint = shapePoints[shapePoints.length - 1];
-				if(startPoint && startPoint.y != undefined && startPoint.y != null) {
-					//使用线条来画虚线效果
-					this.__line = this.__line || this.graph.createShape(jmLine, {
-						style: this.style,						
-					});	
-					this.__line.start = startPoint;
-					this.__line.end = p;			
-
-					const dots = this.__line.initPoints();
-					shapePoints = shapePoints.concat(dots);					
-				}
+				shapePoints = this.createDotLine(shapePoints, p);
 			}
 
 			shapePoints.push(p);
@@ -140,6 +105,62 @@ export default class jmLineSeries extends jmSeries {
 
 		this.points = shapePoints;
 		this.createArea(shapePoints);// 仓建区域效果
+	}
+
+	// 生成点的小圆圈
+	createPointItem(p) {
+		const pointShape = this.graph.createShape(jmCircle, {
+			style: this.style.item,
+			center: p,
+			radius: this.style.radius || 3
+		});
+	
+		pointShape.zIndex = (pointShape.style.zIndex || 1) + 1;	
+		this.graph.chartArea.children.add(pointShape);
+		this.shapes.add(pointShape);
+		return pointShape;
+	}
+
+	// 根据上下点生成平滑曲线
+	createCurePoints(shapePoints, p) {
+		const startPoint = shapePoints[shapePoints.length - 1];
+		if(startPoint && startPoint.y != undefined && startPoint.y != null) {
+			//如果需要画曲线，则计算贝塞尔曲线坐标				
+			const p1 = {x: startPoint.x + (p.x - startPoint.x) / 5, y: startPoint.y};
+			const p2 = {x: startPoint.x + (p.x - startPoint.x) / 2, y: p.y - (p.y - startPoint.y) / 2};
+			const p3 = {x: p.x - (p.x - startPoint.x) / 5, y: p.y};
+
+			//圆滑线条使用的贝塞尔对象
+			this.__bezier = this.__bezier || this.graph.createShape(jmBezier);
+			this.__bezier.cpoints = [
+				startPoint,
+				p1,
+				p2,
+				p3,
+				p
+			];//设置控制点
+
+			const bzpoints = this.__bezier.initPoints();
+			shapePoints = shapePoints.concat(bzpoints);					
+		}
+		return shapePoints;
+	}
+
+	// 生成虚线
+	createDotLine(shapePoints, p) {
+		const startPoint = shapePoints[shapePoints.length - 1];
+		if(startPoint && startPoint.y != undefined && startPoint.y != null) {
+			//使用线条来画虚线效果
+			this.__line = this.__line || this.graph.createShape(jmLine, {
+				style: this.style,						
+			});	
+			this.__line.start = startPoint;
+			this.__line.end = p;			
+
+			const dots = this.__line.initPoints();
+			shapePoints = shapePoints.concat(dots);					
+		}
+		return shapePoints;
 	}
 
 	/**
@@ -178,7 +199,7 @@ export default class jmLineSeries extends jmSeries {
 	}
 
 	// 生成布效果
-	createArea(points) {
+	createArea(points, needClosePoint = true) {
 		// 有指定绘制区域效果才展示
 		if(!this.style.area || points.length < 2) return;
 
@@ -192,10 +213,9 @@ export default class jmLineSeries extends jmSeries {
 		if(!style.fill) {
 			const color = this.graph.utils.hexToRGBA(this.style.stroke);
 			style.fill = `linear-gradient(50% 0 50% 100%, 
-				rgba(${color.r},${color.g},${color.b}, 0) 1, 
-				rgba(${color.r},${color.g},${color.b}, 0) 0.3,
-				rgba(${color.r},${color.g},${color.b}, 0.1) 0.1, 
-				rgba(${color.r},${color.g},${color.b}, 0.2) 0)`;
+				rgba(${color.r},${color.g},${color.b}, 0) 1,
+				rgba(${color.r},${color.g},${color.b}, 0.1) 0.7, 
+				rgba(${color.r},${color.g},${color.b}, 0.3) 0)`;
 		}
 		else if(typeof style.fill === 'function') {
 			style.fill = style.fill.call(this, style);
@@ -208,14 +228,16 @@ export default class jmLineSeries extends jmSeries {
 		});
 
 		// 在点集合前后加上落地到X轴的点就可以组成一个封闭的图形area
-		area.points.unshift({
-			x: start.x,
-			y: this.graph.chartArea.height
-		});
-		area.points.push({
-			x: end.x,
-			y: this.graph.chartArea.height
-		});
+		if(needClosePoint) {
+			area.points.unshift({
+				x: start.x,
+				y: this.graph.chartArea.height
+			});
+			area.points.push({
+				x: end.x,
+				y: this.graph.chartArea.height
+			});
+		}
 
 		this.graph.chartArea.children.add(area);
 		this.shapes.add(area);

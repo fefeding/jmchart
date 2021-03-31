@@ -154,6 +154,30 @@ export default {
 		// 默认不填充，需要填满请配置{fill:'',stroke:''}
 		area: false	
 	},
+	stackLine: {
+		normal: {
+			lineWidth: 1,
+			zIndex: 18,
+			cursor: 'default'
+		},
+		hover: {
+			lineWidth:4,
+			//zIndex: 100,
+			cursor: 'pointer'
+		},
+		lineWidth:1,
+		zIndex: 18,
+		cursor: 'default',
+		radius: 3,
+		fill: null,	
+		showItem: true,	// 是否展示圆点
+		item: {
+			fill: '#fff',
+			zIndex: 19
+		},
+		// 默认不填充，需要填满请配置{fill:'',stroke:''}
+		area: false	
+	},
 	bar : {
 		normal: {
 			lineWidth: 1,

@@ -24,7 +24,7 @@ export default class jmBarSeries extends jmSeries {
 	 */
 	init() {			
 		//生成描点位
-		const {points, dataChanged} = super.init();				
+		const {points, dataChanged} = this.initDataPoint();				
 
 		const len = points.length;
 

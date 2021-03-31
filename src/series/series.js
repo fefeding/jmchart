@@ -22,7 +22,7 @@ export default class jmSeries extends jmPath {
 
 		this.options = options;
 
-		this.field = options.field || '';
+		this.field = options.field || options.fields || '';
 		this.index = options.index || 1;
 		this.legendLabel = options.legendLabel || '';
 		this.___animateCounter = 0; // 动画计数
@@ -91,7 +91,7 @@ export default class jmSeries extends jmPath {
 	field = '';
 
 	// 做一些基础初始化工作
-	init(...args) {
+	initDataPoint(...args) {
 		//生成描点位
 		// 如果有动画，则需要判断是否改变，不然不需要重新动画
 		let dataChanged = false;
@@ -181,9 +181,18 @@ export default class jmSeries extends jmPath {
 		// 计算最大最小值
 		// 当前需要先更新axis的边界值，轴好画图
 		for(var i=0; i< this.data.length;i++) {	
-			const v = this.data[i][this.field]; 
-			this.yAxis.max(v);
-			this.yAxis.min(v);
+			if(Array.isArray(this.field)) {
+				this.field.forEach((f)=> {
+					const v = this.data[i][f]; 
+					this.yAxis.max(v);
+					this.yAxis.min(v);
+				});
+			}
+			else {
+				const v = this.data[i][this.field]; 
+				this.yAxis.max(v);
+				this.yAxis.min(v);
+			}
 
 			const xv = this.data[i][this.xAxis.field]; 
 			this.xAxis.max(xv);
@@ -206,36 +215,46 @@ export default class jmSeries extends jmPath {
 		if(!data) return;
 
 		const xstep = this.xAxis.step();
-		const ystep = this.yAxis.step();	
+		const ystep = this.yAxis.step();
+		// 有些图形是有多属性值的
+		const fields = Array.isArray(this.field)? this.field: [this.field];
 
 		this.dataPoints = [];
 		for(let i=0;i < data.length; i++) {
 			const s = data[i];
 			
 			const xv = s[this.xAxis.field];
-			const yv = s[this.field];
+			
 
 			const p = {				
 				data: s,
 				xValue: xv,
 				xLabel: xv,
-				yValue: yv,
-				yLabel: yv
+				points: []
 			};
 			
 			// 这里的点应相对于chartArea
 			p.x = xstep * (data.length === 1? 1: i) + this.xAxis.labelStart;			
+			
+			for(const f of fields) {
+				const yv = s[f];
+				p.yLabel = p.yValue = yv;
 
-			//如果Y值不存在。则此点无效，不画图
-			if(yv == null || typeof yv == 'undefined') {
-				p.m = true;
-			}
-			else {
-				if(this.yAxis.dataType != 'number') {
-					yv = i;
+				const point = {
+					x: p.x					
 				}
-				p.y = this.graph.chartArea.height - (yv - this.yAxis.min()) * ystep;
-			}			
+				//如果Y值不存在。则此点无效，不画图
+				if(yv == null || typeof yv == 'undefined') {
+					point.m = p.m = true;
+				}
+				else {
+					if(this.yAxis.dataType != 'number') {
+						yv = i;
+					}
+					point.y = p.y = this.graph.chartArea.height - (yv - this.yAxis.min()) * ystep;
+				}	
+				p.points.push(point);
+			}		
 			this.dataPoints.push(p);							
 		}
 		return this.dataPoints;

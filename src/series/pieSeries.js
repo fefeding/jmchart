@@ -51,7 +51,7 @@ export default class jmPieSeries extends jmSeries {
 
 		//生成描点位
 		// super.init会把参数透传给 createPoints
-		const { points, dataChanged }  = super.init(center, radius);	
+		const { points, dataChanged }  = this.initDataPoint(center, radius);	
 
 		// 是否正在动画中
 		const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0 );

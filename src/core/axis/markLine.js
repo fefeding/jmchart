@@ -67,19 +67,22 @@ export default class jmMarkLine extends jmLine {
                 const style = graph.utils.clone(this.style, {
                     stroke: serie.style.color || serie.style.stroke                    
                 }, true);
-                this.markArc = graph.createShape(jmCircle, {
-                    style,
-                    radius: (this.style.radius || 5) * this.graph.devicePixelRatio
-                });
 
-                this.markArc.center.y = point.y;
                 // 锁定在有数据点的X轴上
                 // 如果在操作图层上， 点的X轴需要加上图表图层区域偏移量
                 this.start.x = this.end.x = isTocuhGraph? (point.x + graph.chartArea.position.x): point.x;
 
-                this.children.add(this.markArc);
-                this.shapes.add(this.markArc);
+                for(const p of point.points) {
+                    this.markArc = graph.createShape(jmCircle, {
+                        style,
+                        radius: (this.style.radius || 5) * this.graph.devicePixelRatio
+                    });
 
+                    this.markArc.center.y = p.y;
+
+                    this.children.add(this.markArc);
+                    this.shapes.add(this.markArc);
+                }
                 // x轴改变，表示变换了位置
                 if(!touchChange && (!serie.lastMarkPoint || serie.lastMarkPoint.x != point.x)) touchChange = true;
 
