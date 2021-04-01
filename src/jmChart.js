@@ -5,6 +5,7 @@ import defaultStyle from './common/style.js';
 import jmAxis from './core/axis/axis.js';
 import jmLegend from './core/legend/legend.js';
 import jmBarSeries from './series/barSeries.js';
+import jmStackBarSeries from './series/stackBarSeries.js';
 import jmPieSeries from './series/pieSeries.js';
 
 import jmLineSeries from './series/lineSeries.js';
@@ -60,7 +61,25 @@ export default class jmChart extends jmgraph.jmGraph  {
 	/**
 	 * 是否启用动画
 	 */
-	enableAnimate = false;
+	get enableAnimate() {
+		if(typeof this.options.enableAnimate !== 'undefined') return !!this.options.enableAnimate;
+		else {
+			return false;
+		}
+	}
+	set enableAnimate(v) {
+		this.options.enableAnimate = v;
+	}	
+
+	/**
+	 * Y轴的基线 默认是0
+	 */
+	get baseY() {
+		return this.options.baseY;
+	}
+	set baseY(v) {
+		this.options.baseY = v;
+	}
 
 	// 初始化图表
 	init(options) {
@@ -412,6 +431,7 @@ export default class jmChart extends jmgraph.jmGraph  {
 			this.serieTypes = {
 				'line' : jmLineSeries,
 				'bar' : jmBarSeries,
+				'stackBar' : jmStackBarSeries,
 				'pie' : jmPieSeries,
 				'stackLine' : jmStackLineSeries
 			};		

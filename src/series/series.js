@@ -25,7 +25,7 @@ export default class jmSeries extends jmPath {
 		this.field = options.field || options.fields || '';
 		this.index = options.index || 1;
 		this.legendLabel = options.legendLabel || '';
-		this.___animateCounter = 0; // 动画计数
+		this.___animateCounter = 0; // 动画计数		
 
 		this.xAxis = this.graph.createXAxis(); // 生成X轴
 		
@@ -89,6 +89,18 @@ export default class jmSeries extends jmPath {
 
 	// 图绑定的属性名
 	field = '';
+	/**
+	 * Y轴的基线跟最底层的高度
+	 */
+	baseYHeight = 0;
+	/**
+	 * Y轴基线的Y坐标
+	 */
+	baseY = 0;
+	/**
+	 * 当前基线Y的值，不给basey就会默认采用当前Y轴最小值
+	 */
+	baseYValue = 0;
 
 	// 做一些基础初始化工作
 	initDataPoint(...args) {
@@ -215,7 +227,12 @@ export default class jmSeries extends jmPath {
 		if(!data) return;
 
 		const xstep = this.xAxis.step();
+		const minY = this.yAxis.min();
 		const ystep = this.yAxis.step();
+
+		this.baseYValue = typeof this.graph.baseY === 'undefined'? minY: (this.graph.baseY||0);
+		this.baseYHeight = (this.baseYValue - minY) * ystep;// 基线的高度
+		this.baseY = this.graph.chartArea.height - this.baseYHeight;// Y轴基线的Y坐标
 		// 有些图形是有多属性值的
 		const fields = Array.isArray(this.field)? this.field: [this.field];
 
@@ -239,9 +256,13 @@ export default class jmSeries extends jmPath {
 			for(const f of fields) {
 				const yv = s[f];
 				p.yLabel = p.yValue = yv;
+				// 高度
+				p.height = (yv - this.baseYValue) * ystep;
 
 				const point = {
-					x: p.x					
+					x: p.x,
+					// 高度
+					height: p.height				
 				}
 				//如果Y值不存在。则此点无效，不画图
 				if(yv == null || typeof yv == 'undefined') {
@@ -251,7 +272,7 @@ export default class jmSeries extends jmPath {
 					if(this.yAxis.dataType != 'number') {
 						yv = i;
 					}
-					point.y = p.y = this.graph.chartArea.height - (yv - this.yAxis.min()) * ystep;
+					point.y = p.y = this.baseY - point.height;
 				}	
 				p.points.push(point);
 			}		

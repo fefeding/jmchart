@@ -62,7 +62,7 @@ export default class jmBarSeries extends jmSeries {
 			//this.bindTooltip(sp, point);
 
 			//首先确定p1和p4,因为他们是底脚。会固定
-			const p1 = {x: point.x - this.barTotalWidth / 2 + this.barWidth * this.barIndex, y: this.graph.chartArea.height};			
+			const p1 = {x: point.x - this.barTotalWidth / 2 + this.barWidth * this.barIndex, y: this.baseY };			
 			const p4 = {x: p1.x + this.barWidth, y: p1.y };
 
 			const p2 = {x: p1.x, y: p1.y };
@@ -70,18 +70,16 @@ export default class jmBarSeries extends jmSeries {
 
 			// 如果要动画。则动态改变高度
 			if(isRunningAni) {
-				const height = Math.abs(point.y - p1.y);
-				const step = height / aniCount;
-
+				const step = point.height / aniCount;
 				const offHeight = step * this.___animateCounter;// 动态计算当前高度
+				p2.y = p1.y - offHeight;// 计算高度
 
 				// 当次动画完成
-				if(offHeight >= height) {
+				if((step >= 0 && p2.y <= point.y) || (step < 0 && p2.y >= point.y)) {
 					p2.y = point.y;
 				}
 				else {
 					aniIsEnd = false;// 只要有一个没完成，就还没有完成动画
-					p2.y = p1.y - offHeight;// 计算高度
 				}
 
 				p3.y = p2.y;

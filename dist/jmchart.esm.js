@@ -1915,7 +1915,7 @@ class jmControl extends jmProperty {
 						style = style.call(this);
 					}
 					catch(e) {
-						console.error(e);
+						console.warn(e);
 						return;
 					}
 				}
@@ -3203,17 +3203,13 @@ class jmGraph extends jmControl {
 	 * 简单直观创建对象
 	 *
 	 * @method createShape 
-	 * @param {string} name 注册控件的名称
+	 * @param {string} shape 注册控件的名称 也可以直接是控件类型
 	 * @param {object} args 实例化控件的参数
 	 * @return {object} 已实例化控件的对象
 	 */
-	createShape(name, args) {
-		let shape;
-		if(typeof name === 'function') {
-			shape = name;
-		}
-		else {
-			shape = this.shapes[name];
+	createShape(shape, args) {
+		if(typeof shape === 'string') {
+			shape = this.shapes[shape];
 		}
 		if(shape) {
 			if(!args) args = {};
@@ -3494,6 +3490,242 @@ class jmGraph extends jmControl {
 }
 
 /**
+ * 圆弧图型 继承自jmPath
+ *
+ * @class jmArc
+ * @extends jmPath
+ * @param {object} params center=当前圆弧中心,radius=圆弧半径,start=圆弧起始角度,end=圆弧结束角度,anticlockwise=  false  顺时针，true 逆时针
+ */
+class jmArc extends jmPath {
+
+	constructor(params, t='jmArc') {
+		if(!params) params = {};
+		super(params, t);
+
+		this.center = params.center || {x:0,y:0};
+		this.radius = params.radius || 0;
+
+		this.startAngle = params.start || params.startAngle || 0;
+		this.endAngle = params.end || params.endAngle || Math.PI * 2;		
+
+		this.anticlockwise = params.anticlockwise  || 0;
+
+		this.isFan = !!params.isFan;
+	}	
+
+	/**
+	 * 中心点
+	 * point格式：{x:0,y:0,m:true}
+	 * @property center
+	 * @type {point}
+	 */
+	get center() {
+		return this.__pro('center');
+	}
+	set center(v) {
+		this.needUpdate = true;
+		return this.__pro('center', v);
+	}
+
+	/**
+	 * 半径
+	 * @property radius
+	 * @type {number}
+	 */
+	get radius() {
+		return this.__pro('radius');
+	}
+	set radius(v) {
+		this.needUpdate = true;
+		return this.__pro('radius', v);
+	}
+
+	/**
+	 * 扇形起始角度
+	 * @property startAngle
+	 * @type {number}
+	 */
+	get startAngle() {
+		return this.__pro('startAngle');
+	}
+	set startAngle(v) {
+		this.needUpdate = true;
+		return this.__pro('startAngle', v);
+	}
+
+	/**
+	 * 扇形结束角度
+	 * @property endAngle
+	 * @type {number}
+	 */
+	get endAngle() {
+		return this.__pro('endAngle');
+	}
+	set endAngle(v) {
+		this.needUpdate = true;
+		return this.__pro('endAngle', v);
+	}
+
+	/**
+	 * 可选。规定应该逆时针还是顺时针绘图
+	 * false  顺时针，true 逆时针
+	 * @property anticlockwise
+	 * @type {boolean}
+	 */
+	get anticlockwise() {
+		return this.__pro('anticlockwise');
+	}
+	set anticlockwise(v) {
+		this.needUpdate = true;
+		return this.__pro('anticlockwise', v);
+	}
+
+
+	/**
+	 * 初始化图形点
+	 * 
+	 * @method initPoint
+	 * @private
+	 * @for jmArc
+	 */
+	initPoints() {
+		let location = this.getLocation();//获取位置参数
+		let mw = 0;
+		let mh = 0;
+		let cx = location.center.x ;
+		let cy = location.center.y ;
+		//如果设定了半径。则以半径为主	
+		if(location.radius) {
+			mw = mh = location.radius;
+		}
+		else {
+			mw = location.width / 2;
+			mh = location.height / 2;
+		}	
+		
+		let start = this.startAngle;
+		let end = this.endAngle;
+
+		if((mw == 0 && mh == 0) || start == end) return;
+
+		let anticlockwise = this.anticlockwise;
+		this.points = [];
+		let step = 1 / Math.max(mw, mh);
+
+		//如果是逆时针绘制，则角度为负数，并且结束角为2Math.PI-end
+		if(anticlockwise) {
+			let p2 =  Math.PI * 2;
+			start = p2 - start;
+			end = p2 - end;
+		}
+		if(start > end) step = -step;
+
+		if(this.isFan) this.points.push(location.center);// 如果是扇形，则从中心开始画
+		
+		//椭圆方程x=a*cos(r) ,y=b*sin(r)	
+		for(let r=start;;r += step) {	
+			if(step > 0 && r > end) r = end;
+			else if(step < 0 && r < end) r = end;
+
+			let p = {
+				x : Math.cos(r) * mw + cx,
+				y : Math.sin(r) * mh + cy
+			};
+			this.points.push(p);
+
+			if(r == end) break;
+		}
+		return this.points;
+	}
+}
+
+/**
+ * 画一条直线
+ *
+ * @class jmLine
+ * @extends jmPath
+ * @param {object} params 直线参数:start=起始点,end=结束点,lineType=线类型(solid=实线，dotted=虚线),dashLength=虚线间隔(=4)
+ */
+class jmLine extends jmPath {	
+	
+	constructor(params, t='jmLine') {
+		super(params, t);
+
+		this.start = params.start || {x:0,y:0};
+		this.end = params.end || {x:0,y:0};
+		this.style.lineType = this.style.lineType || 'solid';
+		this.style.dashLength = this.style.dashLength || 4;
+	}	
+
+	/**
+	 * 控制起始点
+	 * 
+	 * @property start
+	 * @for jmLine
+	 * @type {point}
+	 */
+	get start() {
+		return this.__pro('start');
+	}
+	set start(v) {
+		this.needUpdate = true;
+		return this.__pro('start', v);
+	}
+
+	/**
+	 * 控制结束点
+	 * 
+	 * @property end
+	 * @for jmLine
+	 * @type {point}
+	 */
+	get end() {
+		return this.__pro('end');
+	}
+	set end(v) {
+		this.needUpdate = true;
+		return this.__pro('end', v);
+	}
+
+	/**
+	 * 初始化图形点,如呆为虚线则根据跳跃间隔描点
+	 * @method initPoints
+	 * @private
+	 */
+	initPoints() {	
+		let start = this.start;
+		let end = this.end;
+		this.points = [];	
+		this.points.push(start);
+
+		if(this.style.lineType === 'dotted') {			
+			let dx = end.x - start.x;
+			let dy = end.y - start.y;
+			let lineLen = Math.sqrt(dx * dx + dy * dy);
+			dx = dx / lineLen;
+			dy = dy / lineLen;
+			let dottedstart = false;
+
+			let dashLen = this.style.dashLength || 5;
+			let dottedsp = dashLen / 2;
+			for(let l=dashLen; l<=lineLen;) {
+				if(dottedstart == false) {
+					this.points.push({x: start.x + dx * l, y: start.y + dy * l});
+					l += dottedsp;
+				}
+				else {				
+					this.points.push({x: start.x + dx * l, y: start.y+ dy * l, m: true});
+					l += dashLen;
+				}
+				dottedstart = !dottedstart;				
+			}
+		}
+		this.points.push(end);
+		return this.points;
+	}
+}
+
+/**
  * 画矩形
  *
  * @class jmRect
@@ -3593,31 +3825,31 @@ class jmRect extends jmPath {
 
 		//如果指定为虚线 , 则初始化一个直线组件，来构建虚线点集合
 		if(this.style.lineType === 'dotted' && !this.dottedLine) {
-			this.dottedLine = this.graph.createShape('line', {style: this.style});
+			this.dottedLine = this.graph.createShape(jmLine, {style: this.style});
 		}
 		
 		//如果有边界弧度则借助圆弧对象计算描点
 		if(location.radius && location.radius < location.width/2 && location.radius < location.height/2) {
 			let q = Math.PI / 2;
-			let arc = this.graph.createShape('arc',{radius:location.radius,anticlockwise:false});
+			let arc = this.graph.createShape(jmArc,{radius:location.radius,anticlockwise:false});
 			arc.center = {x:location.left + location.radius,y:location.top+location.radius};
 			arc.startAngle = Math.PI;
 			arc.endAngle = Math.PI + q;
 			let ps1 = arc.initPoints();
 			
-			arc = this.graph.createShape('arc',{radius:location.radius,anticlockwise:false});
+			arc = this.graph.createShape(jmArc,{radius:location.radius,anticlockwise:false});
 			arc.center = {x:p2.x - location.radius,y:p2.y + location.radius};
 			arc.startAngle = Math.PI + q;
 			arc.endAngle = Math.PI * 2;
 			let ps2 = arc.initPoints();
 			
-			arc = this.graph.createShape('arc',{radius:location.radius,anticlockwise:false});
+			arc = this.graph.createShape(jmArc,{radius:location.radius,anticlockwise:false});
 			arc.center = {x:p3.x - location.radius,y:p3.y - location.radius};
 			arc.startAngle = 0;
 			arc.endAngle = q;
 			let ps3 = arc.initPoints();
 			
-			arc = this.graph.createShape('arc',{radius:location.radius,anticlockwise:false});
+			arc = this.graph.createShape(jmArc,{radius:location.radius,anticlockwise:false});
 			arc.center = {x:p4.x + location.radius,y:p4.y - location.radius};
 			arc.startAngle = q;
 			arc.endAngle = Math.PI;
@@ -3656,92 +3888,6 @@ class jmRect extends jmPath {
 			}
 		}		
 		
-		return this.points;
-	}
-}
-
-/**
- * 画一条直线
- *
- * @class jmLine
- * @extends jmPath
- * @param {object} params 直线参数:start=起始点,end=结束点,lineType=线类型(solid=实线，dotted=虚线),dashLength=虚线间隔(=4)
- */
-class jmLine extends jmPath {	
-	
-	constructor(params, t='jmLine') {
-		super(params, t);
-
-		this.start = params.start || {x:0,y:0};
-		this.end = params.end || {x:0,y:0};
-		this.style.lineType = this.style.lineType || 'solid';
-		this.style.dashLength = this.style.dashLength || 4;
-	}	
-
-	/**
-	 * 控制起始点
-	 * 
-	 * @property start
-	 * @for jmLine
-	 * @type {point}
-	 */
-	get start() {
-		return this.__pro('start');
-	}
-	set start(v) {
-		this.needUpdate = true;
-		return this.__pro('start', v);
-	}
-
-	/**
-	 * 控制结束点
-	 * 
-	 * @property end
-	 * @for jmLine
-	 * @type {point}
-	 */
-	get end() {
-		return this.__pro('end');
-	}
-	set end(v) {
-		this.needUpdate = true;
-		return this.__pro('end', v);
-	}
-
-	/**
-	 * 初始化图形点,如呆为虚线则根据跳跃间隔描点
-	 * @method initPoints
-	 * @private
-	 */
-	initPoints() {	
-		let start = this.start;
-		let end = this.end;
-		this.points = [];	
-		this.points.push(start);
-
-		if(this.style.lineType === 'dotted') {			
-			let dx = end.x - start.x;
-			let dy = end.y - start.y;
-			let lineLen = Math.sqrt(dx * dx + dy * dy);
-			dx = dx / lineLen;
-			dy = dy / lineLen;
-			let dottedstart = false;
-
-			let dashLen = this.style.dashLength || 5;
-			let dottedsp = dashLen / 2;
-			for(let l=dashLen; l<=lineLen;) {
-				if(dottedstart == false) {
-					this.points.push({x: start.x + dx * l, y: start.y + dy * l});
-					l += dottedsp;
-				}
-				else {				
-					this.points.push({x: start.x + dx * l, y: start.y+ dy * l, m: true});
-					l += dashLen;
-				}
-				dottedstart = !dottedstart;				
-			}
-		}
-		this.points.push(end);
 		return this.points;
 	}
 }
@@ -5178,156 +5324,6 @@ jmLegend.prototype.reset = function () {
 };
 
 /**
- * 圆弧图型 继承自jmPath
- *
- * @class jmArc
- * @extends jmPath
- * @param {object} params center=当前圆弧中心,radius=圆弧半径,start=圆弧起始角度,end=圆弧结束角度,anticlockwise=  false  顺时针，true 逆时针
- */
-class jmArc extends jmPath {
-
-	constructor(params, t='jmArc') {
-		if(!params) params = {};
-		super(params, t);
-
-		this.center = params.center || {x:0,y:0};
-		this.radius = params.radius || 0;
-
-		this.startAngle = params.start || params.startAngle || 0;
-		this.endAngle = params.end || params.endAngle || Math.PI * 2;		
-
-		this.anticlockwise = params.anticlockwise  || 0;
-
-		this.isFan = !!params.isFan;
-	}	
-
-	/**
-	 * 中心点
-	 * point格式：{x:0,y:0,m:true}
-	 * @property center
-	 * @type {point}
-	 */
-	get center() {
-		return this.__pro('center');
-	}
-	set center(v) {
-		this.needUpdate = true;
-		return this.__pro('center', v);
-	}
-
-	/**
-	 * 半径
-	 * @property radius
-	 * @type {number}
-	 */
-	get radius() {
-		return this.__pro('radius');
-	}
-	set radius(v) {
-		this.needUpdate = true;
-		return this.__pro('radius', v);
-	}
-
-	/**
-	 * 扇形起始角度
-	 * @property startAngle
-	 * @type {number}
-	 */
-	get startAngle() {
-		return this.__pro('startAngle');
-	}
-	set startAngle(v) {
-		this.needUpdate = true;
-		return this.__pro('startAngle', v);
-	}
-
-	/**
-	 * 扇形结束角度
-	 * @property endAngle
-	 * @type {number}
-	 */
-	get endAngle() {
-		return this.__pro('endAngle');
-	}
-	set endAngle(v) {
-		this.needUpdate = true;
-		return this.__pro('endAngle', v);
-	}
-
-	/**
-	 * 可选。规定应该逆时针还是顺时针绘图
-	 * false  顺时针，true 逆时针
-	 * @property anticlockwise
-	 * @type {boolean}
-	 */
-	get anticlockwise() {
-		return this.__pro('anticlockwise');
-	}
-	set anticlockwise(v) {
-		this.needUpdate = true;
-		return this.__pro('anticlockwise', v);
-	}
-
-
-	/**
-	 * 初始化图形点
-	 * 
-	 * @method initPoint
-	 * @private
-	 * @for jmArc
-	 */
-	initPoints() {
-		let location = this.getLocation();//获取位置参数
-		let mw = 0;
-		let mh = 0;
-		let cx = location.center.x ;
-		let cy = location.center.y ;
-		//如果设定了半径。则以半径为主	
-		if(location.radius) {
-			mw = mh = location.radius;
-		}
-		else {
-			mw = location.width / 2;
-			mh = location.height / 2;
-		}	
-		
-		let start = this.startAngle;
-		let end = this.endAngle;
-
-		if((mw == 0 && mh == 0) || start == end) return;
-
-		let anticlockwise = this.anticlockwise;
-		this.points = [];
-		let step = 1 / Math.max(mw, mh);
-
-		//如果是逆时针绘制，则角度为负数，并且结束角为2Math.PI-end
-		if(anticlockwise) {
-			let p2 =  Math.PI * 2;
-			start = p2 - start;
-			end = p2 - end;
-		}
-		if(start > end) step = -step;
-
-		if(this.isFan) this.points.push(location.center);// 如果是扇形，则从中心开始画
-		
-		//椭圆方程x=a*cos(r) ,y=b*sin(r)	
-		for(let r=start;;r += step) {	
-			if(step > 0 && r > end) r = end;
-			else if(step < 0 && r < end) r = end;
-
-			let p = {
-				x : Math.cos(r) * mw + cx,
-				y : Math.sin(r) * mh + cy
-			};
-			this.points.push(p);
-
-			if(r == end) break;
-		}
-		return this.points;
-	}
-}
-
-/**
  * 画规则的圆弧
  *
  * @class jmCircle
@@ -5426,11 +5422,17 @@ class jmSeries extends jmPath {
 
     _defineProperty(this, "field", '');
 
+    _defineProperty(this, "baseYHeight", 0);
+
+    _defineProperty(this, "baseY", 0);
+
+    _defineProperty(this, "baseYValue", 0);
+
     this.options = options;
     this.field = options.field || options.fields || '';
     this.index = options.index || 1;
     this.legendLabel = options.legendLabel || '';
-    this.___animateCounter = 0; // 动画计数
+    this.___animateCounter = 0; // 动画计数		
 
     this.xAxis = this.graph.createXAxis(); // 生成X轴
     // 生成当前Y轴
@@ -5604,7 +5606,13 @@ class jmSeries extends jmPath {
     data = data || this.data;
     if (!data) return;
     const xstep = this.xAxis.step();
-    const ystep = this.yAxis.step(); // 有些图形是有多属性值的
+    const minY = this.yAxis.min();
+    const ystep = this.yAxis.step();
+    this.baseYValue = typeof this.graph.baseY === 'undefined' ? minY : this.graph.baseY || 0;
+    this.baseYHeight = (this.baseYValue - minY) * ystep; // 基线的高度
+
+    this.baseY = this.graph.chartArea.height - this.baseYHeight; // Y轴基线的Y坐标
+    // 有些图形是有多属性值的
 
     const fields = Array.isArray(this.field) ? this.field : [this.field];
     this.dataPoints = [];
@@ -5623,9 +5631,13 @@ class jmSeries extends jmPath {
 
       for (const f of fields) {
         const yv = s[f];
-        p.yLabel = p.yValue = yv;
+        p.yLabel = p.yValue = yv; // 高度
+
+        p.height = (yv - this.baseYValue) * ystep;
         const point = {
-          x: p.x
+          x: p.x,
+          // 高度
+          height: p.height
         }; //如果Y值不存在。则此点无效，不画图
 
         if (yv == null || typeof yv == 'undefined') {
@@ -5635,7 +5647,7 @@ class jmSeries extends jmPath {
             yv = i;
           }
 
-          point.y = p.y = this.graph.chartArea.height - (yv - this.yAxis.min()) * ystep;
+          point.y = p.y = this.baseY - point.height;
         }
 
         p.points.push(point);
@@ -5823,7 +5835,7 @@ class jmBarSeries extends jmSeries {
 
       const p1 = {
         x: point.x - this.barTotalWidth / 2 + this.barWidth * this.barIndex,
-        y: this.graph.chartArea.height
+        y: this.baseY
       };
       const p4 = {
         x: p1.x + this.barWidth,
@@ -5839,17 +5851,134 @@ class jmBarSeries extends jmSeries {
       }; // 如果要动画。则动态改变高度
 
       if (isRunningAni) {
-        const height = Math.abs(point.y - p1.y);
-        const step = height / aniCount;
+        const step = point.height / aniCount;
         const offHeight = step * this.___animateCounter; // 动态计算当前高度
+
+        p2.y = p1.y - offHeight; // 计算高度
         // 当次动画完成
 
-        if (offHeight >= height) {
+        if (step >= 0 && p2.y <= point.y || step < 0 && p2.y >= point.y) {
           p2.y = point.y;
         } else {
           aniIsEnd = false; // 只要有一个没完成，就还没有完成动画
+        }
 
-          p2.y = p1.y - offHeight; // 计算高度
+        p3.y = p2.y;
+      } else {
+        p2.y = point.y;
+        p3.y = point.y;
+      }
+
+      sp.points.push(p1);
+      sp.points.push(p2);
+      sp.points.push(p3);
+      sp.points.push(p4);
+    }
+
+    if (aniIsEnd) {
+      this.___animateCounter = 0;
+    } else {
+      this.___animateCounter++; // next tick 再次刷新
+
+      setTimeout(() => {
+        this.needUpdate = true; //需要刷新
+      });
+    }
+  }
+
+}
+
+/**
+ * 柱图
+ *
+ * @class jmBarSeries
+ * @module jmChart
+ * @param {jmChart} chart 当前图表
+ * @param {array} mappings 图形字段映射
+ * @param {style} style 样式
+ */
+//构造函数
+
+class jmBarSeries$1 extends jmSeries {
+  constructor(options) {
+    super(options);
+  }
+  /**
+   * 绘制当前图形
+   *
+   * @method beginDraw
+   * @for jmBarSeries
+   */
+
+
+  init() {
+    //生成描点位
+    const {
+      points,
+      dataChanged
+    } = this.initDataPoint();
+    const len = points.length; //设定其填充颜色
+
+    this.style.fill = this.style.color; //计算每个柱子占宽
+    //每项柱子占宽除以柱子个数,默认最大宽度为30		
+
+    this.barTotalWidth = this.xAxis.width / len * (this.style.perWidth || 0.4);
+    this.barWidth = this.barTotalWidth / this.graph.barSeriesCount;
+    const maxBarWidth = this.graph.barMaxWidth || 50;
+
+    if (this.barWidth > maxBarWidth) {
+      this.barWidth = maxBarWidth;
+      this.barTotalWidth = maxBarWidth * this.graph.barSeriesCount;
+    } // 是否正在动画中
+    // 如果数据点多于100 个，暂时不启用动画，太慢了
+
+
+    const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0) && len < 100;
+    let aniIsEnd = true; // 当次是否结束动画
+
+    const aniCount = this.style.aniCount || 10;
+
+    for (let i = 0; i < len; i++) {
+      //const label = this.xAxis.labels[i];
+      const point = points[i]; //如果当前点无效，则跳致下一点
+
+      if (typeof point.y === 'undefined' || point.y === null) {
+        continue;
+      }
+
+      const sp = this.shapes.add(this.graph.createPath(null, this.graph.utils.clone(this.style)));
+      this.children.add(sp); //绑定提示框
+      //this.bindTooltip(sp, point);
+      //首先确定p1和p4,因为他们是底脚。会固定
+
+      const p1 = {
+        x: point.x - this.barTotalWidth / 2 + this.barWidth * this.barIndex,
+        y: this.baseY
+      };
+      const p4 = {
+        x: p1.x + this.barWidth,
+        y: p1.y
+      };
+      const p2 = {
+        x: p1.x,
+        y: p1.y
+      };
+      const p3 = {
+        x: p4.x,
+        y: p1.y
+      }; // 如果要动画。则动态改变高度
+
+      if (isRunningAni) {
+        const step = point.height / aniCount;
+        const offHeight = step * this.___animateCounter; // 动态计算当前高度
+
+        p2.y = p1.y - offHeight; // 计算高度
+        // 当次动画完成
+
+        if (step >= 0 && p2.y <= point.y || step < 0 && p2.y >= point.y) {
+          p2.y = point.y;
+        } else {
+          aniIsEnd = false; // 只要有一个没完成，就还没有完成动画
         }
 
         p3.y = p2.y;
@@ -6649,11 +6778,11 @@ class jmLineSeries extends jmSeries {
     if (needClosePoint) {
       area.points.unshift({
         x: start.x,
-        y: this.graph.chartArea.height
+        y: this.baseY
       });
       area.points.push({
         x: end.x,
-        y: this.graph.chartArea.height
+        y: this.baseY
       });
     }
 
@@ -6871,17 +7000,14 @@ class jmMarkLine extends jmLine {
         if (!serie.getDataPointByX) continue;
         const point = serie.getDataPointByX(findX); // 找到最近的数据点
 
-        if (!point) continue;
-        const style = graph.utils.clone(this.style, {
-          stroke: serie.style.color || serie.style.stroke
-        }, true); // 锁定在有数据点的X轴上
+        if (!point) continue; // 锁定在有数据点的X轴上
         // 如果在操作图层上， 点的X轴需要加上图表图层区域偏移量
 
         this.start.x = this.end.x = isTocuhGraph ? point.x + graph.chartArea.position.x : point.x;
 
         for (const p of point.points) {
           this.markArc = graph.createShape(jmCircle, {
-            style,
+            style: this.style,
             radius: (this.style.radius || 5) * this.graph.devicePixelRatio
           });
           this.markArc.center.y = p.y;
@@ -7013,8 +7139,6 @@ class jmChart extends jmGraph {
 
     _defineProperty(this, "series", new jmList());
 
-    _defineProperty(this, "enableAnimate", false);
-
     this.enableAnimate = enableAnimate;
     this.data = options.data || []; // x轴绑定的字段名
 
@@ -7028,7 +7152,32 @@ class jmChart extends jmGraph {
    */
 
 
-  // 初始化图表
+  /**
+   * 是否启用动画
+   */
+  get enableAnimate() {
+    if (typeof this.options.enableAnimate !== 'undefined') return !!this.options.enableAnimate;else {
+      return false;
+    }
+  }
+
+  set enableAnimate(v) {
+    this.options.enableAnimate = v;
+  }
+  /**
+   * Y轴的基线 默认是0
+   */
+
+
+  get baseY() {
+    return this.options.baseY;
+  }
+
+  set baseY(v) {
+    this.options.baseY = v;
+  } // 初始化图表
+
+
   init(options) {
     /**
      * 绘图区域
@@ -7390,6 +7539,7 @@ class jmChart extends jmGraph {
       this.serieTypes = {
         'line': jmLineSeries,
         'bar': jmBarSeries,
+        'stackBar': jmBarSeries$1,
         'pie': jmPieSeries,
         'stackLine': jmStackLineSeries
       };

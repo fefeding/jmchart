@@ -231,11 +231,11 @@ export default class jmLineSeries extends jmSeries {
 		if(needClosePoint) {
 			area.points.unshift({
 				x: start.x,
-				y: this.graph.chartArea.height
+				y: this.baseY
 			});
 			area.points.push({
 				x: end.x,
-				y: this.graph.chartArea.height
+				y: this.baseY
 			});
 		}
 
