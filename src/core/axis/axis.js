@@ -124,7 +124,17 @@ export default class jmAxis extends jmArrawLine {
 				this.start.x = bounds.left;
 				this.start.y = bounds.bottom;
 				this.end.x = bounds.right;
-				this.end.y = bounds.bottom;					
+				this.end.y = bounds.bottom;	
+				
+				// zeroBase 时才需要移到0位置，否则依然为沉底
+				if(this.graph.baseY === 0) {
+					const yAxis = this.graph.yAxises[1];
+					if(!yAxis) return;
+
+					this.value = 0;
+					const y = this.start.y + yAxis.min() * yAxis.step();					
+					this.start.y = this.end.y = y;
+				}
 				break;
 			}
 			case 'y' : {				
@@ -145,29 +155,10 @@ export default class jmAxis extends jmArrawLine {
 				this.start.x = xoffset;
 				this.start.y = bounds.bottom;
 				this.end.x = this.start.x;
-				this.end.y = bounds.top;
-
-				//当Y轴最小值为负数时，则移动X轴的位置到0位置
-				const min = this.min();
-				const max = this.max();
-				// zeroBase 时才需要移到0位置，否则依然为沉底
-				if(this.dataType == 'number' && min < 0 && this.zeroBase && this.graph.xAxis) {
-					const step = this.step();
-					let xstepy = 0;//x轴y偏移量
-					if(max <= 0) {
-						this.graph.xAxis.value = max;
-						xstepy = this.end.y;
-					}
-					else {
-						this.graph.xAxis.value = min;
-						xstepy = this.start.y + (step * min);
-					}
-					this.graph.xAxis.start.y = this.graph.xAxis.end.y = xstepy;
-				}
+				this.end.y = bounds.top;				
 				break;
 			}
 		}
-
 		this.createLabel();
 	}
 
@@ -228,8 +219,7 @@ export default class jmAxis extends jmArrawLine {
 			const label = this.graph.createShape(jmLabel, {
 				style: this.style.xLabel
 			});
-			label.data = d; // 当前点的数据结构值			
-
+			label.data = d; // 当前点的数据结构值
 			label.text = text;
 
 			this.labels.push(label);
@@ -277,7 +267,10 @@ export default class jmAxis extends jmArrawLine {
 				//设定旋转原点为label左上角					
 				rotation.point = pos;
 				//当旋转后，其原点位移至左上角，所有当前控件必须反向移位其父容器位置
-				label.position = {x:-this.graph.chartArea.position.x,y:-this.graph.chartArea.position.y};
+				label.position = {
+					x: -this.graph.chartArea.position.x,
+					y: -this.graph.chartArea.position.y
+				};
 			}
 			else {
 				// 如果标签居中，则把二头的标签左边的左对齐，右边的右对齐

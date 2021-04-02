@@ -4653,7 +4653,16 @@ class jmAxis extends jmArrawLine {
           this.start.x = bounds.left;
           this.start.y = bounds.bottom;
           this.end.x = bounds.right;
-          this.end.y = bounds.bottom;
+          this.end.y = bounds.bottom; // zeroBase 时才需要移到0位置，否则依然为沉底
+
+          if (this.graph.baseY === 0) {
+            const yAxis = this.graph.yAxises[1];
+            if (!yAxis) return;
+            this.value = 0;
+            const y = this.start.y + yAxis.min() * yAxis.step();
+            this.start.y = this.end.y = y;
+          }
+
           break;
         }
 
@@ -4673,26 +4682,7 @@ class jmAxis extends jmArrawLine {
           this.start.x = xoffset;
           this.start.y = bounds.bottom;
           this.end.x = this.start.x;
-          this.end.y = bounds.top; //当Y轴最小值为负数时，则移动X轴的位置到0位置
-
-          const min = this.min();
-          const max = this.max(); // zeroBase 时才需要移到0位置，否则依然为沉底
-
-          if (this.dataType == 'number' && min < 0 && this.zeroBase && this.graph.xAxis) {
-            const step = this.step();
-            let xstepy = 0; //x轴y偏移量
-
-            if (max <= 0) {
-              this.graph.xAxis.value = max;
-              xstepy = this.end.y;
-            } else {
-              this.graph.xAxis.value = min;
-              xstepy = this.start.y + step * min;
-            }
-
-            this.graph.xAxis.start.y = this.graph.xAxis.end.y = xstepy;
-          }
-
+          this.end.y = bounds.top;
           break;
         }
     }
@@ -4758,7 +4748,7 @@ class jmAxis extends jmArrawLine {
       const label = this.graph.createShape(jmLabel, {
         style: this.style.xLabel
       });
-      label.data = d; // 当前点的数据结构值			
+      label.data = d; // 当前点的数据结构值
 
       label.text = text;
       this.labels.push(label);
@@ -5569,9 +5559,19 @@ class jmSeries extends jmPath {
     } //生成图例  这里要放到shape清理后面
 
 
-    this.createLegend(); // 计算最大最小值
-    // 当前需要先更新axis的边界值，轴好画图
+    this.createLegend();
+    this.initAxisValue(); // 处理最大值最小值
 
+    return this.chartInfo = {
+      xAxis: this.xAxis,
+      yAxis: this.yAxis
+    };
+  } // 计算最大值和最小值，一般图形直接采用最大最小值即可，有些需要多值叠加
+
+
+  initAxisValue() {
+    // 计算最大最小值
+    // 当前需要先更新axis的边界值，轴好画图
     for (var i = 0; i < this.data.length; i++) {
       if (Array.isArray(this.field)) {
         this.field.forEach(f => {
@@ -5589,11 +5589,6 @@ class jmSeries extends jmPath {
       this.xAxis.max(xv);
       this.xAxis.min(xv);
     }
-
-    return this.chartInfo = {
-      xAxis: this.xAxis,
-      yAxis: this.yAxis
-    };
   }
   /**
    * 生成序列图描点
@@ -5609,7 +5604,7 @@ class jmSeries extends jmPath {
     const minY = this.yAxis.min();
     const ystep = this.yAxis.step();
     this.baseYValue = typeof this.graph.baseY === 'undefined' ? minY : this.graph.baseY || 0;
-    this.baseYHeight = (this.baseYValue - minY) * ystep; // 基线的高度
+    this.baseYHeight = (this.baseYValue - minY) * ystep; // 基线的高度		
 
     this.baseY = this.graph.chartArea.height - this.baseYHeight; // Y轴基线的Y坐标
     // 有些图形是有多属性值的
@@ -5799,21 +5794,9 @@ class jmBarSeries extends jmSeries {
       points,
       dataChanged
     } = this.initDataPoint();
-    const len = points.length; //设定其填充颜色
-
-    this.style.fill = this.style.color; //计算每个柱子占宽
-    //每项柱子占宽除以柱子个数,默认最大宽度为30		
-
-    this.barTotalWidth = this.xAxis.width / len * (this.style.perWidth || 0.4);
-    this.barWidth = this.barTotalWidth / this.graph.barSeriesCount;
-    const maxBarWidth = this.graph.barMaxWidth || 50;
-
-    if (this.barWidth > maxBarWidth) {
-      this.barWidth = maxBarWidth;
-      this.barTotalWidth = maxBarWidth * this.graph.barSeriesCount;
-    } // 是否正在动画中
+    const len = points.length;
+    this.initWidth(len); // 是否正在动画中
     // 如果数据点多于100 个，暂时不启用动画，太慢了
-
 
     const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0) && len < 100;
     let aniIsEnd = true; // 当次是否结束动画
@@ -5884,6 +5867,22 @@ class jmBarSeries extends jmSeries {
         this.needUpdate = true; //需要刷新
       });
     }
+  } // 计算柱子宽度
+
+
+  initWidth(count) {
+    //设定其填充颜色
+    this.style.fill = this.style.color; //计算每个柱子占宽
+    //每项柱子占宽除以柱子个数,默认最大宽度为30		
+
+    this.barTotalWidth = this.xAxis.width / count * (this.style.perWidth || 0.4);
+    this.barWidth = this.barTotalWidth / this.graph.barSeriesCount;
+    const maxBarWidth = this.graph.barMaxWidth || 50;
+
+    if (this.barWidth > maxBarWidth) {
+      this.barWidth = maxBarWidth;
+      this.barTotalWidth = maxBarWidth * this.graph.barSeriesCount;
+    }
   }
 
 }
@@ -5899,7 +5898,7 @@ class jmBarSeries extends jmSeries {
  */
 //构造函数
 
-class jmBarSeries$1 extends jmSeries {
+class jmStackBarSeries extends jmBarSeries {
   constructor(options) {
     super(options);
   }
@@ -5917,21 +5916,9 @@ class jmBarSeries$1 extends jmSeries {
       points,
       dataChanged
     } = this.initDataPoint();
-    const len = points.length; //设定其填充颜色
-
-    this.style.fill = this.style.color; //计算每个柱子占宽
-    //每项柱子占宽除以柱子个数,默认最大宽度为30		
-
-    this.barTotalWidth = this.xAxis.width / len * (this.style.perWidth || 0.4);
-    this.barWidth = this.barTotalWidth / this.graph.barSeriesCount;
-    const maxBarWidth = this.graph.barMaxWidth || 50;
-
-    if (this.barWidth > maxBarWidth) {
-      this.barWidth = maxBarWidth;
-      this.barTotalWidth = maxBarWidth * this.graph.barSeriesCount;
-    } // 是否正在动画中
+    const len = points.length;
+    this.initWidth(len); // 是否正在动画中
     // 如果数据点多于100 个，暂时不启用动画，太慢了
-
 
     const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0) && len < 100;
     let aniIsEnd = true; // 当次是否结束动画
@@ -5940,57 +5927,61 @@ class jmBarSeries$1 extends jmSeries {
 
     for (let i = 0; i < len; i++) {
       //const label = this.xAxis.labels[i];
-      const point = points[i]; //如果当前点无效，则跳致下一点
+      const point = points[i];
 
-      if (typeof point.y === 'undefined' || point.y === null) {
-        continue;
-      }
+      for (let index = 0; index < point.points.length; index++) {
+        const style = this.graph.utils.clone(this.style);
 
-      const sp = this.shapes.add(this.graph.createPath(null, this.graph.utils.clone(this.style)));
-      this.children.add(sp); //绑定提示框
-      //this.bindTooltip(sp, point);
-      //首先确定p1和p4,因为他们是底脚。会固定
-
-      const p1 = {
-        x: point.x - this.barTotalWidth / 2 + this.barWidth * this.barIndex,
-        y: this.baseY
-      };
-      const p4 = {
-        x: p1.x + this.barWidth,
-        y: p1.y
-      };
-      const p2 = {
-        x: p1.x,
-        y: p1.y
-      };
-      const p3 = {
-        x: p4.x,
-        y: p1.y
-      }; // 如果要动画。则动态改变高度
-
-      if (isRunningAni) {
-        const step = point.height / aniCount;
-        const offHeight = step * this.___animateCounter; // 动态计算当前高度
-
-        p2.y = p1.y - offHeight; // 计算高度
-        // 当次动画完成
-
-        if (step >= 0 && p2.y <= point.y || step < 0 && p2.y >= point.y) {
-          p2.y = point.y;
+        if (style.color && typeof style.color === 'function') {
+          style.fill = style.color.call(this, this, index);
         } else {
-          aniIsEnd = false; // 只要有一个没完成，就还没有完成动画
+          style.fill = this.graph.getColor(index);
         }
 
-        p3.y = p2.y;
-      } else {
-        p2.y = point.y;
-        p3.y = point.y;
-      }
+        const sp = this.shapes.add(this.graph.createPath(null, style));
+        this.children.add(sp); //首先确定p1和p4,因为他们是底脚。会固定
 
-      sp.points.push(p1);
-      sp.points.push(p2);
-      sp.points.push(p3);
-      sp.points.push(p4);
+        const p1 = {
+          x: point.x - this.barTotalWidth / 2,
+          y: this.baseY
+        };
+        const p4 = {
+          x: p1.x + this.barWidth,
+          y: p1.y
+        };
+        const p2 = {
+          x: p1.x,
+          y: p1.y
+        };
+        const p3 = {
+          x: p4.x,
+          y: p1.y
+        }; // 如果要动画。则动态改变高度
+
+        if (isRunningAni) {
+          const step = point.height / aniCount;
+          const offHeight = step * this.___animateCounter; // 动态计算当前高度
+
+          p2.y = p1.y - offHeight; // 计算高度
+          // 当次动画完成
+
+          if (step >= 0 && p2.y <= point.y || step < 0 && p2.y >= point.y) {
+            p2.y = point.y;
+          } else {
+            aniIsEnd = false; // 只要有一个没完成，就还没有完成动画
+          }
+
+          p3.y = p2.y;
+        } else {
+          p2.y = point.y;
+          p3.y = point.y;
+        }
+
+        sp.points.push(p1);
+        sp.points.push(p2);
+        sp.points.push(p3);
+        sp.points.push(p4);
+      }
     }
 
     if (aniIsEnd) {
@@ -6001,6 +5992,37 @@ class jmBarSeries$1 extends jmSeries {
       setTimeout(() => {
         this.needUpdate = true; //需要刷新
       });
+    }
+  } // 计算最大值和最小值，一般图形直接采用最大最小值即可，有些需要多值叠加
+
+
+  initAxisValue() {
+    // 计算最大最小值
+    // 当前需要先更新axis的边界值，轴好画图
+    const fields = Array.isArray(this.field) ? this.field : [this.field];
+
+    for (const row of this.data) {
+      let max, min;
+
+      for (const f of fields) {
+        const v = Number(row[f]);
+        if (typeof max === 'undefined') max = v;else {
+          if (v < 0 || max < 0) max = Math.max(max, v);else {
+            max += v;
+          }
+        }
+        if (typeof min === 'undefined') min = v;else {
+          if (v >= 0 || min >= 0) min = Math.min(min, v);else {
+            min += v;
+          }
+        }
+      }
+
+      this.yAxis.max(max);
+      this.yAxis.min(min);
+      const xv = row[this.xAxis.field];
+      this.xAxis.max(xv);
+      this.xAxis.min(xv);
     }
   }
 
@@ -7393,13 +7415,13 @@ class jmChart extends jmGraph {
       serie.style.color = serie.style.color || serie.graph.getColor(i); //如果排版指定非内缩的方式，但出现了柱图，还是会采用内缩一个刻度的方式
 
       if (serie.graph.style.layout != 'inside') {
-        if (serie.graph.utils.isType(serie, jmBarSeries)) {
+        if (serie instanceof jmBarSeries) {
           serie.graph.style.layout = 'inside';
         }
       } //对柱图计算,并标记为第几个柱图，用为排列
 
 
-      if (serie.graph.utils.isType(serie, jmBarSeries)) {
+      if (serie instanceof jmBarSeries) {
         serie.barIndex = serie.graph.barSeriesCount;
         serie.graph.barSeriesCount++;
       }
@@ -7408,17 +7430,17 @@ class jmChart extends jmGraph {
     }); //console.log('beginDraw2', Date.now() - startTime);
     //重置图例
 
-    this.legend && this.legend.reset();
-
-    if (this.xAxis) {
-      this.xAxis.reset();
-    } //计算Y轴位置
-
+    this.legend && this.legend.reset(); //计算Y轴位置
 
     if (this.yAxises) {
       for (var i in this.yAxises) {
         this.yAxises[i].reset();
       }
+    } // y 处理完才能处理x
+
+
+    if (this.xAxis) {
+      this.xAxis.reset();
     } //console.log('beginDraw3', Date.now() - startTime);
     //最后再来初始化图形，这个必须在轴初始化完后才能执行
 
@@ -7509,7 +7531,8 @@ class jmChart extends jmGraph {
     options = Object.assign({
       index: 1,
       type: 'y',
-      format: this.options.yLabelFormat
+      format: this.options.yLabelFormat,
+      zeroBase: this.baseY === 0
     }, options || {});
 
     if (typeof this.options.minYValue !== 'undefined') {
@@ -7539,7 +7562,7 @@ class jmChart extends jmGraph {
       this.serieTypes = {
         'line': jmLineSeries,
         'bar': jmBarSeries,
-        'stackBar': jmBarSeries$1,
+        'stackBar': jmStackBarSeries,
         'pie': jmPieSeries,
         'stackLine': jmStackLineSeries
       };

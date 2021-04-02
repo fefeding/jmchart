@@ -26,20 +26,8 @@ export default class jmBarSeries extends jmSeries {
 		//生成描点位
 		const {points, dataChanged} = this.initDataPoint();				
 
-		const len = points.length;
-
-		//设定其填充颜色
-		this.style.fill = this.style.color;	
-
-		//计算每个柱子占宽
-		//每项柱子占宽除以柱子个数,默认最大宽度为30		
-		this.barTotalWidth = (this.xAxis.width / len * (this.style.perWidth||0.4));
-		this.barWidth = this.barTotalWidth / this.graph.barSeriesCount;
-		const maxBarWidth = this.graph.barMaxWidth || 50;
-		if(this.barWidth > maxBarWidth) {
-			this.barWidth = maxBarWidth;
-			this.barTotalWidth = maxBarWidth * this.graph.barSeriesCount;
-		}
+		const len = points.length;		
+		this.initWidth(len);
 		
 		// 是否正在动画中
 		// 如果数据点多于100 个，暂时不启用动画，太慢了
@@ -104,6 +92,21 @@ export default class jmBarSeries extends jmSeries {
 			setTimeout(()=>{
 				this.needUpdate = true;//需要刷新
 			});
+		}
+	}
+
+	// 计算柱子宽度
+	initWidth(count) {
+		//设定其填充颜色
+		this.style.fill = this.style.color;	
+		//计算每个柱子占宽
+		//每项柱子占宽除以柱子个数,默认最大宽度为30		
+		this.barTotalWidth = (this.xAxis.width / count * (this.style.perWidth||0.4));
+		this.barWidth = this.barTotalWidth / this.graph.barSeriesCount;
+		const maxBarWidth = this.graph.barMaxWidth || 50;
+		if(this.barWidth > maxBarWidth) {
+			this.barWidth = maxBarWidth;
+			this.barTotalWidth = maxBarWidth * this.graph.barSeriesCount;
 		}
 	}
 }

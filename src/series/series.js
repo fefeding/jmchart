@@ -190,6 +190,16 @@ export default class jmSeries extends jmPath {
 		//生成图例  这里要放到shape清理后面
 		this.createLegend();
 
+		this.initAxisValue();// 处理最大值最小值
+
+		return this.chartInfo = {
+			xAxis: this.xAxis,
+			yAxis: this.yAxis
+		};
+	}
+
+	// 计算最大值和最小值，一般图形直接采用最大最小值即可，有些需要多值叠加
+	initAxisValue() {
 		// 计算最大最小值
 		// 当前需要先更新axis的边界值，轴好画图
 		for(var i=0; i< this.data.length;i++) {	
@@ -210,11 +220,6 @@ export default class jmSeries extends jmPath {
 			this.xAxis.max(xv);
 			this.xAxis.min(xv);
 		}
-
-		return this.chartInfo = {
-			xAxis: this.xAxis,
-			yAxis: this.yAxis
-		};
 	}
 
 	/**
@@ -231,7 +236,7 @@ export default class jmSeries extends jmPath {
 		const ystep = this.yAxis.step();
 
 		this.baseYValue = typeof this.graph.baseY === 'undefined'? minY: (this.graph.baseY||0);
-		this.baseYHeight = (this.baseYValue - minY) * ystep;// 基线的高度
+		this.baseYHeight = (this.baseYValue - minY) * ystep;// 基线的高度		
 		this.baseY = this.graph.chartArea.height - this.baseYHeight;// Y轴基线的Y坐标
 		// 有些图形是有多属性值的
 		const fields = Array.isArray(this.field)? this.field: [this.field];
@@ -240,8 +245,7 @@ export default class jmSeries extends jmPath {
 		for(let i=0;i < data.length; i++) {
 			const s = data[i];
 			
-			const xv = s[this.xAxis.field];
-			
+			const xv = s[this.xAxis.field];		
 
 			const p = {				
 				data: s,

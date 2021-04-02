@@ -294,13 +294,13 @@ export default class jmChart extends jmgraph.jmGraph  {
 			serie.style.color = serie.style.color || serie.graph.getColor(i);
 			//如果排版指定非内缩的方式，但出现了柱图，还是会采用内缩一个刻度的方式
 			if(serie.graph.style.layout != 'inside') {
-				if(serie.graph.utils.isType(serie, jmBarSeries)) {			
-						serie.graph.style.layout = 'inside';
+				if(serie instanceof jmBarSeries) {			
+					serie.graph.style.layout = 'inside';
 				}
 			}
 			
 			//对柱图计算,并标记为第几个柱图，用为排列
-			if(serie.graph.utils.isType(serie, jmBarSeries)) {
+			if(serie instanceof jmBarSeries) {
 				serie.barIndex = serie.graph.barSeriesCount;
 				serie.graph.barSeriesCount ++;
 			}
@@ -310,16 +310,17 @@ export default class jmChart extends jmgraph.jmGraph  {
 		//重置图例
 		this.legend && this.legend.reset();	
 
-		if(this.xAxis) {
-			this.xAxis.reset();
-		}
-
 		//计算Y轴位置
 		if(this.yAxises) {
 			for(var i in this.yAxises) {
 				this.yAxises[i].reset();
 			}
 		}
+		// y 处理完才能处理x
+		if(this.xAxis) {
+			this.xAxis.reset();
+		}
+
 		//console.log('beginDraw3', Date.now() - startTime);
 		//最后再来初始化图形，这个必须在轴初始化完后才能执行
 		this.series.each(function(i, serie) {		
@@ -405,6 +406,7 @@ export default class jmChart extends jmgraph.jmGraph  {
 			index: 1,
 			type: 'y',
 			format: this.options.yLabelFormat,
+			zeroBase: this.baseY === 0
 		}, options || {});
 		if(typeof this.options.minYValue !== 'undefined') {
 			options.minYValue = typeof options.minYValue === 'undefined'?this.options.minYValue:Math.min(this.options.minYValue, options.minYValue);
