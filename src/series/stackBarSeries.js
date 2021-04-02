@@ -37,9 +37,10 @@ export default class jmStackBarSeries extends jmBarSeries {
 		const aniCount = (this.style.aniCount || 10);
 
 		for(let i=0; i<len; i++) {
-			//const label = this.xAxis.labels[i];
 			const point = points[i];			
 			
+			let topStartY = this.baseY;
+			let bottomStartY = this.baseY;
 			for(let index=0; index < point.points.length; index ++) {
 				const style = this.graph.utils.clone(this.style);
 				if(style.color && typeof style.color === 'function') {
@@ -50,9 +51,12 @@ export default class jmStackBarSeries extends jmBarSeries {
 				}
 				const sp = this.shapes.add(this.graph.createPath(null, style));
 				this.children.add(sp);
-	
+				const p = point.points[index];
+				let startY = topStartY;
+				if(p.yValue < this.baseYValue) startY = bottomStartY;
+				
 				//首先确定p1和p4,因为他们是底脚。会固定
-				const p1 = {x: point.x - this.barTotalWidth / 2, y: this.baseY };			
+				const p1 = {x: p.x - this.barTotalWidth / 2, y: startY };			
 				const p4 = {x: p1.x + this.barWidth, y: p1.y };
 	
 				const p2 = {x: p1.x, y: p1.y };
@@ -60,24 +64,27 @@ export default class jmStackBarSeries extends jmBarSeries {
 	
 				// 如果要动画。则动态改变高度
 				if(isRunningAni) {
-					const step = point.height / aniCount;
+					const step = p.height / aniCount;
 					const offHeight = step * this.___animateCounter;// 动态计算当前高度
-					p2.y = p1.y - offHeight;// 计算高度
+					p2.y = startY - offHeight;// 计算高度
 	
 					// 当次动画完成
-					if((step >= 0 && p2.y <= point.y) || (step < 0 && p2.y >= point.y)) {
-						p2.y = point.y;
+					if((step >= 0 && offHeight >= p.height) || (step < 0 && offHeight <= p.height)) {
+						p2.y = startY - p.height;
 					}
 					else {
 						aniIsEnd = false;// 只要有一个没完成，就还没有完成动画
 					}
 	
-					p3.y = p2.y;
+					p.y = p3.y = p2.y;
 				}
 				else {
-					p2.y = point.y;
-					p3.y = point.y;					
+					p2.y = startY - p.height;
+					p.y = p3.y = p2.y;					
 				}
+
+				if(p.yValue < this.baseYValue) bottomStartY = p2.y;// 下一个又从它顶部开始画
+				else topStartY = p2.y;
 	
 				sp.points.push(p1); 
 				sp.points.push(p2); 

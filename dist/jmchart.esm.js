@@ -1396,7 +1396,7 @@ class jmMouseEvent {
 
 		this.eventEvents['mousedown'] = jmUtils.bindEvent(this.target,'mousedown',function(evt) {
 			evt = evt || window.event;
-			let r = container.raiseEvent('mousedown',evt);
+			container.raiseEvent('mousedown',evt);
 			//if(r === false) {
 				//if(evt.preventDefault) evt.preventDefault();
 				//return false;
@@ -1407,7 +1407,7 @@ class jmMouseEvent {
 			evt = evt || window.event;		
 			let target = evt.target || evt.srcElement;
 			if(target == canvas) {
-				let r = container.raiseEvent('mousemove',evt);
+				container.raiseEvent('mousemove',evt);
 				//if(r === false) {
 					if(evt.preventDefault) evt.preventDefault();
 					return false;
@@ -4474,7 +4474,7 @@ class jmLabel extends jmControl {
 		
 		//获取当前控件的绝对位置
 		let bounds = this.parent && this.parent.absoluteBounds?this.parent.absoluteBounds:this.absoluteBounds;		
-		let size = this.testSize();
+		this.testSize();
 		let location = this.location;
 		let x = location.left + bounds.left;
 		let y = location.top + bounds.top;
@@ -5518,7 +5518,7 @@ class jmSeries extends jmPath {
       } // 下一个点
 
 
-      if ( p.x > x) {
+      if (p.x > x) {
         // 没有上一个，只能返回这个了
         if (prePoint && x - prePoint.x < p.x - x) return prePoint;else return p;
       }
@@ -5632,7 +5632,8 @@ class jmSeries extends jmPath {
         const point = {
           x: p.x,
           // 高度
-          height: p.height
+          height: p.height,
+          yValue: yv
         }; //如果Y值不存在。则此点无效，不画图
 
         if (yv == null || typeof yv == 'undefined') {
@@ -5926,8 +5927,9 @@ class jmStackBarSeries extends jmBarSeries {
     const aniCount = this.style.aniCount || 10;
 
     for (let i = 0; i < len; i++) {
-      //const label = this.xAxis.labels[i];
       const point = points[i];
+      let topStartY = this.baseY;
+      let bottomStartY = this.baseY;
 
       for (let index = 0; index < point.points.length; index++) {
         const style = this.graph.utils.clone(this.style);
@@ -5939,11 +5941,14 @@ class jmStackBarSeries extends jmBarSeries {
         }
 
         const sp = this.shapes.add(this.graph.createPath(null, style));
-        this.children.add(sp); //首先确定p1和p4,因为他们是底脚。会固定
+        this.children.add(sp);
+        const p = point.points[index];
+        let startY = topStartY;
+        if (p.yValue < this.baseYValue) startY = bottomStartY; //首先确定p1和p4,因为他们是底脚。会固定
 
         const p1 = {
-          x: point.x - this.barTotalWidth / 2,
-          y: this.baseY
+          x: p.x - this.barTotalWidth / 2,
+          y: startY
         };
         const p4 = {
           x: p1.x + this.barWidth,
@@ -5959,24 +5964,26 @@ class jmStackBarSeries extends jmBarSeries {
         }; // 如果要动画。则动态改变高度
 
         if (isRunningAni) {
-          const step = point.height / aniCount;
+          const step = p.height / aniCount;
           const offHeight = step * this.___animateCounter; // 动态计算当前高度
 
-          p2.y = p1.y - offHeight; // 计算高度
+          p2.y = startY - offHeight; // 计算高度
           // 当次动画完成
 
-          if (step >= 0 && p2.y <= point.y || step < 0 && p2.y >= point.y) {
-            p2.y = point.y;
+          if (step >= 0 && offHeight >= p.height || step < 0 && offHeight <= p.height) {
+            p2.y = startY - p.height;
           } else {
             aniIsEnd = false; // 只要有一个没完成，就还没有完成动画
           }
 
-          p3.y = p2.y;
+          p.y = p3.y = p2.y;
         } else {
-          p2.y = point.y;
-          p3.y = point.y;
+          p2.y = startY - p.height;
+          p.y = p3.y = p2.y;
         }
 
+        if (p.yValue < this.baseYValue) bottomStartY = p2.y; // 下一个又从它顶部开始画
+        else topStartY = p2.y;
         sp.points.push(p1);
         sp.points.push(p2);
         sp.points.push(p3);

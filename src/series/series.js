@@ -266,7 +266,8 @@ export default class jmSeries extends jmPath {
 				const point = {
 					x: p.x,
 					// 高度
-					height: p.height				
+					height: p.height,
+					yValue: yv				
 				}
 				//如果Y值不存在。则此点无效，不画图
 				if(yv == null || typeof yv == 'undefined') {

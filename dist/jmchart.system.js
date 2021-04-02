@@ -1,4 +1,4 @@
-System.register([], function (exports, module) {
+System.register([], function (exports) {
   'use strict';
   return {
     execute: function () {
@@ -518,7 +518,7 @@ System.register([], function (exports, module) {
           /**
            * @method judge 判断点是否在多边形中
            * @param {point} dot {{x,y}} 需要判断的点
-           * @param {array} coordinates {{x,y}[]} 多边形点坐标的数组，为保证图形能够闭合，起点和终点必须相等。
+           * @param {array} coordinates {{x,y}} 多边形点坐标的数组，为保证图形能够闭合，起点和终点必须相等。
            *        比如三角形需要四个点表示，第一个点和最后一个点必须相同。 
            * @param  {number} 是否为实心 1= 是
            * @returns {boolean} 结果 true=在形状内
@@ -1401,7 +1401,7 @@ System.register([], function (exports, module) {
 
       		this.eventEvents['mousedown'] = jmUtils.bindEvent(this.target,'mousedown',function(evt) {
       			evt = evt || window.event;
-      			let r = container.raiseEvent('mousedown',evt);
+      			container.raiseEvent('mousedown',evt);
       			//if(r === false) {
       				//if(evt.preventDefault) evt.preventDefault();
       				//return false;
@@ -1412,7 +1412,7 @@ System.register([], function (exports, module) {
       			evt = evt || window.event;		
       			let target = evt.target || evt.srcElement;
       			if(target == canvas) {
-      				let r = container.raiseEvent('mousemove',evt);
+      				container.raiseEvent('mousemove',evt);
       				//if(r === false) {
       					if(evt.preventDefault) evt.preventDefault();
       					return false;
@@ -1896,7 +1896,7 @@ System.register([], function (exports, module) {
       	 * @param {style} style 样式对象，如:{fill:'black',stroke:'red'}
       	 */
       	setStyle(style) {
-      		style = style || this.style;
+      		style = style || jmUtils.clone(this.style, true);
       		if(!style) return;
 
       		// 当前根据屏幕放大倍数，如果有倍数，则需要对线宽等同比放大
@@ -1915,7 +1915,15 @@ System.register([], function (exports, module) {
       		let __setStyle = (style, name, mpkey) => {
       			//let styleValue = style[mpkey||name]||style;
       			if(style) {				
-      				
+      				if(typeof style === 'function') {
+      					try {
+      						style = style.call(this);
+      					}
+      					catch(e) {
+      						console.warn(e);
+      						return;
+      					}
+      				}
       				let t = typeof style;	
       				let mpname = this.jmStyleMap[mpkey || name];
 
@@ -3200,17 +3208,13 @@ System.register([], function (exports, module) {
       	 * 简单直观创建对象
       	 *
       	 * @method createShape 
-      	 * @param {string} name 注册控件的名称
+      	 * @param {string} shape 注册控件的名称 也可以直接是控件类型
       	 * @param {object} args 实例化控件的参数
       	 * @return {object} 已实例化控件的对象
       	 */
-      	createShape(name, args) {
-      		let shape;
-      		if(typeof name === 'function') {
-      			shape = name;
-      		}
-      		else {
-      			shape = this.shapes[name];
+      	createShape(shape, args) {
+      		if(typeof shape === 'string') {
+      			shape = this.shapes[shape];
       		}
       		if(shape) {
       			if(!args) args = {};
@@ -3491,6 +3495,242 @@ System.register([], function (exports, module) {
       }
 
       /**
+       * 圆弧图型 继承自jmPath
+       *
+       * @class jmArc
+       * @extends jmPath
+       * @param {object} params center=当前圆弧中心,radius=圆弧半径,start=圆弧起始角度,end=圆弧结束角度,anticlockwise=  false  顺时针，true 逆时针
+       */
+      class jmArc extends jmPath {
+
+      	constructor(params, t='jmArc') {
+      		if(!params) params = {};
+      		super(params, t);
+
+      		this.center = params.center || {x:0,y:0};
+      		this.radius = params.radius || 0;
+
+      		this.startAngle = params.start || params.startAngle || 0;
+      		this.endAngle = params.end || params.endAngle || Math.PI * 2;		
+
+      		this.anticlockwise = params.anticlockwise  || 0;
+
+      		this.isFan = !!params.isFan;
+      	}	
+
+      	/**
+      	 * 中心点
+      	 * point格式：{x:0,y:0,m:true}
+      	 * @property center
+      	 * @type {point}
+      	 */
+      	get center() {
+      		return this.__pro('center');
+      	}
+      	set center(v) {
+      		this.needUpdate = true;
+      		return this.__pro('center', v);
+      	}
+
+      	/**
+      	 * 半径
+      	 * @property radius
+      	 * @type {number}
+      	 */
+      	get radius() {
+      		return this.__pro('radius');
+      	}
+      	set radius(v) {
+      		this.needUpdate = true;
+      		return this.__pro('radius', v);
+      	}
+
+      	/**
+      	 * 扇形起始角度
+      	 * @property startAngle
+      	 * @type {number}
+      	 */
+      	get startAngle() {
+      		return this.__pro('startAngle');
+      	}
+      	set startAngle(v) {
+      		this.needUpdate = true;
+      		return this.__pro('startAngle', v);
+      	}
+
+      	/**
+      	 * 扇形结束角度
+      	 * @property endAngle
+      	 * @type {number}
+      	 */
+      	get endAngle() {
+      		return this.__pro('endAngle');
+      	}
+      	set endAngle(v) {
+      		this.needUpdate = true;
+      		return this.__pro('endAngle', v);
+      	}
+
+      	/**
+      	 * 可选。规定应该逆时针还是顺时针绘图
+      	 * false  顺时针，true 逆时针
+      	 * @property anticlockwise
+      	 * @type {boolean}
+      	 */
+      	get anticlockwise() {
+      		return this.__pro('anticlockwise');
+      	}
+      	set anticlockwise(v) {
+      		this.needUpdate = true;
+      		return this.__pro('anticlockwise', v);
+      	}
+
+
+      	/**
+      	 * 初始化图形点
+      	 * 
+      	 * @method initPoint
+      	 * @private
+      	 * @for jmArc
+      	 */
+      	initPoints() {
+      		let location = this.getLocation();//获取位置参数
+      		let mw = 0;
+      		let mh = 0;
+      		let cx = location.center.x ;
+      		let cy = location.center.y ;
+      		//如果设定了半径。则以半径为主	
+      		if(location.radius) {
+      			mw = mh = location.radius;
+      		}
+      		else {
+      			mw = location.width / 2;
+      			mh = location.height / 2;
+      		}	
+      		
+      		let start = this.startAngle;
+      		let end = this.endAngle;
+
+      		if((mw == 0 && mh == 0) || start == end) return;
+
+      		let anticlockwise = this.anticlockwise;
+      		this.points = [];
+      		let step = 1 / Math.max(mw, mh);
+
+      		//如果是逆时针绘制，则角度为负数，并且结束角为2Math.PI-end
+      		if(anticlockwise) {
+      			let p2 =  Math.PI * 2;
+      			start = p2 - start;
+      			end = p2 - end;
+      		}
+      		if(start > end) step = -step;
+
+      		if(this.isFan) this.points.push(location.center);// 如果是扇形，则从中心开始画
+      		
+      		//椭圆方程x=a*cos(r) ,y=b*sin(r)	
+      		for(let r=start;;r += step) {	
+      			if(step > 0 && r > end) r = end;
+      			else if(step < 0 && r < end) r = end;
+
+      			let p = {
+      				x : Math.cos(r) * mw + cx,
+      				y : Math.sin(r) * mh + cy
+      			};
+      			this.points.push(p);
+
+      			if(r == end) break;
+      		}
+      		return this.points;
+      	}
+      }
+
+      /**
+       * 画一条直线
+       *
+       * @class jmLine
+       * @extends jmPath
+       * @param {object} params 直线参数:start=起始点,end=结束点,lineType=线类型(solid=实线，dotted=虚线),dashLength=虚线间隔(=4)
+       */
+      class jmLine extends jmPath {	
+      	
+      	constructor(params, t='jmLine') {
+      		super(params, t);
+
+      		this.start = params.start || {x:0,y:0};
+      		this.end = params.end || {x:0,y:0};
+      		this.style.lineType = this.style.lineType || 'solid';
+      		this.style.dashLength = this.style.dashLength || 4;
+      	}	
+
+      	/**
+      	 * 控制起始点
+      	 * 
+      	 * @property start
+      	 * @for jmLine
+      	 * @type {point}
+      	 */
+      	get start() {
+      		return this.__pro('start');
+      	}
+      	set start(v) {
+      		this.needUpdate = true;
+      		return this.__pro('start', v);
+      	}
+
+      	/**
+      	 * 控制结束点
+      	 * 
+      	 * @property end
+      	 * @for jmLine
+      	 * @type {point}
+      	 */
+      	get end() {
+      		return this.__pro('end');
+      	}
+      	set end(v) {
+      		this.needUpdate = true;
+      		return this.__pro('end', v);
+      	}
+
+      	/**
+      	 * 初始化图形点,如呆为虚线则根据跳跃间隔描点
+      	 * @method initPoints
+      	 * @private
+      	 */
+      	initPoints() {	
+      		let start = this.start;
+      		let end = this.end;
+      		this.points = [];	
+      		this.points.push(start);
+
+      		if(this.style.lineType === 'dotted') {			
+      			let dx = end.x - start.x;
+      			let dy = end.y - start.y;
+      			let lineLen = Math.sqrt(dx * dx + dy * dy);
+      			dx = dx / lineLen;
+      			dy = dy / lineLen;
+      			let dottedstart = false;
+
+      			let dashLen = this.style.dashLength || 5;
+      			let dottedsp = dashLen / 2;
+      			for(let l=dashLen; l<=lineLen;) {
+      				if(dottedstart == false) {
+      					this.points.push({x: start.x + dx * l, y: start.y + dy * l});
+      					l += dottedsp;
+      				}
+      				else {				
+      					this.points.push({x: start.x + dx * l, y: start.y+ dy * l, m: true});
+      					l += dashLen;
+      				}
+      				dottedstart = !dottedstart;				
+      			}
+      		}
+      		this.points.push(end);
+      		return this.points;
+      	}
+      }
+
+      /**
        * 画矩形
        *
        * @class jmRect
@@ -3590,31 +3830,31 @@ System.register([], function (exports, module) {
 
       		//如果指定为虚线 , 则初始化一个直线组件，来构建虚线点集合
       		if(this.style.lineType === 'dotted' && !this.dottedLine) {
-      			this.dottedLine = this.graph.createShape('line', {style: this.style});
+      			this.dottedLine = this.graph.createShape(jmLine, {style: this.style});
       		}
       		
       		//如果有边界弧度则借助圆弧对象计算描点
       		if(location.radius && location.radius < location.width/2 && location.radius < location.height/2) {
       			let q = Math.PI / 2;
-      			let arc = this.graph.createShape('arc',{radius:location.radius,anticlockwise:false});
+      			let arc = this.graph.createShape(jmArc,{radius:location.radius,anticlockwise:false});
       			arc.center = {x:location.left + location.radius,y:location.top+location.radius};
       			arc.startAngle = Math.PI;
       			arc.endAngle = Math.PI + q;
       			let ps1 = arc.initPoints();
       			
-      			arc = this.graph.createShape('arc',{radius:location.radius,anticlockwise:false});
+      			arc = this.graph.createShape(jmArc,{radius:location.radius,anticlockwise:false});
       			arc.center = {x:p2.x - location.radius,y:p2.y + location.radius};
       			arc.startAngle = Math.PI + q;
       			arc.endAngle = Math.PI * 2;
       			let ps2 = arc.initPoints();
       			
-      			arc = this.graph.createShape('arc',{radius:location.radius,anticlockwise:false});
+      			arc = this.graph.createShape(jmArc,{radius:location.radius,anticlockwise:false});
       			arc.center = {x:p3.x - location.radius,y:p3.y - location.radius};
       			arc.startAngle = 0;
       			arc.endAngle = q;
       			let ps3 = arc.initPoints();
       			
-      			arc = this.graph.createShape('arc',{radius:location.radius,anticlockwise:false});
+      			arc = this.graph.createShape(jmArc,{radius:location.radius,anticlockwise:false});
       			arc.center = {x:p4.x + location.radius,y:p4.y - location.radius};
       			arc.startAngle = q;
       			arc.endAngle = Math.PI;
@@ -3653,92 +3893,6 @@ System.register([], function (exports, module) {
       			}
       		}		
       		
-      		return this.points;
-      	}
-      }
-
-      /**
-       * 画一条直线
-       *
-       * @class jmLine
-       * @extends jmPath
-       * @param {object} params 直线参数:start=起始点,end=结束点,lineType=线类型(solid=实线，dotted=虚线),dashLength=虚线间隔(=4)
-       */
-      class jmLine extends jmPath {	
-      	
-      	constructor(params, t='jmLine') {
-      		super(params, t);
-
-      		this.start = params.start || {x:0,y:0};
-      		this.end = params.end || {x:0,y:0};
-      		this.style.lineType = this.style.lineType || 'solid';
-      		this.style.dashLength = this.style.dashLength || 4;
-      	}	
-
-      	/**
-      	 * 控制起始点
-      	 * 
-      	 * @property start
-      	 * @for jmLine
-      	 * @type {point}
-      	 */
-      	get start() {
-      		return this.__pro('start');
-      	}
-      	set start(v) {
-      		this.needUpdate = true;
-      		return this.__pro('start', v);
-      	}
-
-      	/**
-      	 * 控制结束点
-      	 * 
-      	 * @property end
-      	 * @for jmLine
-      	 * @type {point}
-      	 */
-      	get end() {
-      		return this.__pro('end');
-      	}
-      	set end(v) {
-      		this.needUpdate = true;
-      		return this.__pro('end', v);
-      	}
-
-      	/**
-      	 * 初始化图形点,如呆为虚线则根据跳跃间隔描点
-      	 * @method initPoints
-      	 * @private
-      	 */
-      	initPoints() {	
-      		let start = this.start;
-      		let end = this.end;
-      		this.points = [];	
-      		this.points.push(start);
-
-      		if(this.style.lineType === 'dotted') {			
-      			let dx = end.x - start.x;
-      			let dy = end.y - start.y;
-      			let lineLen = Math.sqrt(dx * dx + dy * dy);
-      			dx = dx / lineLen;
-      			dy = dy / lineLen;
-      			let dottedstart = false;
-
-      			let dashLen = this.style.dashLength || 5;
-      			let dottedsp = dashLen / 2;
-      			for(let l=dashLen; l<=lineLen;) {
-      				if(dottedstart == false) {
-      					this.points.push({x: start.x + dx * l, y: start.y + dy * l});
-      					l += dottedsp;
-      				}
-      				else {				
-      					this.points.push({x: start.x + dx * l, y: start.y+ dy * l, m: true});
-      					l += dashLen;
-      				}
-      				dottedstart = !dottedstart;				
-      			}
-      		}
-      		this.points.push(end);
       		return this.points;
       	}
       }
@@ -3887,6 +4041,31 @@ System.register([], function (exports, module) {
         	'border-radius': '6px'
         },*/
         line: {
+          normal: {
+            lineWidth: 1,
+            zIndex: 18,
+            cursor: 'default'
+          },
+          hover: {
+            lineWidth: 4,
+            //zIndex: 100,
+            cursor: 'pointer'
+          },
+          lineWidth: 1,
+          zIndex: 18,
+          cursor: 'default',
+          radius: 3,
+          fill: null,
+          showItem: true,
+          // 是否展示圆点
+          item: {
+            fill: '#fff',
+            zIndex: 19
+          },
+          // 默认不填充，需要填满请配置{fill:'',stroke:''}
+          area: false
+        },
+        stackLine: {
           normal: {
             lineWidth: 1,
             zIndex: 18,
@@ -4300,7 +4479,7 @@ System.register([], function (exports, module) {
       		
       		//获取当前控件的绝对位置
       		let bounds = this.parent && this.parent.absoluteBounds?this.parent.absoluteBounds:this.absoluteBounds;		
-      		let size = this.testSize();
+      		this.testSize();
       		let location = this.location;
       		let x = location.left + bounds.left;
       		let y = location.top + bounds.top;
@@ -4479,7 +4658,16 @@ System.register([], function (exports, module) {
                 this.start.x = bounds.left;
                 this.start.y = bounds.bottom;
                 this.end.x = bounds.right;
-                this.end.y = bounds.bottom;
+                this.end.y = bounds.bottom; // zeroBase 时才需要移到0位置，否则依然为沉底
+
+                if (this.graph.baseY === 0) {
+                  const yAxis = this.graph.yAxises[1];
+                  if (!yAxis) return;
+                  this.value = 0;
+                  const y = this.start.y + yAxis.min() * yAxis.step();
+                  this.start.y = this.end.y = y;
+                }
+
                 break;
               }
 
@@ -4499,26 +4687,7 @@ System.register([], function (exports, module) {
                 this.start.x = xoffset;
                 this.start.y = bounds.bottom;
                 this.end.x = this.start.x;
-                this.end.y = bounds.top; //当Y轴最小值为负数时，则移动X轴的位置到0位置
-
-                const min = this.min();
-                const max = this.max(); // zeroBase 时才需要移到0位置，否则依然为沉底
-
-                if (this.dataType == 'number' && min < 0 && this.zeroBase && this.graph.xAxis) {
-                  const step = this.step();
-                  let xstepy = 0; //x轴y偏移量
-
-                  if (max <= 0) {
-                    this.graph.xAxis.value = max;
-                    xstepy = this.end.y;
-                  } else {
-                    this.graph.xAxis.value = min;
-                    xstepy = this.start.y + step * min;
-                  }
-
-                  this.graph.xAxis.start.y = this.graph.xAxis.end.y = xstepy;
-                }
-
+                this.end.y = bounds.top;
                 break;
               }
           }
@@ -4584,7 +4753,7 @@ System.register([], function (exports, module) {
             const label = this.graph.createShape(jmLabel, {
               style: this.style.xLabel
             });
-            label.data = d; // 当前点的数据结构值			
+            label.data = d; // 当前点的数据结构值
 
             label.text = text;
             this.labels.push(label);
@@ -5150,156 +5319,6 @@ System.register([], function (exports, module) {
       };
 
       /**
-       * 圆弧图型 继承自jmPath
-       *
-       * @class jmArc
-       * @extends jmPath
-       * @param {object} params center=当前圆弧中心,radius=圆弧半径,start=圆弧起始角度,end=圆弧结束角度,anticlockwise=  false  顺时针，true 逆时针
-       */
-      class jmArc extends jmPath {
-
-      	constructor(params, t='jmArc') {
-      		if(!params) params = {};
-      		super(params, t);
-
-      		this.center = params.center || {x:0,y:0};
-      		this.radius = params.radius || 0;
-
-      		this.startAngle = params.start || params.startAngle || 0;
-      		this.endAngle = params.end || params.endAngle || Math.PI * 2;		
-
-      		this.anticlockwise = params.anticlockwise  || 0;
-
-      		this.isFan = !!params.isFan;
-      	}	
-
-      	/**
-      	 * 中心点
-      	 * point格式：{x:0,y:0,m:true}
-      	 * @property center
-      	 * @type {point}
-      	 */
-      	get center() {
-      		return this.__pro('center');
-      	}
-      	set center(v) {
-      		this.needUpdate = true;
-      		return this.__pro('center', v);
-      	}
-
-      	/**
-      	 * 半径
-      	 * @property radius
-      	 * @type {number}
-      	 */
-      	get radius() {
-      		return this.__pro('radius');
-      	}
-      	set radius(v) {
-      		this.needUpdate = true;
-      		return this.__pro('radius', v);
-      	}
-
-      	/**
-      	 * 扇形起始角度
-      	 * @property startAngle
-      	 * @type {number}
-      	 */
-      	get startAngle() {
-      		return this.__pro('startAngle');
-      	}
-      	set startAngle(v) {
-      		this.needUpdate = true;
-      		return this.__pro('startAngle', v);
-      	}
-
-      	/**
-      	 * 扇形结束角度
-      	 * @property endAngle
-      	 * @type {number}
-      	 */
-      	get endAngle() {
-      		return this.__pro('endAngle');
-      	}
-      	set endAngle(v) {
-      		this.needUpdate = true;
-      		return this.__pro('endAngle', v);
-      	}
-
-      	/**
-      	 * 可选。规定应该逆时针还是顺时针绘图
-      	 * false  顺时针，true 逆时针
-      	 * @property anticlockwise
-      	 * @type {boolean}
-      	 */
-      	get anticlockwise() {
-      		return this.__pro('anticlockwise');
-      	}
-      	set anticlockwise(v) {
-      		this.needUpdate = true;
-      		return this.__pro('anticlockwise', v);
-      	}
-
-
-      	/**
-      	 * 初始化图形点
-      	 * 
-      	 * @method initPoint
-      	 * @private
-      	 * @for jmArc
-      	 */
-      	initPoints() {
-      		let location = this.getLocation();//获取位置参数
-      		let mw = 0;
-      		let mh = 0;
-      		let cx = location.center.x ;
-      		let cy = location.center.y ;
-      		//如果设定了半径。则以半径为主	
-      		if(location.radius) {
-      			mw = mh = location.radius;
-      		}
-      		else {
-      			mw = location.width / 2;
-      			mh = location.height / 2;
-      		}	
-      		
-      		let start = this.startAngle;
-      		let end = this.endAngle;
-
-      		if((mw == 0 && mh == 0) || start == end) return;
-
-      		let anticlockwise = this.anticlockwise;
-      		this.points = [];
-      		let step = 1 / Math.max(mw, mh);
-
-      		//如果是逆时针绘制，则角度为负数，并且结束角为2Math.PI-end
-      		if(anticlockwise) {
-      			let p2 =  Math.PI * 2;
-      			start = p2 - start;
-      			end = p2 - end;
-      		}
-      		if(start > end) step = -step;
-
-      		if(this.isFan) this.points.push(location.center);// 如果是扇形，则从中心开始画
-      		
-      		//椭圆方程x=a*cos(r) ,y=b*sin(r)	
-      		for(let r=start;;r += step) {	
-      			if(step > 0 && r > end) r = end;
-      			else if(step < 0 && r < end) r = end;
-
-      			let p = {
-      				x : Math.cos(r) * mw + cx,
-      				y : Math.sin(r) * mh + cy
-      			};
-      			this.points.push(p);
-
-      			if(r == end) break;
-      		}
-      		return this.points;
-      	}
-      }
-
-      /**
        * 画规则的圆弧
        *
        * @class jmCircle
@@ -5398,18 +5417,24 @@ System.register([], function (exports, module) {
 
           _defineProperty(this, "field", '');
 
+          _defineProperty(this, "baseYHeight", 0);
+
+          _defineProperty(this, "baseY", 0);
+
+          _defineProperty(this, "baseYValue", 0);
+
           this.options = options;
-          this.field = options.field || '';
+          this.field = options.field || options.fields || '';
           this.index = options.index || 1;
           this.legendLabel = options.legendLabel || '';
-          this.___animateCounter = 0; // 动画计数
+          this.___animateCounter = 0; // 动画计数		
 
           this.xAxis = this.graph.createXAxis(); // 生成X轴
           // 生成当前Y轴
 
           this.yAxis = this.yAxis || this.graph.createYAxis({
             index: this.index,
-            format: options.yLabelFormat
+            format: options.yLabelFormat || this.graph.options.yLabelFormat
           }); // 初始化一些参数， 因为这里有多个Y轴的可能，所以每次都需要重调一次init
 
           this.yAxis.init({
@@ -5429,6 +5454,17 @@ System.register([], function (exports, module) {
 
         set data(d) {
           this.graph.data = d;
+        } //是否启用动画效果
+
+
+        get enableAnimate() {
+          if (typeof this.options.enableAnimate !== 'undefined') return !!this.options.enableAnimate;else {
+            return this.graph.enableAnimate;
+          }
+        }
+
+        set enableAnimate(v) {
+          this.options.enableAnimate = v;
         }
         /**
          * 图例名称
@@ -5439,7 +5475,7 @@ System.register([], function (exports, module) {
 
 
         // 做一些基础初始化工作
-        init(...args) {
+        initDataPoint(...args) {
           //生成描点位
           // 如果有动画，则需要判断是否改变，不然不需要重新动画
           let dataChanged = false;
@@ -5487,7 +5523,7 @@ System.register([], function (exports, module) {
             } // 下一个点
 
 
-            if ( p.x > x) {
+            if (p.x > x) {
               // 没有上一个，只能返回这个了
               if (prePoint && x - prePoint.x < p.x - x) return prePoint;else return p;
             }
@@ -5520,9 +5556,7 @@ System.register([], function (exports, module) {
 
 
         reset() {
-          //是否启用动画效果
-          this.enableAnimate = typeof this.enableAnimate === 'undefined' ? this.graph.enableAnimate : this.enableAnimate; // 重置所有图形
-
+          // 重置所有图形
           var shape;
 
           while (shape = this.shapes.shift()) {
@@ -5530,22 +5564,36 @@ System.register([], function (exports, module) {
           } //生成图例  这里要放到shape清理后面
 
 
-          this.createLegend(); // 计算最大最小值
-          // 当前需要先更新axis的边界值，轴好画图
-
-          for (var i = 0; i < this.data.length; i++) {
-            const v = this.data[i][this.field];
-            this.yAxis.max(v);
-            this.yAxis.min(v);
-            const xv = this.data[i][this.xAxis.field];
-            this.xAxis.max(xv);
-            this.xAxis.min(xv);
-          }
+          this.createLegend();
+          this.initAxisValue(); // 处理最大值最小值
 
           return this.chartInfo = {
             xAxis: this.xAxis,
             yAxis: this.yAxis
           };
+        } // 计算最大值和最小值，一般图形直接采用最大最小值即可，有些需要多值叠加
+
+
+        initAxisValue() {
+          // 计算最大最小值
+          // 当前需要先更新axis的边界值，轴好画图
+          for (var i = 0; i < this.data.length; i++) {
+            if (Array.isArray(this.field)) {
+              this.field.forEach(f => {
+                const v = this.data[i][f];
+                this.yAxis.max(v);
+                this.yAxis.min(v);
+              });
+            } else {
+              const v = this.data[i][this.field];
+              this.yAxis.max(v);
+              this.yAxis.min(v);
+            }
+
+            const xv = this.data[i][this.xAxis.field];
+            this.xAxis.max(xv);
+            this.xAxis.min(xv);
+          }
         }
         /**
          * 生成序列图描点
@@ -5558,31 +5606,52 @@ System.register([], function (exports, module) {
           data = data || this.data;
           if (!data) return;
           const xstep = this.xAxis.step();
+          const minY = this.yAxis.min();
           const ystep = this.yAxis.step();
+          this.baseYValue = typeof this.graph.baseY === 'undefined' ? minY : this.graph.baseY || 0;
+          this.baseYHeight = (this.baseYValue - minY) * ystep; // 基线的高度		
+
+          this.baseY = this.graph.chartArea.height - this.baseYHeight; // Y轴基线的Y坐标
+          // 有些图形是有多属性值的
+
+          const fields = Array.isArray(this.field) ? this.field : [this.field];
           this.dataPoints = [];
 
           for (let i = 0; i < data.length; i++) {
             const s = data[i];
             const xv = s[this.xAxis.field];
-            const yv = s[this.field];
             const p = {
               data: s,
               xValue: xv,
               xLabel: xv,
-              yValue: yv,
-              yLabel: yv
+              points: []
             }; // 这里的点应相对于chartArea
 
-            p.x = xstep * (data.length === 1 ? 1 : i) + this.xAxis.labelStart; //如果Y值不存在。则此点无效，不画图
+            p.x = xstep * (data.length === 1 ? 1 : i) + this.xAxis.labelStart;
 
-            if (yv == null || typeof yv == 'undefined') {
-              p.m = true;
-            } else {
-              if (this.yAxis.dataType != 'number') {
-                yv = i;
+            for (const f of fields) {
+              const yv = s[f];
+              p.yLabel = p.yValue = yv; // 高度
+
+              p.height = (yv - this.baseYValue) * ystep;
+              const point = {
+                x: p.x,
+                // 高度
+                height: p.height,
+                yValue: yv
+              }; //如果Y值不存在。则此点无效，不画图
+
+              if (yv == null || typeof yv == 'undefined') {
+                point.m = p.m = true;
+              } else {
+                if (this.yAxis.dataType != 'number') {
+                  yv = i;
+                }
+
+                point.y = p.y = this.baseY - point.height;
               }
 
-              p.y = this.graph.chartArea.height - (yv - this.yAxis.min()) * ystep;
+              p.points.push(point);
             }
 
             this.dataPoints.push(p);
@@ -5651,7 +5720,7 @@ System.register([], function (exports, module) {
         } // 在关健点生成高亮点
 
 
-        createKeyPoint(position, point) {
+        createKeyPoint(point) {
           for (const opt of this.keyPoints) {
             if (opt.xValue !== point.xValue) return;
             const pointShape = this.graph.createShape(jmCircle, {
@@ -5659,7 +5728,7 @@ System.register([], function (exports, module) {
                 stroke: this.style.stroke,
                 fill: this.style.stroke
               }, opt.style || {}),
-              center: position,
+              center: point,
               radius: opt.radius || 5
             });
             pointShape.zIndex = 20;
@@ -5669,7 +5738,7 @@ System.register([], function (exports, module) {
         } // 在关健点生成标注
 
 
-        createLabel(position, point) {
+        createLabel(point) {
           for (const opt of this.labels) {
             if (opt.xValue !== point.xValue || !opt.text) return;
             const label = this.graph.createShape(jmLabel, {
@@ -5689,7 +5758,7 @@ System.register([], function (exports, module) {
                 }
               }, opt.style || {}),
               text: opt.text,
-              position: Object.assign({}, position)
+              position: point
             });
             const size = label.testSize();
             label.position.y -= size.height + 10;
@@ -5730,22 +5799,10 @@ System.register([], function (exports, module) {
           const {
             points,
             dataChanged
-          } = super.init();
-          const len = points.length; //设定其填充颜色
-
-          this.style.fill = this.style.color; //计算每个柱子占宽
-          //每项柱子占宽除以柱子个数,默认最大宽度为30		
-
-          this.barTotalWidth = this.xAxis.width / len * (this.style.perWidth || 0.4);
-          this.barWidth = this.barTotalWidth / this.graph.barSeriesCount;
-          const maxBarWidth = this.graph.barMaxWidth || 50;
-
-          if (this.barWidth > maxBarWidth) {
-            this.barWidth = maxBarWidth;
-            this.barTotalWidth = maxBarWidth * this.graph.barSeriesCount;
-          } // 是否正在动画中
+          } = this.initDataPoint();
+          const len = points.length;
+          this.initWidth(len); // 是否正在动画中
           // 如果数据点多于100 个，暂时不启用动画，太慢了
-
 
           const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0) && len < 100;
           let aniIsEnd = true; // 当次是否结束动画
@@ -5767,7 +5824,7 @@ System.register([], function (exports, module) {
 
             const p1 = {
               x: point.x - this.barTotalWidth / 2 + this.barWidth * this.barIndex,
-              y: this.graph.chartArea.height
+              y: this.baseY
             };
             const p4 = {
               x: p1.x + this.barWidth,
@@ -5783,17 +5840,16 @@ System.register([], function (exports, module) {
             }; // 如果要动画。则动态改变高度
 
             if (isRunningAni) {
-              const height = Math.abs(point.y - p1.y);
-              const step = height / aniCount;
+              const step = point.height / aniCount;
               const offHeight = step * this.___animateCounter; // 动态计算当前高度
+
+              p2.y = p1.y - offHeight; // 计算高度
               // 当次动画完成
 
-              if (offHeight >= height) {
+              if (step >= 0 && p2.y <= point.y || step < 0 && p2.y >= point.y) {
                 p2.y = point.y;
               } else {
                 aniIsEnd = false; // 只要有一个没完成，就还没有完成动画
-
-                p2.y = p1.y - offHeight; // 计算高度
               }
 
               p3.y = p2.y;
@@ -5816,6 +5872,169 @@ System.register([], function (exports, module) {
             setTimeout(() => {
               this.needUpdate = true; //需要刷新
             });
+          }
+        } // 计算柱子宽度
+
+
+        initWidth(count) {
+          //设定其填充颜色
+          this.style.fill = this.style.color; //计算每个柱子占宽
+          //每项柱子占宽除以柱子个数,默认最大宽度为30		
+
+          this.barTotalWidth = this.xAxis.width / count * (this.style.perWidth || 0.4);
+          this.barWidth = this.barTotalWidth / this.graph.barSeriesCount;
+          const maxBarWidth = this.graph.barMaxWidth || 50;
+
+          if (this.barWidth > maxBarWidth) {
+            this.barWidth = maxBarWidth;
+            this.barTotalWidth = maxBarWidth * this.graph.barSeriesCount;
+          }
+        }
+
+      }
+
+      /**
+       * 柱图
+       *
+       * @class jmBarSeries
+       * @module jmChart
+       * @param {jmChart} chart 当前图表
+       * @param {array} mappings 图形字段映射
+       * @param {style} style 样式
+       */
+      //构造函数
+
+      class jmStackBarSeries extends jmBarSeries {
+        constructor(options) {
+          super(options);
+        }
+        /**
+         * 绘制当前图形
+         *
+         * @method beginDraw
+         * @for jmBarSeries
+         */
+
+
+        init() {
+          //生成描点位
+          const {
+            points,
+            dataChanged
+          } = this.initDataPoint();
+          const len = points.length;
+          this.initWidth(len); // 是否正在动画中
+          // 如果数据点多于100 个，暂时不启用动画，太慢了
+
+          const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0) && len < 100;
+          let aniIsEnd = true; // 当次是否结束动画
+
+          const aniCount = this.style.aniCount || 10;
+
+          for (let i = 0; i < len; i++) {
+            const point = points[i];
+            let topStartY = this.baseY;
+            let bottomStartY = this.baseY;
+
+            for (let index = 0; index < point.points.length; index++) {
+              const style = this.graph.utils.clone(this.style);
+
+              if (style.color && typeof style.color === 'function') {
+                style.fill = style.color.call(this, this, index);
+              } else {
+                style.fill = this.graph.getColor(index);
+              }
+
+              const sp = this.shapes.add(this.graph.createPath(null, style));
+              this.children.add(sp);
+              const p = point.points[index];
+              let startY = topStartY;
+              if (p.yValue < this.baseYValue) startY = bottomStartY; //首先确定p1和p4,因为他们是底脚。会固定
+
+              const p1 = {
+                x: p.x - this.barTotalWidth / 2,
+                y: startY
+              };
+              const p4 = {
+                x: p1.x + this.barWidth,
+                y: p1.y
+              };
+              const p2 = {
+                x: p1.x,
+                y: p1.y
+              };
+              const p3 = {
+                x: p4.x,
+                y: p1.y
+              }; // 如果要动画。则动态改变高度
+
+              if (isRunningAni) {
+                const step = p.height / aniCount;
+                const offHeight = step * this.___animateCounter; // 动态计算当前高度
+
+                p2.y = startY - offHeight; // 计算高度
+                // 当次动画完成
+
+                if (step >= 0 && offHeight >= p.height || step < 0 && offHeight <= p.height) {
+                  p2.y = startY - p.height;
+                } else {
+                  aniIsEnd = false; // 只要有一个没完成，就还没有完成动画
+                }
+
+                p.y = p3.y = p2.y;
+              } else {
+                p2.y = startY - p.height;
+                p.y = p3.y = p2.y;
+              }
+
+              if (p.yValue < this.baseYValue) bottomStartY = p2.y; // 下一个又从它顶部开始画
+              else topStartY = p2.y;
+              sp.points.push(p1);
+              sp.points.push(p2);
+              sp.points.push(p3);
+              sp.points.push(p4);
+            }
+          }
+
+          if (aniIsEnd) {
+            this.___animateCounter = 0;
+          } else {
+            this.___animateCounter++; // next tick 再次刷新
+
+            setTimeout(() => {
+              this.needUpdate = true; //需要刷新
+            });
+          }
+        } // 计算最大值和最小值，一般图形直接采用最大最小值即可，有些需要多值叠加
+
+
+        initAxisValue() {
+          // 计算最大最小值
+          // 当前需要先更新axis的边界值，轴好画图
+          const fields = Array.isArray(this.field) ? this.field : [this.field];
+
+          for (const row of this.data) {
+            let max, min;
+
+            for (const f of fields) {
+              const v = Number(row[f]);
+              if (typeof max === 'undefined') max = v;else {
+                if (v < 0 || max < 0) max = Math.max(max, v);else {
+                  max += v;
+                }
+              }
+              if (typeof min === 'undefined') min = v;else {
+                if (v >= 0 || min >= 0) min = Math.min(min, v);else {
+                  min += v;
+                }
+              }
+            }
+
+            this.yAxis.max(max);
+            this.yAxis.min(min);
+            const xv = row[this.xAxis.field];
+            this.xAxis.max(xv);
+            this.xAxis.min(xv);
           }
         }
 
@@ -5973,7 +6192,7 @@ System.register([], function (exports, module) {
           const {
             points,
             dataChanged
-          } = super.init(center, radius); // 是否正在动画中
+          } = this.initDataPoint(center, radius); // 是否正在动画中
 
           const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0); // 在动画中，则一直刷新
 
@@ -6024,7 +6243,11 @@ System.register([], function (exports, module) {
           let index = 0;
           let startAni = 0; // 总起始角度
 
-          let cm = Math.PI * 2;
+          let cm = Math.PI * 2; //规定应该逆时针还是顺时针绘图 false  顺时针，true 逆时针
+
+          const anticlockwise = this.options.anticlockwise || false; // 每项之间的间隔角度  顺时钟为正，否则为负
+
+          const marginAngle = Number(this.style.marginAngle) || 0;
 
           for (var i = 0; i < this.data.length; i++) {
             const s = this.data[i];
@@ -6040,7 +6263,8 @@ System.register([], function (exports, module) {
                 yLabel: yv,
                 step: Math.abs(yv / this.totalValue),
                 // 每个数值点比
-                style: this.graph.utils.clone(this.style)
+                style: this.graph.utils.clone(this.style),
+                anticlockwise
               }; //p.style.color = this.graph.getColor(index);
 
               if (p.style.color && typeof p.style.color === 'function') {
@@ -6054,19 +6278,46 @@ System.register([], function (exports, module) {
 
               p.y = startAni + p.step * cm;
               startAni = p.y;
+              p.startAngle = start + marginAngle;
+              p.endAngle = p.y;
 
               if (center && radius) {
+                const arcWidth = this.style.arcWidth || radius * 0.2;
+                let curRadius = radius; // 如果有指定动态半径，则调用
+
+                if (typeof this.options.radius === 'function') {
+                  curRadius = this.options.radius.call(this, p, radius, i);
+                }
+
+                let maxRadius = curRadius; // 如果有指定动态半径，则调用
+
+                if (typeof this.options.maxRadius === 'function') {
+                  maxRadius = this.options.maxRadius.call(this, p, maxRadius, i);
+                }
+
+                let minRadius = curRadius - arcWidth; // 如果有指定动态半径，则调用
+
+                if (typeof this.options.minRadius === 'function') {
+                  minRadius = this.options.minRadius.call(this, p, minRadius, i);
+                }
+
+                let curCenter = center; // 如果有指定动态半径，则调用
+
+                if (typeof this.options.center === 'function') {
+                  curCenter = this.options.center.call(this, p, curCenter, i);
+                }
+
                 p.shape = this.graph.createShape(this.style.isHollow ? jmHArc : jmArc, {
                   style: p.style,
-                  startAngle: start,
-                  endAngle: p.y,
-                  anticlockwise: this.options.anticlockwise,
+                  startAngle: p.startAngle,
+                  endAngle: p.endAngle,
+                  anticlockwise: anticlockwise,
                   isFan: true,
                   // 表示画扇形
-                  center,
-                  radius,
-                  maxRadius: radius,
-                  minRadius: radius - (this.style.arcWidth || radius * 0.2)
+                  center: curCenter,
+                  radius: curRadius,
+                  maxRadius,
+                  minRadius
                 });
                 /**
                  * 因为jmgraph是按图形形状来计算所占区域和大小的， 这里我们把扇形占区域改为整个图圆。这样计算大小和渐变时才好闭合。
@@ -6079,11 +6330,11 @@ System.register([], function (exports, module) {
                     width: 0,
                     height: 0,
                     center: this.center,
-                    radius: this.radius
+                    radius: curRadius
                   };
-                  local.left = this.center.x - this.radius;
-                  local.top = this.center.y - this.radius;
-                  local.width = local.height = this.radius * 2;
+                  local.left = this.center.x - curRadius;
+                  local.top = this.center.y - curRadius;
+                  local.width = local.height = curRadius * 2;
                   return local;
                 };
 
@@ -6353,7 +6604,7 @@ System.register([], function (exports, module) {
           const {
             points,
             dataChanged
-          } = super.init(); //去除多余的线条
+          } = this.initDataPoint(); //去除多余的线条
           //当数据源线条数比现有的少时，删除多余的线条
 
           const len = points.length; //设定其填充颜色
@@ -6365,12 +6616,11 @@ System.register([], function (exports, module) {
           this.style.item.stroke = this.style.color; // 是否正在动画中
           // 如果数据点多于100 个，暂时不启用动画，太慢了
 
-          const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0) && len < 100;
-          let shapePoints = []; // 计算出来的曲线点集合			
-
-          let aniIsEnd = true; // 当次是否结束动画
+          const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0);
+          let shapePoints = []; // 计算出来的曲线点集合	
 
           const aniCount = this.style.aniCount || 10;
+          const aniStep = Math.floor(len / aniCount) || 1; // 每次动画播放点个数
 
           for (let i = 0; i < len; i++) {
             const p = points[i]; //如果当前点无效，则跳致下一点
@@ -6378,81 +6628,39 @@ System.register([], function (exports, module) {
             if (typeof p.y === 'undefined' || p.y === null) {
               //prePoint = null;						
               continue;
-            } // 当前线条描点，如果有动画是不一样的
-
-
-            const linePoint = {
-              x: p.x,
-              y: this.graph.chartArea.height
-            }; // 如果要动画。则动态改变高度, dataChanged或动画没完成才需要执行，否则只是普通刷新
+            }
 
             if (isRunningAni) {
-              const height = Math.abs(p.y - linePoint.y);
-              const step = height / aniCount;
-              const offHeight = step * this.___animateCounter; // 动态计算当前高度
-              // 当次动画完成
-
-              if (offHeight >= height) {
-                linePoint.y = p.y;
-              } else {
-                aniIsEnd = false;
-                linePoint.y -= offHeight; // 计算高度
+              if (i > this.___animateCounter) {
+                break;
               }
-            } else {
-              linePoint.y = p.y;
             } // 是否显示数值点圆
 
 
             if (this.style.showItem) {
-              const pointShape = this.graph.createShape(jmCircle, {
-                style: this.style.item,
-                center: linePoint,
-                radius: this.style.radius || 3
-              });
-              pointShape.zIndex = (pointShape.style.zIndex || 1) + 1;
-              this.graph.chartArea.children.add(pointShape);
-              this.shapes.add(pointShape);
-            }
+              this.createPointItem(p);
+            } // 平滑曲线
+
 
             if (this.style.curve) {
-              const startPoint = shapePoints[shapePoints.length - 1];
-
-              if (startPoint && startPoint.y != undefined && startPoint.y != null) {
-                //如果需要画曲线，则计算贝塞尔曲线坐标				
-                const p1 = {
-                  x: startPoint.x + (linePoint.x - startPoint.x) / 5,
-                  y: startPoint.y
-                };
-                const p2 = {
-                  x: startPoint.x + (linePoint.x - startPoint.x) / 2,
-                  y: linePoint.y - (linePoint.y - startPoint.y) / 2
-                };
-                const p3 = {
-                  x: linePoint.x - (linePoint.x - startPoint.x) / 5,
-                  y: linePoint.y
-                }; //圆滑线条使用的贝塞尔对象
-
-                this.__bezier = this.__bezier || this.graph.createShape(jmBezier);
-                this.__bezier.cpoints = [startPoint, p1, p2, p3, linePoint]; //设置控制点
-
-                const bzpoints = this.__bezier.initPoints();
-
-                shapePoints = shapePoints.concat(bzpoints);
+              shapePoints = this.createCurePoints(shapePoints, p);
+            } // 如果是虚线
+            else if (this.style.lineType === 'dotted') {
+                shapePoints = this.createDotLine(shapePoints, p);
               }
-            }
 
-            shapePoints.push(linePoint); // 生成关健值标注
+            shapePoints.push(p); // 生成关健值标注
 
-            this.createKeyPoint(linePoint, p); // 生成标注
+            this.createKeyPoint(p); // 生成标注
 
-            this.createLabel(linePoint, p);
+            this.createLabel(p);
           } // 如果所有都已经结束，则重置成初始化状态
 
 
-          if (aniIsEnd) {
+          if (this.___animateCounter >= len - 1) {
             this.___animateCounter = 0;
-          } else {
-            this.___animateCounter++; // next tick 再次刷新
+          } else if (isRunningAni) {
+            this.___animateCounter += aniStep; // next tick 再次刷新
 
             setTimeout(() => {
               this.needUpdate = true; //需要刷新
@@ -6461,6 +6669,69 @@ System.register([], function (exports, module) {
 
           this.points = shapePoints;
           this.createArea(shapePoints); // 仓建区域效果
+        } // 生成点的小圆圈
+
+
+        createPointItem(p) {
+          const pointShape = this.graph.createShape(jmCircle, {
+            style: this.style.item,
+            center: p,
+            radius: this.style.radius || 3
+          });
+          pointShape.zIndex = (pointShape.style.zIndex || 1) + 1;
+          this.graph.chartArea.children.add(pointShape);
+          this.shapes.add(pointShape);
+          return pointShape;
+        } // 根据上下点生成平滑曲线
+
+
+        createCurePoints(shapePoints, p) {
+          const startPoint = shapePoints[shapePoints.length - 1];
+
+          if (startPoint && startPoint.y != undefined && startPoint.y != null) {
+            //如果需要画曲线，则计算贝塞尔曲线坐标				
+            const p1 = {
+              x: startPoint.x + (p.x - startPoint.x) / 5,
+              y: startPoint.y
+            };
+            const p2 = {
+              x: startPoint.x + (p.x - startPoint.x) / 2,
+              y: p.y - (p.y - startPoint.y) / 2
+            };
+            const p3 = {
+              x: p.x - (p.x - startPoint.x) / 5,
+              y: p.y
+            }; //圆滑线条使用的贝塞尔对象
+
+            this.__bezier = this.__bezier || this.graph.createShape(jmBezier);
+            this.__bezier.cpoints = [startPoint, p1, p2, p3, p]; //设置控制点
+
+            const bzpoints = this.__bezier.initPoints();
+
+            shapePoints = shapePoints.concat(bzpoints);
+          }
+
+          return shapePoints;
+        } // 生成虚线
+
+
+        createDotLine(shapePoints, p) {
+          const startPoint = shapePoints[shapePoints.length - 1];
+
+          if (startPoint && startPoint.y != undefined && startPoint.y != null) {
+            //使用线条来画虚线效果
+            this.__line = this.__line || this.graph.createShape(jmLine, {
+              style: this.style
+            });
+            this.__line.start = startPoint;
+            this.__line.end = p;
+
+            const dots = this.__line.initPoints();
+
+            shapePoints = shapePoints.concat(dots);
+          }
+
+          return shapePoints;
         }
         /**
          * 生成图例
@@ -6512,7 +6783,7 @@ System.register([], function (exports, module) {
         } // 生成布效果
 
 
-        createArea(points) {
+        createArea(points, needClosePoint = true) {
           // 有指定绘制区域效果才展示
           if (!this.style.area || points.length < 2) return;
           const start = points[0];
@@ -6524,10 +6795,9 @@ System.register([], function (exports, module) {
           if (!style.fill) {
             const color = this.graph.utils.hexToRGBA(this.style.stroke);
             style.fill = `linear-gradient(50% 0 50% 100%, 
-				rgba(${color.r},${color.g},${color.b}, 0) 1, 
-				rgba(${color.r},${color.g},${color.b}, 0) 0.3,
-				rgba(${color.r},${color.g},${color.b}, 0.1) 0.1, 
-				rgba(${color.r},${color.g},${color.b}, 0.2) 0)`;
+				rgba(${color.r},${color.g},${color.b}, 0) 1,
+				rgba(${color.r},${color.g},${color.b}, 0.1) 0.7, 
+				rgba(${color.r},${color.g},${color.b}, 0.3) 0)`;
           } else if (typeof style.fill === 'function') {
             style.fill = style.fill.call(this, style);
           }
@@ -6539,16 +6809,168 @@ System.register([], function (exports, module) {
             height: this.graph.chartArea.height
           }); // 在点集合前后加上落地到X轴的点就可以组成一个封闭的图形area
 
-          area.points.unshift({
-            x: start.x,
-            y: this.graph.chartArea.height
-          });
-          area.points.push({
-            x: end.x,
-            y: this.graph.chartArea.height
-          });
+          if (needClosePoint) {
+            area.points.unshift({
+              x: start.x,
+              y: this.baseY
+            });
+            area.points.push({
+              x: end.x,
+              y: this.baseY
+            });
+          }
+
           this.graph.chartArea.children.add(area);
           this.shapes.add(area);
+        }
+
+      }
+
+      /**
+       * 二条线组成的区域图表
+       *
+       * @class jmStackLineSeries
+       * @module jmChart
+       * @param {jmChart} chart 当前图表
+       * @param {array} mappings 图形字段映射
+       * @param {style} style 样式
+       */
+      //构造函数
+
+      class jmStackLineSeries extends jmLineSeries {
+        constructor(options) {
+          options.style = options.style || options.graph.style.stackLine;
+          super(options);
+        }
+        /**
+         * 绘制图形前 初始化线条
+         *
+         * @method preDraw
+         * @for jmLineSeries
+         */
+
+
+        init() {
+          //生成描点位
+          const {
+            points,
+            dataChanged
+          } = this.initDataPoint(); //去除多余的线条
+          //当数据源线条数比现有的少时，删除多余的线条
+
+          const len = points.length; //设定其填充颜色
+          //if(!this.style.fill) this.style.fill = jmUtils.toColor(this.style.stroke,null,null,20);	
+
+          this.style.stroke = this.style.color; //是否启用动画效果
+          //var ani = typeof this.enableAnimate === 'undefined'? this.graph.enableAnimate: this.enableAnimate;
+
+          this.style.item.stroke = this.style.color; // 是否正在动画中
+          // 如果数据点多于100 个，暂时不启用动画，太慢了
+
+          const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0);
+          let startShapePoints = []; // 计算出来的曲线点集合	
+
+          let endShapePoints = []; // 计算出来的曲线点集合
+
+          const aniCount = this.style.aniCount || 10;
+          const aniStep = Math.floor(len / aniCount) || 1; // 每次动画播放点个数
+
+          for (let i = 0; i < len; i++) {
+            const p = points[i];
+
+            if (isRunningAni) {
+              if (i > this.___animateCounter) {
+                break;
+              }
+            } // 是否显示数值点圆
+
+
+            if (this.style.showItem) {
+              this.createPointItem(p.points[0]);
+              this.createPointItem(p.points[1]);
+            } // 平滑曲线
+
+
+            if (this.style.curve) {
+              startShapePoints = this.createCurePoints(startShapePoints, p.points[0]);
+              endShapePoints = this.createCurePoints(endShapePoints, p.points[1]);
+            } // 如果是虚线
+            else if (this.style.lineType === 'dotted') {
+                startShapePoints = this.createDotLine(startShapePoints, p.points[0]);
+                endShapePoints = this.createDotLine(endShapePoints, p.points[1]);
+              }
+
+            startShapePoints.push(p.points[0]);
+            endShapePoints.push(p.points[1]);
+          } // 如果所有都已经结束，则重置成初始化状态
+
+
+          if (this.___animateCounter >= len - 1) {
+            this.___animateCounter = 0;
+          } else if (isRunningAni) {
+            this.___animateCounter += aniStep; // next tick 再次刷新
+
+            setTimeout(() => {
+              this.needUpdate = true; //需要刷新
+            });
+          }
+
+          if (endShapePoints.length) endShapePoints[0].m = true; // 第二条线重新开始画
+
+          this.points = startShapePoints.concat(endShapePoints); // 仓建区域效果  这里的endShapePoints要倒过来画，才能形成一个封闭区域
+
+          const areaPoints = startShapePoints.concat(endShapePoints.reverse());
+          const areaEnd = areaPoints[areaPoints.length - 1] = this.graph.utils.clone(areaPoints[areaPoints.length - 1]);
+          areaEnd.m = false;
+          this.createArea(areaPoints, false);
+        }
+        /**
+         * 生成图例
+         *
+         * @method createLegend	 
+         */
+
+
+        createLegend() {
+          //生成图例前的图标
+          var style = this.graph.utils.clone(this.style);
+          style.stroke = style.color;
+          var shape = this.graph.createShape('path', {
+            style: style
+          });
+
+          if (this.curve || this.style.curve) {
+            var p1 = {
+              x: 0,
+              y: this.graph.style.legend.item.shape.height
+            };
+            var p2 = {
+              x: this.graph.style.legend.item.shape.width / 3,
+              y: this.graph.style.legend.item.shape.height / 3
+            };
+            var p3 = {
+              x: this.graph.style.legend.item.shape.width / 3 * 2,
+              y: this.graph.style.legend.item.shape.height / 3 * 2
+            };
+            var p4 = {
+              x: this.graph.style.legend.item.shape.width,
+              y: 0
+            };
+            this.__bezier = this.__bezier || this.graph.createShape(jmBezier);
+            this.__bezier.cpoints = [p1, p2, p3, p4]; //设置控制点		
+
+            shape.points = this.__bezier.initPoints();
+          } else {
+            shape.points = [{
+              x: 0,
+              y: this.graph.style.legend.item.shape.height / 2
+            }, {
+              x: this.graph.style.legend.item.shape.width,
+              y: this.graph.style.legend.item.shape.height / 2
+            }];
+          }
+
+          this.graph.legend.append(this, shape);
         }
 
       }
@@ -6612,20 +7034,21 @@ System.register([], function (exports, module) {
               if (!serie.getDataPointByX) continue;
               const point = serie.getDataPointByX(findX); // 找到最近的数据点
 
-              if (!point) continue;
-              const style = graph.utils.clone(this.style, {
-                stroke: serie.style.color || serie.style.stroke
-              }, true);
-              this.markArc = graph.createShape(jmCircle, {
-                style,
-                radius: (this.style.radius || 5) * this.graph.devicePixelRatio
-              });
-              this.markArc.center.y = point.y; // 锁定在有数据点的X轴上
+              if (!point) continue; // 锁定在有数据点的X轴上
               // 如果在操作图层上， 点的X轴需要加上图表图层区域偏移量
 
               this.start.x = this.end.x = isTocuhGraph ? point.x + graph.chartArea.position.x : point.x;
-              this.children.add(this.markArc);
-              this.shapes.add(this.markArc); // x轴改变，表示变换了位置
+
+              for (const p of point.points) {
+                this.markArc = graph.createShape(jmCircle, {
+                  style: this.style,
+                  radius: (this.style.radius || 5) * this.graph.devicePixelRatio
+                });
+                this.markArc.center.y = p.y;
+                this.children.add(this.markArc);
+                this.shapes.add(this.markArc);
+              } // x轴改变，表示变换了位置
+
 
               if (!touchChange && (!serie.lastMarkPoint || serie.lastMarkPoint.x != point.x)) touchChange = true;
               touchPoints.push(point);
@@ -6735,7 +7158,13 @@ System.register([], function (exports, module) {
       class jmChart extends jmGraph {
         constructor(container, options) {
           options = options || {};
-          options.autoRefresh = typeof options.autoRefresh === 'undefined' ? false : options.autoRefresh; // 深度复制默认样式，以免被改
+          const enableAnimate = !!options.enableAnimate;
+          options.autoRefresh = typeof options.autoRefresh === 'undefined' ? enableAnimate : options.autoRefresh;
+
+          if (enableAnimate && !options.autoRefresh) {
+            console.warn('开启了动画，却没有开户自动刷新');
+          } // 深度复制默认样式，以免被改
+
 
           options.style = jmUtils.clone(defaultStyle, options.style, true);
           super(container, options);
@@ -6744,8 +7173,7 @@ System.register([], function (exports, module) {
 
           _defineProperty(this, "series", new jmList());
 
-          _defineProperty(this, "enableAnimate", false);
-
+          this.enableAnimate = enableAnimate;
           this.data = options.data || []; // x轴绑定的字段名
 
           this.xField = options.xField || '';
@@ -6758,16 +7186,39 @@ System.register([], function (exports, module) {
          */
 
 
-        // 初始化图表
+        /**
+         * 是否启用动画
+         */
+        get enableAnimate() {
+          if (typeof this.options.enableAnimate !== 'undefined') return !!this.options.enableAnimate;else {
+            return false;
+          }
+        }
+
+        set enableAnimate(v) {
+          this.options.enableAnimate = v;
+        }
+        /**
+         * Y轴的基线 默认是0
+         */
+
+
+        get baseY() {
+          return this.options.baseY;
+        }
+
+        set baseY(v) {
+          this.options.baseY = v;
+        } // 初始化图表
+
+
         init(options) {
-          this.enableAnimate = !!options.enableAnimate;
           /**
            * 绘图区域
            *
            * @property chartArea
            * @type jmControl
            */
-
           if (!this.chartArea) {
             this.chartArea = this.createShape(jmRect, {
               style: this.style.chartArea,
@@ -6976,13 +7427,13 @@ System.register([], function (exports, module) {
             serie.style.color = serie.style.color || serie.graph.getColor(i); //如果排版指定非内缩的方式，但出现了柱图，还是会采用内缩一个刻度的方式
 
             if (serie.graph.style.layout != 'inside') {
-              if (serie.graph.utils.isType(serie, jmBarSeries)) {
+              if (serie instanceof jmBarSeries) {
                 serie.graph.style.layout = 'inside';
               }
             } //对柱图计算,并标记为第几个柱图，用为排列
 
 
-            if (serie.graph.utils.isType(serie, jmBarSeries)) {
+            if (serie instanceof jmBarSeries) {
               serie.barIndex = serie.graph.barSeriesCount;
               serie.graph.barSeriesCount++;
             }
@@ -6991,17 +7442,17 @@ System.register([], function (exports, module) {
           }); //console.log('beginDraw2', Date.now() - startTime);
           //重置图例
 
-          this.legend && this.legend.reset();
-
-          if (this.xAxis) {
-            this.xAxis.reset();
-          } //计算Y轴位置
-
+          this.legend && this.legend.reset(); //计算Y轴位置
 
           if (this.yAxises) {
             for (var i in this.yAxises) {
               this.yAxises[i].reset();
             }
+          } // y 处理完才能处理x
+
+
+          if (this.xAxis) {
+            this.xAxis.reset();
           } //console.log('beginDraw3', Date.now() - startTime);
           //最后再来初始化图形，这个必须在轴初始化完后才能执行
 
@@ -7058,10 +7509,17 @@ System.register([], function (exports, module) {
             options = Object.assign({
               field: this.xField,
               type: 'x',
-              minXValue: this.options.minXValue,
-              maxXValue: this.options.maxXValue,
               format: this.options.xLabelFormat
             }, options || {});
+
+            if (typeof this.options.minXValue !== 'undefined') {
+              options.minXValue = typeof options.minXValue === 'undefined' ? this.options.minXValue : Math.min(this.options.minXValue, options.minXValue);
+            }
+
+            if (typeof this.options.maxXValue !== 'undefined') {
+              options.maxXValue = typeof options.maxXValue === 'undefined' ? this.options.maxXValue : Math.max(this.options.maxXValue, options.maxXValue);
+            }
+
             this.xAxis = this.createAxis(options);
           }
 
@@ -7078,11 +7536,23 @@ System.register([], function (exports, module) {
 
 
         createYAxis(options) {
-          options.index = options.index || 1;
-          options.type = 'y';
-
           if (!this.yAxises) {
             this.yAxises = {};
+          }
+
+          options = Object.assign({
+            index: 1,
+            type: 'y',
+            format: this.options.yLabelFormat,
+            zeroBase: this.baseY === 0
+          }, options || {});
+
+          if (typeof this.options.minYValue !== 'undefined') {
+            options.minYValue = typeof options.minYValue === 'undefined' ? this.options.minYValue : Math.min(this.options.minYValue, options.minYValue);
+          }
+
+          if (typeof this.options.maxYValue !== 'undefined') {
+            options.maxYValue = typeof options.maxYValue === 'undefined' ? this.options.maxYValue : Math.max(this.options.maxYValue, options.maxYValue);
           }
 
           var yaxis = this.yAxises[options.index] || (this.yAxises[options.index] = this.createAxis(options));
@@ -7104,7 +7574,9 @@ System.register([], function (exports, module) {
             this.serieTypes = {
               'line': jmLineSeries,
               'bar': jmBarSeries,
-              'pie': jmPieSeries
+              'stackBar': jmStackBarSeries,
+              'pie': jmPieSeries,
+              'stackLine': jmStackLineSeries
             };
           } //默认样式为类型对应的样式
 
