@@ -66,6 +66,19 @@
 							return v.toFixed(0);
 						}
 					});	
+					var line = chart.createSeries('line', {
+						field: 'y4',
+						legendLabel: 'line',
+						style: {
+							showItem: false,
+							lineWidth: 3,
+							curve: true,
+							//lineType: 'dotted', // 虚线
+							shadow: function() {								
+								return `2, 2, 10, ${this.style.stroke}`;
+							},
+						}
+					});	
 		
 					const datacount = 10;
 					function animate() {
@@ -78,8 +91,21 @@
 									y2: Math.random() * 200 + 50,
 									y3: Math.random() * 200 + 50,
 								};
-								if(i == 3) {
-									data.y = null;
+								
+								data.y4 = data.y1;
+								if(data.y4 <= 0) {
+									if(data.y2 <= 0) data.y4 += data.y2;
+									else data.y4 = data.y2;
+								}
+								else {
+									if(data.y2 > 0) data.y4 += data.y2;
+								}
+								if(data.y4 <= 0) {
+									if(data.y3 <= 0) data.y4 += data.y3;
+									else data.y4 = data.y3;
+								}
+								else {
+									if(data.y3 > 0) data.y4 += data.y3;
 								}
 								chart.data.push(data);
 							}
