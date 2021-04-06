@@ -225,7 +225,9 @@ class jmUtils {
                 }
                 return source.slice(0);
             }
-            target.constructor = source.constructor;
+           
+            if(source.__proto__) target.__proto__ = source.__proto__;
+            
             for(let k in source) {
                 if(k === 'constructor') continue;
                 // 如果不是对象和空，则采用target的属性
@@ -1396,7 +1398,7 @@ class jmMouseEvent {
 
 		this.eventEvents['mousedown'] = jmUtils.bindEvent(this.target,'mousedown',function(evt) {
 			evt = evt || window.event;
-			container.raiseEvent('mousedown',evt);
+			let r = container.raiseEvent('mousedown',evt);
 			//if(r === false) {
 				//if(evt.preventDefault) evt.preventDefault();
 				//return false;
@@ -1407,7 +1409,7 @@ class jmMouseEvent {
 			evt = evt || window.event;		
 			let target = evt.target || evt.srcElement;
 			if(target == canvas) {
-				container.raiseEvent('mousemove',evt);
+				let r = container.raiseEvent('mousemove',evt);
 				//if(r === false) {
 					if(evt.preventDefault) evt.preventDefault();
 					return false;
@@ -2038,6 +2040,7 @@ class jmControl extends jmProperty {
 		}
 		//设置样式
 		for(let k in style) {
+			if(k === 'constructor') continue;
 			let t = typeof style[k];
 			//先处理部分样式，以免每次都需要初始化解析
 			if(t == 'string' && style[k].indexOf('-gradient') > -1) {
@@ -4474,7 +4477,7 @@ class jmLabel extends jmControl {
 		
 		//获取当前控件的绝对位置
 		let bounds = this.parent && this.parent.absoluteBounds?this.parent.absoluteBounds:this.absoluteBounds;		
-		this.testSize();
+		let size = this.testSize();
 		let location = this.location;
 		let x = location.left + bounds.left;
 		let y = location.top + bounds.top;
@@ -5518,7 +5521,7 @@ class jmSeries extends jmPath {
       } // 下一个点
 
 
-      if (p.x > x) {
+      if ( p.x > x) {
         // 没有上一个，只能返回这个了
         if (prePoint && x - prePoint.x < p.x - x) return prePoint;else return p;
       }
