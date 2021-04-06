@@ -93,6 +93,14 @@ export default class jmPieSeries extends jmSeries {
 		}
 	}
 
+	// 当前总起画角度
+	get startAngle() {
+		return this.options.startAngle || 0;
+	}
+	set startAngle(v) {
+		this.options.startAngle = v;
+	}
+
 	/**
 	 * 生成序列图描点
 	 *
@@ -104,7 +112,11 @@ export default class jmPieSeries extends jmSeries {
 		const points = [];
 		let index = 0;
 		
-		let startAni = 0; // 总起始角度
+		let startAni = this.startAngle; // 总起始角度
+		if(typeof startAni === 'function') {
+			startAni = startAni.call(this, this.data);
+		}
+
 		let cm = Math.PI * 2;
 		//规定应该逆时针还是顺时针绘图 false  顺时针，true 逆时针
 		const anticlockwise = this.options.anticlockwise || false;

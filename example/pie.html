@@ -48,6 +48,10 @@
 					
 					var pie1 = chart1.createSeries('pie', {
 						field: 'y1',
+						startAngle: function(data) {
+							const step = Math.abs(data[0].y1 / this.totalValue);
+							return Math.PI/2 - step * Math.PI;// 当前占的角度的一半加上偏移要刚好等于90度
+						},//10,
 						anticlockwise: false, //是否逆时针
 						legendFormat: function(options) {
 							return 'test' + options.data.x;
