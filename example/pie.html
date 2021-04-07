@@ -60,11 +60,23 @@
 							//return (point.step * 100).toFixed(2) + '%';
 							return point.data.name;
 						},
-						radius: function(p, radius, index) {
+						/*radius: function(p, radius, index) {
 							if(p.data.selected) {
 								return radius + 10;
 							}
 							return radius;
+						},*/
+						minRadius: function(p, r, i) {
+							if(p.data.selected) {
+								return r + 10;
+							}
+							return r;
+						},
+						maxRadius: function(p, r, i) {
+							if(p.data.selected) {
+								return r + 10;
+							}
+							return r;
 						},
 						center: function(p, center, index) {
 							// 如果被选中

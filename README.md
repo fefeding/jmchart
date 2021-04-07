@@ -3,9 +3,15 @@ jmchart
 
 html5图表控件
 
-demo[http://jiamao.github.io/jmchart/example/line.html]
+线条[http://jiamao.github.io/jmchart/example/line.html]
+
+柱图[http://jiamao.github.io/jmchart/example/bar.html]
 
 饼图[http://jiamao.github.io/jmchart/example/pie.html]
+
+stackBar[http://jiamao.github.io/jmchart/example/stackBar.html]
+
+stackLine[http://jiamao.github.io/jmchart/example/stackLine.html]
 
 vue[http://jiamao.github.io/jmchart/example/vue.html]
 
