@@ -29,9 +29,9 @@
 			import { jmChart } from '../dist/jmchart.esm.js';
 
 			(function load() {
-				var w = Math.max((window.innerWidth || window.document.body.clientWidth) * 0.8, 300);
-				var h = Math.max((window.innerHeight || window.document.body.clientHeight) * 0.4, 200);			
-				inichart(w,h);
+				var w = Math.max((window.innerWidth || window.document.body.clientWidth) * 0.8, 600);
+				var h = Math.max((window.innerHeight || window.document.body.clientHeight) * 0.4, 400);			
+				inichart(w, h);
 			})();
 			
 
@@ -42,7 +42,13 @@
 						enableAnimate: true,
 						autoRefresh: true,
                         style: {
-							markLine: false // 不展示标线
+							markLine: false, // 不展示标线
+							margin: {
+								left: 200,
+								top: 100,
+								right: 200,
+								bottom: 100
+							}
                         }
                     });
 					
@@ -58,7 +64,35 @@
 						},
 						labelFormat: function(point) {
 							//return (point.step * 100).toFixed(2) + '%';
-							return point.data.name;
+							//return point.data.name;
+							const label = this.graph.createShape('label', {
+								style: this.style.label,
+								text: point.data.name,
+								position: function() {
+									
+									// 动态计算位置
+									const parentRect = this.parent.getBounds();
+
+									// 圆弧的中间位，离圆心最近和最完的二个点
+									let centerMaxPoint = this.parent.points[Math.floor(this.parent.points.length / 2)];
+									// 如果是空心圆，则要计算 1/4 和 3/4位的点。顺时针和逆时针二个点大小不一样，这里只取，大小计算时处理
+									if(point.shape.style.isHollow) {
+										centerMaxPoint = this.parent.points[Math.floor(this.parent.points.length * 0.75)];
+									}
+
+									const size = this.testSize();
+									const offset = 100;
+									const position = {
+										x: 0,
+										y: 0
+									};
+
+									position.x = (centerMaxPoint.x - this.parent.center.x) / this.parent.radius * offset + centerMaxPoint.x - parentRect.left;
+									position.y = (centerMaxPoint.y - this.parent.center.y) / this.parent.radius * offset + centerMaxPoint.y - parentRect.top;
+									return position;
+								}
+							});
+							return label;
 						},
 						/*radius: function(p, radius, index) {
 							if(p.data.selected) {
@@ -117,7 +151,7 @@
 						},*/
 						style: {
 							isHollow: true, // 是否空心
-							arcWidth: 80, // 圆弧宽
+							arcWidth: 30, // 圆弧宽
 							marginAngle: 0.02,// 间隔角度
 							// 指定颜色获取方式，不指定就会使用默认的
 							color: function(point) {	
@@ -181,7 +215,7 @@
 							return 'test' + options.data.x;
 						},
 						labelFormat: function(point) {
-							return (point.step * 100).toFixed(2) + '%';
+							return point.data.name + ':' + (point.step * 100).toFixed(2) + '$';
 						},
 						/*radius: function(p, radius, index) {
 							if(p.data.name === 'test0') {

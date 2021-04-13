@@ -1,5 +1,6 @@
-import jmRect from 'jmgraph/src/shapes/jmRect.js';
-import jmLabel from 'jmgraph/src/shapes/jmLabel.js';
+import {
+	jmRect
+} from 'jmgraph';
 
 /**
  * 图例的容器
@@ -37,7 +38,7 @@ jmLegend.prototype.append = function(series, shape, options = {}) {
 	// 如果不显示图例，就不处理
 	if(this.visible === false) return;	
 
-	const panel = this.graph.createShape(jmRect,{
+	const panel = this.graph.createShape('rect',{
 		style: this.graph.utils.clone(this.style.item),
 		position: {
 			x: 0,
@@ -56,7 +57,7 @@ jmLegend.prototype.append = function(series, shape, options = {}) {
 
 	if(name) {
 		//生成图例名称
-		const label = this.graph.createShape(jmLabel, {
+		const label = this.graph.createShape('label', {
 			style: panel.style.label,
 			text: name || ''
 		});		

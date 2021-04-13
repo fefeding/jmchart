@@ -1,8 +1,5 @@
 
-import { jmPath, jmList, jmControl } from 'jmgraph/src/core/jmGraph.js';
-import jmRect from 'jmgraph/src/shapes/jmRect.js';
-import jmCircle from 'jmgraph/src/shapes/jmCircle.js';
-import jmLabel from 'jmgraph/src/shapes/jmLabel.js';
+import { jmPath, jmList, jmControl } from 'jmgraph';
 import utils from '../common/utils.js';
 
 /**
@@ -296,7 +293,7 @@ export default class jmSeries extends jmPath {
 		const style = this.graph.utils.clone(this.style);
 		style.fill = style.color;	
 		//delete style.stroke;
-		const shape = this.graph.createShape(jmRect,{
+		const shape = this.graph.createShape('rect',{
 			style
 		});
 		this.graph.legend.append(this, shape);
@@ -347,7 +344,7 @@ export default class jmSeries extends jmPath {
 		for(const opt of this.keyPoints) {
 			if(opt.xValue !== point.xValue) return;
 
-			const pointShape = this.graph.createShape(jmCircle, {
+			const pointShape = this.graph.createShape('circle', {
 				style: Object.assign({
 					stroke: this.style.stroke,
 					fill: this.style.stroke
@@ -367,7 +364,7 @@ export default class jmSeries extends jmPath {
 		for(const opt of this.labels) {
 			if(opt.xValue !== point.xValue || !opt.text) return;
 
-			const label = this.graph.createShape(jmLabel, {
+			const label = this.graph.createShape('label', {
 				style: Object.assign({
 					stroke: this.style.stroke,
 					fill: this.style.stroke,

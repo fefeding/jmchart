@@ -1,6 +1,4 @@
-import { jmList } from 'jmgraph/src/core/jmGraph.js';
-import  jmCircle from 'jmgraph/src/shapes/jmCircle.js';
-import  jmLine from 'jmgraph/src/shapes/jmLine.js';
+import { jmList, jmLine } from 'jmgraph';
 
 /**
  * 轴
@@ -69,7 +67,7 @@ export default class jmMarkLine extends jmLine {
                 this.start.x = this.end.x = isTocuhGraph? (point.x + graph.chartArea.position.x): point.x;
 
                 for(const p of point.points) {
-                    this.markArc = graph.createShape(jmCircle, {
+                    this.markArc = graph.createShape('circle', {
                         style: this.style,
                         radius: (this.style.radius || 5) * this.graph.devicePixelRatio
                     });

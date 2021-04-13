@@ -1,6 +1,9 @@
-import * as jmgraph from 'jmgraph/src/core/jmGraph.js';
-import jmRect from 'jmgraph/src/shapes/jmRect.js';
-import  jmLine from 'jmgraph/src/shapes/jmLine.js';
+
+import {
+	jmGraph,
+	jmUtils,
+	jmList
+} from 'jmgraph';
 import defaultStyle from './common/style.js';
 import jmAxis from './core/axis/axis.js';
 import jmLegend from './core/legend/legend.js';
@@ -20,7 +23,7 @@ import jmMarkLine from './core/axis/markLine';
  * @module jmChart
  * @param {element} container 图表容器
  */
-export default class jmChart extends jmgraph.jmGraph  {
+export default class jmChart extends jmGraph  {
 
 	constructor(container, options) {
 		options = options||{};
@@ -33,7 +36,7 @@ export default class jmChart extends jmgraph.jmGraph  {
 		}
 
 		 // 深度复制默认样式，以免被改
-		options.style = jmgraph.jmUtils.clone(defaultStyle, options.style, true);
+		options.style = jmUtils.clone(defaultStyle, options.style, true);
 
 		super(container, options);
 
@@ -56,7 +59,7 @@ export default class jmChart extends jmgraph.jmGraph  {
 	/**
 	 * 当前所有图
 	 */
-	series = new jmgraph.jmList();
+	series = new jmList();
 
 	/**
 	 * 是否启用动画
@@ -91,7 +94,7 @@ export default class jmChart extends jmgraph.jmGraph  {
 		 * @type jmControl
 		 */
 		if(!this.chartArea) {
-			this.chartArea = this.createShape(jmRect, {
+			this.chartArea = this.createShape('rect', {
 				style: this.style.chartArea,
 				position: { x: 0, y: 0}
 			});
@@ -147,7 +150,7 @@ export default class jmChart extends jmgraph.jmGraph  {
 			cn.style.top = 0;
 			cn.style.left = 0;
 
-			this.touchGraph = graph = new jmgraph.jmGraph(cn, options);
+			this.touchGraph = graph = new jmGraph(cn, options);
 			
 			container.appendChild(cn);
 

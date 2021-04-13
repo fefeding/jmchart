@@ -874,240 +874,6 @@ class jmUtils {
 }
 
 /**
- *  所有jm对象的基础对象
- * 
- * @class jmObject
- * @for jmGraph
- */
-class jmObject {
-	//id;
-	constructor(g) {
-		if(g && g.type == 'jmGraph') {
-			this.graph = g;
-		}
-		//this.id = Symbol("id"); //生成一个唯一id
-	}
-	
-	/**
-	 * 检 查对象是否为指定类型
-	 * 
-	 * @method is
-	 * @param {class} type 判断的类型
-	 * @for jmObject
-	 * @return {boolean} true=表示当前对象为指定的类型type,false=表示不是
-	 */
-	is(type) {
-		if(typeof type == 'string') {
-			return this.type == type;
-		}
-		return this instanceof type;
-	}
-
-	/**
-	 * 给控件添加动画处理,如果成功执行会导致画布刷新。
-	 *
-	 * @method animate
-	 * @for jmObject
-	 * @param {function} handle 动画委托
-	 * @param {integer} millisec 此委托执行间隔 （毫秒）
-	 */
-	animate(...args) {	
-		if(this.is('jmGraph')) {
-			if(args.length > 1) {			
-				if(!this.animateHandles) this.animateHandles = new jmList();
-				
-				var params = [];
-				if(args.length > 2) {
-					for(var i=2;i<args.length;i++) {
-						params.push(args[i]);
-					}
-				}		
-				this.animateHandles.add({
-					millisec: args[1] || 20, 
-					handle: args[0], 
-					params:params
-				});
-			}
-			if(this.animateHandles) {
-				if(this.animateHandles.count() > 0) {
-					var self = this;
-					//延时处理动画事件
-					this.dispatcher = setTimeout(function(_this) {
-						_this = _this || self;
-						//var needredraw = false;
-						var overduehandles = [];
-						var curTimes = new Date().getTime();
-						_this.animateHandles.each(function(i,ani) {						
-							try {
-								if(ani && ani.handle && (!ani.times || curTimes - ani.times >= ani.millisec)) {
-									var r = ani.handle.apply(_this, ani.params);
-									if(r === false) {
-										overduehandles.push(ani);//表示已完成的动画效果
-									}								
-									ani.times = curTimes;
-									//needredraw = true;								
-								}
-							}
-							catch(e) {
-								if(window.console && window.console.info) {
-									window.console.info(e.toString());
-								}
-								if(ani) overduehandles.push(ani);//异常的事件，不再执行
-							}						
-						});
-						for(var i in overduehandles) {
-							_this.animateHandles.remove(overduehandles[i]);//移除完成的效果
-						}
-						_this.animate();
-					},10,this);//刷新				
-				}
-			}
-		}	
-		else {
-			var graph = this.graph;
-			if(graph) {
-				graph.animate(...args);
-			}
-		}
-	}
-}
-
-const PROPERTY_KEY = Symbol("properties");
-
-/**
- * 对象属性管理
- * 
- * @class jmProperty
- * @extends jmObject
- * @require jmObject
- */
-class jmProperty extends jmObject {		
-	
-	constructor() {
-		super();
-		
-		this[PROPERTY_KEY] = {};
-	}
-
-	/**
-	 * 基础属性读写接口
-	 * @method __pro
-	 * @param {string} name 属性名
-	 * @param {any} value 属性的值
-	 * @returns {any} 属性的值
-	 */
-	__pro(...pars) {
-		if(pars) {
-			let pros = this[PROPERTY_KEY];
-			let name = pars[0];
-			if(pars.length > 1) {
-				let value = pars[1];
-				let args = {oldValue: pros[name], newValue: value};
-				pros[name] = pars[1];
-				if(this.emit) this.emit('propertyChange', name, args);
-				return pars[1];
-			}
-			else if(pars.length == 1) {
-				return pros[name];
-			}
-		}
-	}
-
-	/**
-	 * 是否需要刷新画板，属性的改变会导致它变为true
-	 * @property needUpdate
-	 * @type {boolean}
-	 */
-	get needUpdate() {
-		return this.__pro('needUpdate');
-	}
-	set needUpdate(v) {
-		this.__pro('needUpdate', v);
-		//子控件属性改变，需要更新整个画板
-		if(v && !this.is('jmGraph') && this.graph) {
-			this.graph.needUpdate = true;
-		}
-	}
-
-	/**
-	 * 当前所在的画布对象 jmGraph
-	 * @property graph
-	 * @type {jmGraph}
-	 */
-	get graph() {
-		let g = this.__pro('graph');
-		g = g || (this.__pro('graph', this.findParent('jmGraph')));
-		return g;
-	}
-	set graph(v) {
-		return this.__pro('graph', v);
-	}
-}
-
-/**
- * 画图阴影对象表示法
- *
- * @class jmShadow
- * @param {number} x 横坐标偏移量
- * @param {number} y 纵坐标编移量
- * @param {number} blur 模糊值
- * @param {string} color 阴影的颜色
- */
-
-class jmShadow {
-	constructor(x, y, blur, color) {
-		if(typeof x == 'string' && !y && !blur && !color) {
-			this.fromString(x);
-		}
-		else {
-			this.x = x;
-			this.y = y;
-			this.blur = blur;
-			this.color = color;
-		}
-	}
-	/**
-	 * 根据字符串格式转为阴影
-	 * @method fromString
-	 * @param {string} s 阴影字符串 x,y,blur,color
-	 */
-	fromString(s) {
-		if(!s) return;
-		let ms = s.match(/\s*([^,]+)\s*,\s*([^,]+)\s*(,[^,]+)?\s*(,[\s\S]+)?\s*/i);
-		if(ms) {
-			this.x = ms[1]||0;
-			this.y = ms[2]||0;
-			if(ms[3]) {
-				ms[3] = jmUtils.trim(ms[3],', ');
-				//如果第三位是颜色格式，则表示为颜色
-				if(ms[3].indexOf('#')===0 || /^rgb/i.test(ms[3])) {
-					this.color = ms[3];
-				}
-				else {
-					this.blur = jmUtils.trim(ms[3],', ');
-				}
-			}
-			if(ms[4]) {
-				this.color = jmUtils.trim(ms[4],', ');
-			}
-		}
-		return this;
-	}
-
-	/**
-	 * 转为字符串格式 x,y,blur,color
-	 * @method toString
-	 * @returns {string} 阴影字符串
-	 */
-	toString() {
-		let s = this.x + ',' + this.y;
-		if(this.blur) s += ',' + this.blur;
-		if(this.color) s += ',' + this.color;
-		return s;
-	}
-}
-
-/**
  * 渐变类
  *
  * @class jmGradient
@@ -1311,252 +1077,236 @@ class jmGradient {
 }
 
 /**
- * 事件模型
+ * 画图阴影对象表示法
  *
- * @class jmEvents
- * @for jmGraph
+ * @class jmShadow
+ * @param {number} x 横坐标偏移量
+ * @param {number} y 纵坐标编移量
+ * @param {number} blur 模糊值
+ * @param {string} color 阴影的颜色
  */
-class jmEvents {
 
-	constructor(container, target) {
-		this.container = container;
-		this.target = target || container;
-		this.mouseHandler = new jmMouseEvent(this, container, target);
-		this.keyHandler = new jmKeyEvent(this, container, target);
-	}
-
-	touchStart(evt) {
-		evt = evt || window.event;
-		this.container.raiseEvent('touchstart',evt);
-		let t = evt.target || evt.srcElement;
-		if(t == this.target) {
-			//if(evt.preventDefault) evt.preventDefault();
-			return false;
+class jmShadow {
+	constructor(x, y, blur, color) {
+		if(typeof x == 'string' && !y && !blur && !color) {
+			this.fromString(x);
 		}
-	};
-
-	touchMove(evt) {
-		evt = evt || window.event;
-		this.container.raiseEvent('touchmove',evt);
-		let t = evt.target || evt.srcElement;
-		if(t == this.target) {
-			//if(evt.preventDefault) evt.preventDefault();
-			return false;
-		}
-	};
-
-	touchEnd(evt) {
-		evt = evt || window.event;
-		
-		this.container.raiseEvent('touchend',evt);
-		let t = evt.target || evt.srcElement;
-		if(t == this.target) {
-			//if(evt.preventDefault) evt.preventDefault();
-			return false;
-		}
-	};
-
-	touchCancel(evt) {
-		evt = evt || window.event;
-		
-		this.container.raiseEvent('touchcancel',evt);
-		let t = evt.target || evt.srcElement;
-		if(t == this.target) {
-			//if(evt.preventDefault) evt.preventDefault();
-			return false;
-		}
-	};
-
-	// 销毁
-	destory() {
-		this.mouseHandler.destory();
-		this.keyHandler.destory();
-	}
-}
-
-/**
- * 鼠标事件处理对象，container 为事件主体，target为响应事件对象
- */
-class jmMouseEvent {
-	constructor(instance, container, target) {
-		this.instance = instance;
-		this.container = container;
-		this.target = target || container;
-
-		this.eventEvents = {};// 所有绑定的事件
-
-		this.init(instance, container, target);
-	}
-	
-	init(instance, container, target) {
-		let canvas = this.target;	
-		let doc = typeof typeof document != 'undefined'?document:null;
-		//禁用鼠标右健系统菜单
-		//canvas.oncontextmenu = function() {
-		//	return false;
-		//};
-
-		this.eventEvents['mousedown'] = jmUtils.bindEvent(this.target,'mousedown',function(evt) {
-			evt = evt || window.event;
-			let r = container.raiseEvent('mousedown',evt);
-			//if(r === false) {
-				//if(evt.preventDefault) evt.preventDefault();
-				//return false;
-			//}				
-		});
-		
-		this.eventEvents['mousedown'] = jmUtils.bindEvent(this.target,'mousemove',function(evt) {	
-			evt = evt || window.event;		
-			let target = evt.target || evt.srcElement;
-			if(target == canvas) {
-				let r = container.raiseEvent('mousemove',evt);
-				//if(r === false) {
-					if(evt.preventDefault) evt.preventDefault();
-					return false;
-				//}		
-			}				
-		});
-		
-		this.eventEvents['mousedown'] = jmUtils.bindEvent(this.target,'mouseover',function(evt) {
-			evt = evt || window.event;
-			container.raiseEvent('mouseover',evt);
-		});
-		this.eventEvents['mouseleave'] = jmUtils.bindEvent(this.target,'mouseleave',function(evt) {
-			evt = evt || window.event;
-			container.raiseEvent('mouseleave',evt);
-		});			
-		this.eventEvents['mouseout'] = jmUtils.bindEvent(this.target,'mouseout',function(evt) {
-			evt = evt || window.event;
-			container.raiseEvent('mouseout',evt);
-		});
-		doc && (this.eventEvents['mouseup'] = jmUtils.bindEvent(doc,'mouseup',function(evt) {
-			evt = evt || window.event;
-			//let target = evt.target || evt.srcElement;
-			//if(target == canvas) {						
-				let r = container.raiseEvent('mouseup',evt);
-				if(r === false) {
-					if(evt.preventDefault) evt.preventDefault();
-					return false;
-				}					
-			//}
-		}));
-		
-		this.eventEvents['dblclick'] = jmUtils.bindEvent(this.target,'dblclick',function(evt) {
-			evt = evt || window.event;
-			container.raiseEvent('dblclick',evt);
-		});
-		this.eventEvents['click'] = jmUtils.bindEvent(this.target,'click',function(evt) {
-			evt = evt || window.event;
-			container.raiseEvent('click',evt);
-		});
-
-		doc && (this.eventEvents['resize'] = jmUtils.bindEvent(doc,'resize',function(evt) {
-			evt = evt || window.event;
-			return container.raiseEvent('resize',evt);
-		}));
-
-		// passive: false 为了让浏览器不告警并且preventDefault有效
-		// 另一种处理：touch-action: none; 这样任何触摸事件都不会产生默认行为，但是 touch 事件照样触发。
-		this.eventEvents['touchstart'] = jmUtils.bindEvent(this.target,'touchstart', function(evt) {
-			return instance.touchStart(evt);
-		},{ passive: false });
-
-		this.eventEvents['touchmove'] = jmUtils.bindEvent(this.target,'touchmove', function(evt) {
-			return instance.touchMove(evt);
-		},{ passive: false });
-
-		doc && (this.eventEvents['touchend'] = jmUtils.bindEvent(doc,'touchend', function(evt) {
-			return instance.touchEnd(evt);
-		},{ passive: false }));
-
-		doc && (this.eventEvents['touchcancel'] = jmUtils.bindEvent(doc,'touchcancel', function(evt) {
-			return instance.touchCancel(evt);
-		},{ passive: false }));
-	}
-
-	// 销毁所有事件
-	destory() {
-		for(let name in this.eventEvents) {
-			const event = this.eventEvents[name];
-			if(!event || !event.fun) continue;
-			jmUtils.removeEvent(event.target, name, event.fun);
+		else {
+			this.x = x;
+			this.y = y;
+			this.blur = blur;
+			this.color = color;
 		}
 	}
-}
-
-/**
- * 健盘事件处理对象，container 为事件主体，target为响应事件对象
- */
-class jmKeyEvent {
-	constructor(instance, container,target) {
-		this.instance = instance;
-		this.container = container;
-		this.target = target || container;
-
-		this.eventEvents = {};// 所有绑定的事件
-
-		this.init(container, target);
+	/**
+	 * 根据字符串格式转为阴影
+	 * @method fromString
+	 * @param {string} s 阴影字符串 x,y,blur,color
+	 */
+	fromString(s) {
+		if(!s) return;
+		let ms = s.match(/\s*([^,]+)\s*,\s*([^,]+)\s*(,[^,]+)?\s*(,[\s\S]+)?\s*/i);
+		if(ms) {
+			this.x = ms[1]||0;
+			this.y = ms[2]||0;
+			if(ms[3]) {
+				ms[3] = jmUtils.trim(ms[3],', ');
+				//如果第三位是颜色格式，则表示为颜色
+				if(ms[3].indexOf('#')===0 || /^rgb/i.test(ms[3])) {
+					this.color = ms[3];
+				}
+				else {
+					this.blur = jmUtils.trim(ms[3],', ');
+				}
+			}
+			if(ms[4]) {
+				this.color = jmUtils.trim(ms[4],', ');
+			}
+		}
+		return this;
 	}
 
 	/**
-	 * 初始化健盘事件
+	 * 转为字符串格式 x,y,blur,color
+	 * @method toString
+	 * @returns {string} 阴影字符串
 	 */
-	init(container, target) {
-		let doc = typeof typeof document != 'undefined'?document:null;
-		/**
-		 * 检查是否触发健盘事件至画布
-		 * 如果触发对象为输入框等对象则不响应事件
-		 *  
-		 */
-		let checkKeyEvent = (evt) => {
-			let target = evt.srcElement || evt.target;
-			if(target && (target.tagName == 'INPUT' 
-				|| target.tagName == 'TEXTAREA'
-				|| target.tagName == 'ANCHOR' 
-				|| target.tagName == 'FORM' 
-				|| target.tagName == 'FILE'
-				|| target.tagName == 'IMG'
-				|| target.tagName == 'HIDDEN'
-				|| target.tagName == 'RADIO'
-				|| target.tagName == 'TEXT'	)) {
-				return false;
-			}
-			return true;
-		};
+	toString() {
+		let s = this.x + ',' + this.y;
+		if(this.blur) s += ',' + this.blur;
+		if(this.color) s += ',' + this.color;
+		return s;
+	}
+}
 
-		doc && (this.eventEvents['touchcancel'] = jmUtils.bindEvent(doc,'keypress',function(evt) {
-			evt = evt || window.event;
-			if(!checkKeyEvent(evt)) return;//如果事件为其它输入框，则不响应
-			let r = container.raiseEvent('keypress',evt);
-			if(r === false && evt.preventDefault) 
-				evt.preventDefault();
-			return r;
-		}));
-		doc && (this.eventEvents['touchcancel'] = jmUtils.bindEvent(doc,'keydown',function(evt) {
-			evt = evt || window.event;
-			if(!checkKeyEvent(evt)) return;//如果事件为其它输入框，则不响应
-			let r = container.raiseEvent('keydown',evt);
-			if(r === false && evt.preventDefault) 
-				evt.preventDefault();
-			return r;
-		}));
-		doc && (this.eventEvents['touchcancel'] = jmUtils.bindEvent(doc,'keyup',function(evt) {
-			evt = evt || window.event;
-			if(!checkKeyEvent(evt)) return;//如果事件为其它输入框，则不响应
-			let r = container.raiseEvent('keyup',evt);
-			if(r === false && evt.preventDefault) 
-				evt.preventDefault();
-			return r;
-		}));			
+/**
+ *  所有jm对象的基础对象
+ * 
+ * @class jmObject
+ * @for jmGraph
+ */
+class jmObject {
+	//id;
+	constructor(g) {
+		if(g && g.type == 'jmGraph') {
+			this.graph = g;
+		}
+		//this.id = Symbol("id"); //生成一个唯一id
+	}
+	
+	/**
+	 * 检 查对象是否为指定类型
+	 * 
+	 * @method is
+	 * @param {class} type 判断的类型
+	 * @for jmObject
+	 * @return {boolean} true=表示当前对象为指定的类型type,false=表示不是
+	 */
+	is(type) {
+		if(typeof type == 'string') {
+			return this.type == type;
+		}
+		return this instanceof type;
 	}
 
-	// 销毁所有事件
-	destory() {
-		for(let name in this.eventEvents) {
-			const event = this.eventEvents[name];
-			if(!event || !event.fun) continue;
-			jmUtils.removeEvent(event.target, name, event.fun);
+	/**
+	 * 给控件添加动画处理,如果成功执行会导致画布刷新。
+	 *
+	 * @method animate
+	 * @for jmObject
+	 * @param {function} handle 动画委托
+	 * @param {integer} millisec 此委托执行间隔 （毫秒）
+	 */
+	animate(...args) {	
+		if(this.is('jmGraph')) {
+			if(args.length > 1) {			
+				if(!this.animateHandles) this.animateHandles = new jmList();
+				
+				var params = [];
+				if(args.length > 2) {
+					for(var i=2;i<args.length;i++) {
+						params.push(args[i]);
+					}
+				}		
+				this.animateHandles.add({
+					millisec: args[1] || 20, 
+					handle: args[0], 
+					params:params
+				});
+			}
+			if(this.animateHandles) {
+				if(this.animateHandles.count() > 0) {
+					var self = this;
+					//延时处理动画事件
+					this.dispatcher = setTimeout(function(_this) {
+						_this = _this || self;
+						//var needredraw = false;
+						var overduehandles = [];
+						var curTimes = new Date().getTime();
+						_this.animateHandles.each(function(i,ani) {						
+							try {
+								if(ani && ani.handle && (!ani.times || curTimes - ani.times >= ani.millisec)) {
+									var r = ani.handle.apply(_this, ani.params);
+									if(r === false) {
+										overduehandles.push(ani);//表示已完成的动画效果
+									}								
+									ani.times = curTimes;
+									//needredraw = true;								
+								}
+							}
+							catch(e) {
+								if(window.console && window.console.info) {
+									window.console.info(e.toString());
+								}
+								if(ani) overduehandles.push(ani);//异常的事件，不再执行
+							}						
+						});
+						for(var i in overduehandles) {
+							_this.animateHandles.remove(overduehandles[i]);//移除完成的效果
+						}
+						_this.animate();
+					},10,this);//刷新				
+				}
+			}
+		}	
+		else {
+			var graph = this.graph;
+			if(graph) {
+				graph.animate(...args);
+			}
 		}
+	}
+}
+
+const PROPERTY_KEY = Symbol("properties");
+
+/**
+ * 对象属性管理
+ * 
+ * @class jmProperty
+ * @extends jmObject
+ * @require jmObject
+ */
+class jmProperty extends jmObject {		
+	
+	constructor() {
+		super();
+		
+		this[PROPERTY_KEY] = {};
+	}
+
+	/**
+	 * 基础属性读写接口
+	 * @method __pro
+	 * @param {string} name 属性名
+	 * @param {any} value 属性的值
+	 * @returns {any} 属性的值
+	 */
+	__pro(...pars) {
+		if(pars) {
+			let pros = this[PROPERTY_KEY];
+			let name = pars[0];
+			if(pars.length > 1) {
+				let value = pars[1];
+				let args = {oldValue: pros[name], newValue: value};
+				pros[name] = pars[1];
+				if(this.emit) this.emit('propertyChange', name, args);
+				return pars[1];
+			}
+			else if(pars.length == 1) {
+				return pros[name];
+			}
+		}
+	}
+
+	/**
+	 * 是否需要刷新画板，属性的改变会导致它变为true
+	 * @property needUpdate
+	 * @type {boolean}
+	 */
+	get needUpdate() {
+		return this.__pro('needUpdate');
+	}
+	set needUpdate(v) {
+		this.__pro('needUpdate', v);
+		//子控件属性改变，需要更新整个画板
+		if(v && !this.is('jmGraph') && this.graph) {
+			this.graph.needUpdate = true;
+		}
+	}
+
+	/**
+	 * 当前所在的画布对象 jmGraph
+	 * @property graph
+	 * @type {jmGraph}
+	 */
+	get graph() {
+		let g = this.__pro('graph');
+		g = g || (this.__pro('graph', this.findParent('jmGraph')));
+		return g;
+	}
+	set graph(v) {
+		return this.__pro('graph', v);
 	}
 }
 
@@ -2985,6 +2735,1841 @@ class jmPath extends jmControl {
 }
 
 /**
+ * 圆弧图型 继承自jmPath
+ *
+ * @class jmArc
+ * @extends jmPath
+ * @param {object} params center=当前圆弧中心,radius=圆弧半径,start=圆弧起始角度,end=圆弧结束角度,anticlockwise=  false  顺时针，true 逆时针
+ */
+class jmArc extends jmPath {
+
+	constructor(params, t='jmArc') {
+		if(!params) params = {};
+		super(params, t);
+
+		this.center = params.center || {x:0,y:0};
+		this.radius = params.radius || 0;
+
+		this.startAngle = params.start || params.startAngle || 0;
+		this.endAngle = params.end || params.endAngle || Math.PI * 2;		
+
+		this.anticlockwise = params.anticlockwise  || 0;
+
+		this.isFan = !!params.isFan;
+	}	
+
+	/**
+	 * 中心点
+	 * point格式：{x:0,y:0,m:true}
+	 * @property center
+	 * @type {point}
+	 */
+	get center() {
+		return this.__pro('center');
+	}
+	set center(v) {
+		this.needUpdate = true;
+		return this.__pro('center', v);
+	}
+
+	/**
+	 * 半径
+	 * @property radius
+	 * @type {number}
+	 */
+	get radius() {
+		return this.__pro('radius');
+	}
+	set radius(v) {
+		this.needUpdate = true;
+		return this.__pro('radius', v);
+	}
+
+	/**
+	 * 扇形起始角度
+	 * @property startAngle
+	 * @type {number}
+	 */
+	get startAngle() {
+		return this.__pro('startAngle');
+	}
+	set startAngle(v) {
+		this.needUpdate = true;
+		return this.__pro('startAngle', v);
+	}
+
+	/**
+	 * 扇形结束角度
+	 * @property endAngle
+	 * @type {number}
+	 */
+	get endAngle() {
+		return this.__pro('endAngle');
+	}
+	set endAngle(v) {
+		this.needUpdate = true;
+		return this.__pro('endAngle', v);
+	}
+
+	/**
+	 * 可选。规定应该逆时针还是顺时针绘图
+	 * false  顺时针，true 逆时针
+	 * @property anticlockwise
+	 * @type {boolean}
+	 */
+	get anticlockwise() {
+		return this.__pro('anticlockwise');
+	}
+	set anticlockwise(v) {
+		this.needUpdate = true;
+		return this.__pro('anticlockwise', v);
+	}
+
+
+	/**
+	 * 初始化图形点
+	 * 
+	 * @method initPoint
+	 * @private
+	 * @for jmArc
+	 */
+	initPoints() {
+		let location = this.getLocation();//获取位置参数
+		let mw = 0;
+		let mh = 0;
+		let cx = location.center.x ;
+		let cy = location.center.y ;
+		//如果设定了半径。则以半径为主	
+		if(location.radius) {
+			mw = mh = location.radius;
+		}
+		else {
+			mw = location.width / 2;
+			mh = location.height / 2;
+		}	
+		
+		let start = this.startAngle;
+		let end = this.endAngle;
+
+		if((mw == 0 && mh == 0) || start == end) return;
+
+		let anticlockwise = this.anticlockwise;
+		this.points = [];
+		let step = 1 / Math.max(mw, mh);
+
+		//如果是逆时针绘制，则角度为负数，并且结束角为2Math.PI-end
+		if(anticlockwise) {
+			let p2 =  Math.PI * 2;
+			start = p2 - start;
+			end = p2 - end;
+		}
+		if(start > end) step = -step;
+
+		if(this.isFan) this.points.push(location.center);// 如果是扇形，则从中心开始画
+		
+		//椭圆方程x=a*cos(r) ,y=b*sin(r)	
+		for(let r=start;;r += step) {	
+			if(step > 0 && r > end) r = end;
+			else if(step < 0 && r < end) r = end;
+
+			let p = {
+				x : Math.cos(r) * mw + cx,
+				y : Math.sin(r) * mh + cy
+			};
+			this.points.push(p);
+
+			if(r == end) break;
+		}
+		return this.points;
+	}
+}
+
+/**
+ * 画箭头,继承自jmPath
+ *
+ * @class jmArraw
+ * @extends jmPath
+ * @param {object} 生成箭头所需的参数
+ */
+class jmArraw extends jmPath {	
+
+	constructor(params, t='jmArraw') {
+		super(params, t);
+		this.style.lineJoin = 'miter';
+		this.style.lineCap = 'square';
+
+		this.angle = params.angle  || 0;
+		this.start = params.start  || {x:0,y:0};
+		this.end = params.end  ||  {x:0,y:0};
+		this.offsetX = params.offsetX || 5;
+		this.offsetY = params.offsetY || 8;
+	}
+
+	/**
+	 * 控制起始点
+	 *
+	 * @property start
+	 * @for jmArraw
+	 * @type {point}
+	 */
+	get start() {
+		return this.__pro('start');
+	}
+	set start(v) {
+		this.needUpdate = true;
+		return this.__pro('start', v);
+	}
+
+	/**
+	 * 控制结束点
+	 *
+	 * @property end
+	 * @for jmArraw
+	 * @type {point} 结束点
+	 */
+	get end() {
+		return this.__pro('end');
+	}
+	set end(v) {
+		this.needUpdate = true;
+		return this.__pro('end', v);
+	}
+
+	/**
+	 * 箭头角度
+	 *
+	 * @property angle
+	 * @for jmArraw
+	 * @type {number} 箭头角度
+	 */
+	get angle() {
+		return this.__pro('angle');
+	}
+	set angle(v) {
+		this.needUpdate = true;
+		return this.__pro('angle', v);
+	}
+
+	/**
+	 * 箭头X偏移量
+	 *
+	 * @property offsetX
+	 * @for jmArraw
+	 * @type {number}
+	 */
+	get offsetX() {
+		return this.__pro('offsetX');
+	}
+	set offsetX(v) {
+		this.needUpdate = true;
+		return this.__pro('offsetX', v);
+	}
+
+	/**
+	 * 箭头Y偏移量
+	 *
+	 * @property offsetY
+	 * @for jmArraw
+	 * @type {number}
+	 */
+	get offsetY() {
+		return this.__pro('offsetY');
+	}
+	set offsetY(v) {
+		this.needUpdate = true;
+		return this.__pro('offsetY', v);
+	}
+
+	/**
+	 * 初始化图形点
+	 * 
+	 * @method initPoint
+	 * @private
+	 * @param {boolean} solid 是否为实心的箭头
+	 * @for jmArraw
+	 */
+	initPoints(solid) {	
+		let rotate = this.angle;
+		let start = this.start;
+		let end = this.end;
+		if(!end) return;
+		//计算箭头指向角度
+		if(!rotate) {
+			rotate = Math.atan2(end.y - start.y,end.x - start.x);
+		}
+		this.points = [];
+		let offx = this.offsetX;
+		let offy = this.offsetY;
+		//箭头相对于线的偏移角度
+		let r = Math.atan2(offx,offy);
+		let r1 = rotate + r;
+		let rsin = Math.sin(r1);
+		let rcos = Math.cos(r1);
+		let sq = Math.sqrt(offx * offx  + offy * offy);
+		let ystep = rsin * sq;
+		let xstep = rcos * sq;
+		
+		let p1 = {
+			x:end.x - xstep,
+			y:end.y - ystep
+		};
+		let r2 = rotate - r;
+		rsin = Math.sin(r2);
+		rcos = Math.cos(r2);
+		ystep = rsin * sq;
+		xstep = rcos * sq;
+		let p2 = {
+			x:end.x - xstep,
+			y:end.y - ystep
+		};
+
+		let s = jmUtils.clone(end);  
+		s.m = true;  
+		this.points.push(s);
+		this.points.push(p1);
+		//如果实心箭头则封闭路线
+		if(solid || this.style.fill) {    	
+			this.points.push(p2);
+			this.points.push(end);
+		}
+		else {
+			this.points.push(s);
+			this.points.push(p2);
+		}		
+		return this.points;
+	}
+
+}
+
+/**
+ * 贝塞尔曲线,继承jmPath
+ * N阶，参数points中为控制点
+ *
+ * @class jmBezier
+ * @extends jmPath
+ * @param {object} params 参数
+ */ 
+class jmBezier extends jmPath {	
+	
+	constructor(params, t='jmBezier') {
+		// 典线默认不封闭
+		if(params.style && typeof params.style.close !== true) {
+			params.style.close = false;
+		}
+
+		super(params, t);
+		this.cpoints = params.points || [];
+	}	
+	
+	/**
+	 * 控制点
+	 *
+	 * @property cpoints
+	 * @for jmBezier
+	 * @type {array}
+	 */
+	get cpoints() {
+		return this.__pro('cpoints');
+	}
+	set cpoints(v) {
+		this.needUpdate = true;
+		return this.__pro('cpoints', v);
+	}
+	
+	/**
+	 * 初始化图形点
+	 *
+	 * @method initPoints
+	 * @private
+	 */
+	initPoints() {
+		
+		this.points = [];
+		
+		let cps = this.cpoints;
+		for(let t = 0;t <= 1;t += 0.01) {
+			let p = this.getPoint(cps,t);
+			this.points.push(p);
+		}	
+		this.points.push(cps[cps.length - 1]);
+		return this.points;
+	}
+
+	/**
+	 * 根据控制点和参数t生成贝塞尔曲线轨迹点
+	 *
+	 * @method getPoint
+	 * @param {array} ps 控制点集合
+	 * @param {number} t 参数(0-1)
+	 * @return {array} 所有轨迹点的数组
+	 */
+	getPoint(ps, t) {
+		if(ps.length == 1) return ps[0];
+		if(ps.length == 2) {					
+			let p = {};
+			p.x = (ps[1].x - ps[0].x) * t + ps[0].x;
+			p.y = (ps[1].y - ps[0].y) * t + ps[0].y;
+			return p;	
+		}
+		if(ps.length > 2) {
+			let nps = [];
+			for(let i = 0;i < ps.length - 1;i++) {
+				let p = this.getPoint([ps[i],ps[i+1]],t);
+				if(p) nps.push(p);
+			}
+			return this.getPoint(nps,t);
+		}
+	}
+
+	/**
+	 * 对控件进行平移
+	 * 遍历控件所有描点或位置，设置其偏移量。
+	 *
+	 * @method offset
+	 * @param {number} x x轴偏移量
+	 * @param {number} y y轴偏移量
+	 * @param {boolean} [trans] 是否传递,监听者可以通过此属性是否决定是否响应移动事件,默认=true
+	 */
+	offset(x, y, trans) {	
+		let p = this.cpoints;
+		if(p) {			
+			let len = p.length;
+			for(let i=0; i < len;i++) {
+				p[i].x += x;
+				p[i].y += y;
+			}		
+			
+			//触发控件移动事件	
+			this.emit('move',{
+				offsetX: x,
+				offsetY: y,
+				trans: trans
+			});
+			this.getLocation(true);	//重置
+		}
+	}
+}
+
+/**
+ * 画规则的圆弧
+ *
+ * @class jmCircle
+ * @extends jmArc
+ * @param {object} params 圆的参数:center=圆中心,radius=圆半径,优先取此属性，如果没有则取宽和高,width=圆宽,height=圆高
+ */
+class jmCircle extends jmArc {		
+	
+	constructor(params, t='jmCircle') {
+		super(params, t);		
+	}
+	/**
+	 * 初始化图形点
+	 * 
+	 * @method initPoint
+	 * @private
+	 * @for jmCircle
+	 */
+	initPoints() {			
+		let location = this.getLocation();
+		
+		if(!location.radius) {
+			location.radius = Math.min(location.width , location.height) / 2;
+		}
+		this.points = [];
+		this.points.push({x:location.center.x - location.radius,y:location.center.y - location.radius});
+		this.points.push({x:location.center.x + location.radius,y:location.center.y - location.radius});
+		this.points.push({x:location.center.x + location.radius,y:location.center.y + location.radius});
+		this.points.push({x:location.center.x - location.radius,y:location.center.y + location.radius});
+	}
+
+	/**
+	 * 重写基类画图，此处为画一个完整的圆 
+	 *
+	 * @method draw
+	 */
+	draw() {
+		let bounds = this.parent && this.parent.absoluteBounds?this.parent.absoluteBounds:this.absoluteBounds;	
+		let location = this.getLocation();
+		
+		if(!location.radius) {
+			location.radius = Math.min(location.width , location.height) / 2;
+		}
+		let start = this.startAngle;
+		let end = this.endAngle;
+		let anticlockwise = this.anticlockwise;
+		//context.arc(x,y,r,sAngle,eAngle,counterclockwise);
+		this.context.arc(location.center.x + bounds.left,location.center.y + bounds.top, location.radius, start,end,anticlockwise);
+	}
+}
+
+/**
+ * 画空心圆弧,继承自jmPath
+ *
+ * @class jmHArc
+ * @extends jmArc
+ * @param {object} params 空心圆参数:minRadius=中心小圆半径,maxRadius=大圆半径,start=起始角度,end=结束角度,anticlockwise=false  顺时针，true 逆时针
+ */
+
+class jmHArc extends jmArc {
+		
+	constructor(params, t='jmHArc') {
+		super(params, t);
+
+		this.minRadius = params.minRadius || this.style.minRadius || 0;
+		this.maxRadius = params.maxRadius || this.style.maxRadius || 0;
+	}
+
+	/**
+	 * 设定或获取内空心圆半径
+	 * 
+	 * @property minRadius
+	 * @for jmHArc
+	 * @type {number} 
+	 */
+	get minRadius() {
+		return this.__pro('minRadius');
+	}
+	set minRadius(v) {
+		this.needUpdate = true;
+		return this.__pro('minRadius', v);
+	}
+
+	/**
+	 * 设定或获取外空心圆半径
+	 * 
+	 * @property maxRadius
+	 * @for jmHArc
+	 * @type {number} 
+	 */
+	get maxRadius() {
+		return this.__pro('maxRadius');
+	}
+	set maxRadius(v) {
+		this.needUpdate = true;
+		return this.__pro('maxRadius', v);
+	}
+
+	/**
+	 * 初始化图形点
+	 *
+	 * @method initPoints
+	 * @private
+	 */
+	initPoints() {	
+		let location = this.getLocation();	
+		//如果设定了半径。则以半径为主
+		let minr = this.minRadius;
+		let maxr = this.maxRadius;
+		
+		let start = this.startAngle;
+		let end = this.endAngle;
+		let anticlockwise = this.anticlockwise;
+
+		//如果是逆时针绘制，则角度为负数，并且结束角为2Math.PI-end
+		if(anticlockwise) {
+			let p2 =  Math.PI*2;
+			start = p2 - start;
+			end = p2 - end;
+		}
+
+		let step = 0.1;
+		if(start > end) step = -step;
+
+		let minps = [];
+		let maxps = [];
+		//椭圆方程x=a*cos(r) ,y=b*sin(r)
+		for(let r=start;;r += step) {
+			if(step > 0 && r > end) {
+				r = end;
+			}
+			else if(step < 0 && r < end) {
+				r = end;
+			}
+
+			let cos = Math.cos(r);
+			let sin = Math.sin(r);
+			let p1 = {
+				x : cos * minr + location.center.x,
+				y : sin * minr + location.center.y
+			};
+			let p2 = {
+				x : cos * maxr + location.center.x,
+				y : sin * maxr + location.center.y
+			};
+			minps.push(p1);
+			maxps.push(p2);
+
+			if(r === end) break;
+		}
+		
+		maxps.reverse();//大圆逆序
+		if(!this.style || !this.style.close) {
+			maxps[0].m = true;//开始画大圆时表示为移动
+		}		
+		this.points = minps.concat(maxps);
+	}
+}
+
+/**
+ * 画一条直线
+ *
+ * @class jmLine
+ * @extends jmPath
+ * @param {object} params 直线参数:start=起始点,end=结束点,lineType=线类型(solid=实线，dotted=虚线),dashLength=虚线间隔(=4)
+ */
+class jmLine extends jmPath {	
+	
+	constructor(params, t='jmLine') {
+		super(params, t);
+
+		this.start = params.start || {x:0,y:0};
+		this.end = params.end || {x:0,y:0};
+		this.style.lineType = this.style.lineType || 'solid';
+		this.style.dashLength = this.style.dashLength || 4;
+	}	
+
+	/**
+	 * 控制起始点
+	 * 
+	 * @property start
+	 * @for jmLine
+	 * @type {point}
+	 */
+	get start() {
+		return this.__pro('start');
+	}
+	set start(v) {
+		this.needUpdate = true;
+		return this.__pro('start', v);
+	}
+
+	/**
+	 * 控制结束点
+	 * 
+	 * @property end
+	 * @for jmLine
+	 * @type {point}
+	 */
+	get end() {
+		return this.__pro('end');
+	}
+	set end(v) {
+		this.needUpdate = true;
+		return this.__pro('end', v);
+	}
+
+	/**
+	 * 初始化图形点,如呆为虚线则根据跳跃间隔描点
+	 * @method initPoints
+	 * @private
+	 */
+	initPoints() {	
+		let start = this.start;
+		let end = this.end;
+		this.points = [];	
+		this.points.push(start);
+
+		if(this.style.lineType === 'dotted') {			
+			let dx = end.x - start.x;
+			let dy = end.y - start.y;
+			let lineLen = Math.sqrt(dx * dx + dy * dy);
+			dx = dx / lineLen;
+			dy = dy / lineLen;
+			let dottedstart = false;
+
+			let dashLen = this.style.dashLength || 5;
+			let dottedsp = dashLen / 2;
+			for(let l=dashLen; l<=lineLen;) {
+				if(dottedstart == false) {
+					this.points.push({x: start.x + dx * l, y: start.y + dy * l});
+					l += dottedsp;
+				}
+				else {				
+					this.points.push({x: start.x + dx * l, y: start.y+ dy * l, m: true});
+					l += dashLen;
+				}
+				dottedstart = !dottedstart;				
+			}
+		}
+		this.points.push(end);
+		return this.points;
+	}
+}
+
+/**
+ * 画棱形
+ *
+ * @class jmPrismatic
+ * @extends jmPath
+ * @param {object} params 参数 center=棱形中心点，width=棱形宽,height=棱形高
+ */
+class jmPrismatic extends jmPath {	
+	
+	constructor(params, t='jmPrismatic') {
+		super(params, t);
+		this.style.close = typeof this.style.close == 'undefined'? true : this.style.close;
+
+		this.center = params.center || {x:0,y:0};
+		this.width = params.width || 0;
+
+		//this.on('PropertyChange',this.initPoints);
+		this.height = params.height  || 0;
+	}
+	
+	/**
+	 * 中心点
+	 * point格式：{x:0,y:0,m:true}
+	 * @property center
+	 * @type {point}
+	 */
+	get center() {
+		return this.__pro('center');
+	}
+	set center(v) {
+		this.needUpdate = true;
+		return this.__pro('center', v);
+	}
+	
+	/**
+	 * 初始化图形点
+	 * 计算棱形顶点
+	 * 
+	 * @method initPoints
+	 * @private
+	 */
+	initPoints() {		
+		let location = this.getLocation();
+		let mw = location.width / 2;
+		let mh = location.height / 2;
+		
+		this.points = [];
+		this.points.push({x:location.center.x - mw, y:location.center.y});
+		this.points.push({x:location.center.x, y:location.center.y + mh});
+		this.points.push({x:location.center.x + mw, y:location.center.y});
+		this.points.push({x:location.center.x, y:location.center.y - mh});
+	}
+}
+
+/**
+ * 画矩形
+ *
+ * @class jmRect
+ * @extends jmPath
+ * @param {object} params 参数 position=矩形左上角顶点坐标,width=宽，height=高,radius=边角弧度
+ */ 
+class jmRect extends jmPath {		
+
+	constructor(params, t='jmRect') {
+		params = params||{};
+		super(params, t);
+
+		this.style.close = true;
+		this.radius = params.radius || this.style.radius || 0;
+	}
+	/**
+	 * 圆角半径
+	 * @property radius
+	 * @type {number}
+	 */
+	get radius() {
+		return this.__pro('radius');
+	}
+	set radius(v) {
+		this.needUpdate = true;
+		return this.__pro('radius', v);
+	}	
+
+	/**
+	 * 当前位置左上角
+	 * @property position
+	 * @type {point}
+	 */
+	get position() {
+		return this.__pro('position');
+	}
+	set position(v) {
+		this.needUpdate = true;
+		return this.__pro('position', v);
+	}
+
+	/**
+	 * 获取当前控件的边界
+	 *
+	 * @method getBounds
+	 * @return {bound} 当前控件边界
+	 */
+	getBounds() {
+		let rect = {};
+		this.initPoints();
+		let p = this.getLocation();
+		rect.left = p.left; 
+		rect.top = p.top; 
+		
+		rect.right = p.left + p.width; 
+		rect.bottom = p.top + p.height; 
+		
+		rect.width = rect.right - rect.left;
+		rect.height = rect.bottom - rect.top;
+		return rect;
+	}
+	
+	/**
+	 * 重写检查坐标是否在区域内
+	 *
+	 * @method checkPoint
+	 * @param {point} p 待检查的坐标
+	 * @return {boolean} 如果在则返回true,否则返回false
+	 */
+	/*checkPoint(p) {	
+		//生成当前坐标对应的父级元素的相对位置
+		let abounds = this.bounds || this.getBounds();
+
+		if(p.x > abounds.right || p.x < abounds.left) {
+			return false;
+		}
+		if(p.y > abounds.bottom || p.y < abounds.top) {
+			return false;
+		}
+		
+		return true;
+	}*/
+
+	/**
+	 * 初始化图形点
+	 * 如果有边角弧度则类型圆绝计算其描点
+	 * 
+	 * @method initPoints
+	 * @private
+	 */
+	initPoints() {
+		let location = this.getLocation();	
+		let p1 = {x:location.left,y:location.top};
+		let p2 = {x:location.left + location.width,y:location.top};
+		let p3 = {x:location.left + location.width,y:location.top + location.height};
+		let p4 = {x:location.left,y:location.top + location.height};
+
+		//如果指定为虚线 , 则初始化一个直线组件，来构建虚线点集合
+		if(this.style.lineType === 'dotted' && !this.dottedLine) {
+			this.dottedLine = this.graph.createShape(jmLine, {style: this.style});
+		}
+		
+		//如果有边界弧度则借助圆弧对象计算描点
+		if(location.radius && location.radius < location.width/2 && location.radius < location.height/2) {
+			let q = Math.PI / 2;
+			let arc = this.graph.createShape(jmArc,{radius:location.radius,anticlockwise:false});
+			arc.center = {x:location.left + location.radius,y:location.top+location.radius};
+			arc.startAngle = Math.PI;
+			arc.endAngle = Math.PI + q;
+			let ps1 = arc.initPoints();
+			
+			arc = this.graph.createShape(jmArc,{radius:location.radius,anticlockwise:false});
+			arc.center = {x:p2.x - location.radius,y:p2.y + location.radius};
+			arc.startAngle = Math.PI + q;
+			arc.endAngle = Math.PI * 2;
+			let ps2 = arc.initPoints();
+			
+			arc = this.graph.createShape(jmArc,{radius:location.radius,anticlockwise:false});
+			arc.center = {x:p3.x - location.radius,y:p3.y - location.radius};
+			arc.startAngle = 0;
+			arc.endAngle = q;
+			let ps3 = arc.initPoints();
+			
+			arc = this.graph.createShape(jmArc,{radius:location.radius,anticlockwise:false});
+			arc.center = {x:p4.x + location.radius,y:p4.y - location.radius};
+			arc.startAngle = q;
+			arc.endAngle = Math.PI;
+			let ps4 = arc.initPoints();
+			this.points = ps1.concat(ps2,ps3,ps4);
+		}
+		else {
+			this.points = [];
+			this.points.push(p1);
+			//如果是虚线
+			if(this.dottedLine) {
+				this.dottedLine.start = p1;
+				this.dottedLine.end = p2;
+				this.points = this.points.concat(this.dottedLine.initPoints());
+			}
+			this.points.push(p2);
+			//如果是虚线
+			if(this.dottedLine) {
+				this.dottedLine.start = p2;
+				this.dottedLine.end = p3;
+				this.points = this.points.concat(this.dottedLine.initPoints());
+			}
+			this.points.push(p3);
+			//如果是虚线
+			if(this.dottedLine) {
+				this.dottedLine.start = p3;
+				this.dottedLine.end = p4;
+				this.points = this.points.concat(this.dottedLine.initPoints());
+			}
+			this.points.push(p4);
+			//如果是虚线
+			if(this.dottedLine) {
+				this.dottedLine.start = p4;
+				this.dottedLine.end = p1;
+				this.points = this.points.concat(this.dottedLine.initPoints());
+			}
+		}		
+		
+		return this.points;
+	}
+}
+
+/**
+ * 带箭头的直线,继承jmPath
+ *
+ * @class jmArrawLine
+ * @extends jmLine
+ * @param {object} params 生成当前直线的参数对象，(style=当前线条样式,start=直线起始点,end=直线终结点)
+ */	
+class jmArrawLine extends jmLine {	
+
+	constructor(params, t) {
+
+		params.start = params.start || {x:0,y:0};
+		params.end = params.end || {x:0,y:0};
+
+		super(params, t||'jmArrawLine');
+		this.style.lineJoin = this.style.lineJoin || 'miter';
+		this.arraw = new jmArraw(params);
+	}
+
+	/**
+	 * 初始化直线和箭头描点
+	 *
+	 * @method initPoints
+	 * @private
+	 */
+	initPoints() {	
+		this.points = super.initPoints();
+		if(this.arrawVisible !== false) {
+			this.points = this.points.concat(this.arraw.initPoints());
+		}
+		return this.points;
+	}
+}
+
+/**
+ * 图片控件，继承自jmControl
+ * params参数中image为指定的图片源地址或图片img对象，
+ * postion=当前控件的位置，width=其宽度，height=高度，sourcePosition=从当前图片中展示的位置，sourceWidth=从图片中截取的宽度,sourceHeight=从图片中截取的高度。
+ * 
+ * @class jmImage
+ * @extends jmControl
+ * @param {object} params 控件参数
+ */
+class jmImage extends jmControl {
+
+	constructor(params, t) {
+		params = params || {};
+		super(params, t||'jmImage');
+
+		this.style.fill = this.fill || 'transparent';//默认指定一个fill，为了可以鼠标选中
+
+		this.sourceWidth = params.sourceWidth;
+		this.sourceHeight = params.sourceHeight;
+		this.sourcePosition = params.sourcePosition;
+		this.image = params.image || this.style.image;
+	}
+
+	/**
+	 * 画图开始剪切位置
+	 *
+	 * @property sourcePosition
+	 * @type {point}
+	 */
+	get sourcePosition() {
+		return this.__pro('sourcePosition');
+	}
+	set sourcePosition(v) {
+		return this.__pro('sourcePosition', v);
+	}
+
+	/**
+	 * 被剪切宽度
+	 *
+	 * @property sourceWidth
+	 * @type {number}
+	 */
+	get sourceWidth() {
+		return this.__pro('sourceWidth');
+	}
+	set sourceWidth(v) {
+		this.needUpdate = true;
+		return this.__pro('sourceWidth', v);
+	}
+
+	/**
+	 * 被剪切高度
+	 *
+	 * @method sourceHeight
+	 * @type {number}
+	 */
+	get sourceHeight() {
+		return this.__pro('sourceHeight');
+	}
+	set sourceHeight(v) {
+		this.needUpdate = true;
+		return this.__pro('sourceHeight', v);
+	}
+
+	/**
+	 * 设定要绘制的图像或其它多媒体对象，可以是图片地址，或图片image对象
+	 *
+	 * @method image
+	 * @type {img}
+	 */
+	get image() {
+		return this.__pro('image');
+	}
+	set image(v) {
+		this.needUpdate = true;
+		return this.__pro('image', v);
+	}
+
+	/**
+	 * 重写控件绘制
+	 * 根据父边界偏移和此控件参数绘制图片
+	 *
+	 * @method draw
+	 */
+	draw() {	
+		try {
+			let bounds = this.parent && this.parent.absoluteBounds?this.parent.absoluteBounds:this.absoluteBounds;
+			if(!bounds) bounds = this.parent && this.parent.getAbsoluteBounds?this.parent.getAbsoluteBounds():this.getAbsoluteBounds();
+			let p = this.getLocation();
+			p.left += bounds.left;
+			p.top += bounds.top;
+			
+			let sp = this.sourcePosition;
+			let sw = this.sourceWidth;
+			let sh = this.sourceHeight;
+			let img = this.getImage();
+				
+			if(sp || typeof sw != 'undefined' || typeof sh != 'undefined') {	
+				if(typeof sw == 'undefined') sw= p.width || img.width || 0;
+				if(typeof sh == 'undefined') sh= p.height || img.height || 0;
+				sp = sp || {x:0, y:0};
+
+				if(p.width && p.height) this.context.drawImage(img,sp.x,sp.y,sw,sh,p.left,p.top,p.width,p.height);
+				else if(p.width) {
+					this.context.drawImage(img,sp.x,sp.y,sw,sh,p.left,p.top,p.width,sh);
+				}		
+				else if(p.height) {
+					this.context.drawImage(img,sp.x,sp.y,sw,sh,p.left,p.top,sw,p.height);
+				}		
+				else this.context.drawImage(img,sp.x,sp.y,sw,sh,p.left,p.top,sw,sh);		
+			}
+			else if(p) {
+				if(p.width && p.height) this.context.drawImage(img,p.left,p.top,p.width,p.height);
+				else if(p.width) this.context.drawImage(img,p.left,p.top,p.width,img.height);
+				else if(p.height) this.context.drawImage(img,p.left,p.top,img.width,p.height);
+				else this.context.drawImage(img,p.left,p.top);
+			}
+			else {
+				this.context.drawImage(img);
+			}
+		}
+		catch(e) {
+			console.error && console.error(e);
+		}
+	}
+
+	/**
+	 * 获取当前控件的边界 
+	 * 
+	 * @method getBounds
+	 * @return {object} 边界对象(left,top,right,bottom,width,height)
+	 */
+	getBounds() {
+		let rect = {};
+		let img = this.getImage();
+		let p = this.getLocation();
+		let w = p.width || img.width;
+		let h = p.height || img.height;
+		rect.left = p.left; 
+		rect.top = p.top; 
+		rect.right = p.left + w; 
+		rect.bottom = p.top + h; 
+		rect.width = w;
+		rect.height = h;
+		return rect;
+	}
+
+	/**
+	 * img对象
+	 *
+	 * @method getImage
+	 * @return {img} 图片对象
+	 */
+	getImage() {
+		let src = this.image || this.style.src || this.style.image;
+		if(this.__img && this.__img.src && this.__img.src.indexOf(src) != -1) {
+			return this.__img;
+		}
+		else if(src && src.src) {
+			this.__img = src;
+		}
+		else if(document && document.createElement) {
+			this.__img = document.createElement('img');
+			if(src && typeof src == 'string') this.__img.src = src;
+		}
+		else {
+			this.__img = src;
+		}
+		return this.__img;
+	}
+}
+
+/**
+ * 显示文字控件
+ *
+ * @class jmLabel
+ * @extends jmControl
+ * @param {object} params params参数:style=样式，value=显示的文字
+ */
+class jmLabel extends jmControl {
+
+	constructor(params, t) {
+		params = params || {};
+		super(params, t||'jmLabel');
+
+		this.style.font = this.style.font || "15px Arial";
+		this.style.fontFamily = this.style.fontFamily || 'Arial';
+		this.style.fontSize = this.style.fontSize || 15;
+
+		// 显示不同的 textAlign 值
+		//文字水平对齐
+		this.style.textAlign = this.style.textAlign || 'left';
+		//文字垂直对齐
+		this.style.textBaseline = this.style.textBaseline || 'middle';
+		this.text = params.text || '';
+
+		this.center = params.center || null;
+	}
+
+	/**
+	 * 显示的内容
+	 * @property text
+	 * @type {string}
+	 */
+	get text() {
+		return this.__pro('text');
+	}
+	set text(v) {
+		this.needUpdate = true;
+		return this.__pro('text', v);
+	}
+
+	/**
+	 * 中心点
+	 * point格式：{x:0,y:0,m:true}
+	 * @property center
+	 * @type {point}
+	 */
+	get center() {
+		return this.__pro('center');
+	}
+	set center(v) {
+		this.needUpdate = true;
+		return this.__pro('center', v);
+	}	
+
+	/**
+	 * 当前位置左上角
+	 * @property position
+	 * @type {point}
+	 */
+	get position() {
+		return this.__pro('position');
+	}
+	set position(v) {
+		this.needUpdate = true;
+		return this.__pro('position', v);
+	}
+
+	/**
+	 * 在基础的getLocation上，再加上一个特殊的center处理
+	 * 
+	 * @method getLocation
+	 * @returns {Object}
+	 */
+	getLocation() {
+		let location = super.getLocation();
+		let size = this.testSize();	
+		
+		location.width = location.width || size.width;
+		location.height = location.height || size.height;	
+
+		//如果没有指定位置，但指定了中心，则用中心来计算坐标
+		if(!location.left && !location.top && location.center) {
+			location.left = location.center.x - location.width / 2;
+			location.top = location.center.y - location.height / 2;
+		}
+		return location;
+	}
+
+	/**
+	 * 初始化图形点,主要用于限定控件边界。
+	 *
+	 * @method initPoints
+	 * @return {array} 所有边界点数组
+	 * @private
+	 */
+	initPoints() {	
+		this.__size = null;
+		let location = this.getLocation();
+
+		this.points = [{x: location.left, y: location.top}];
+		this.points.push({x: location.left + location.width, y: location.top});
+		this.points.push({x: location.left + location.width, y: location.top + location.height});
+		this.points.push({x: location.left, y: location.top + location.height});
+		return this.points;
+	}
+
+	/**
+	 * 测试获取文本所占大小
+	 *
+	 * @method testSize
+	 * @return {object} 含文本大小的对象
+	 */
+	testSize() {
+		if(this.__size) return this.__size;
+		
+		this.context.save();
+		// 修改字体，用来计算
+		this.setStyle({
+			font: this.style.font || (this.style.fontSize + 'px ' + this.style.fontFamily)
+		});
+		//计算宽度
+		this.__size = this.context.measureText?
+							this.context.measureText(this.text):
+							{width:15};
+		this.context.restore();
+		this.__size.height = this.style.fontSize?this.style.fontSize:15;
+		if(!this.width) this.width = this.__size.width;
+		if(!this.height) this.height = this.__size.height;
+		return this.__size;
+	}
+
+	/**
+	 * 根据位置偏移画字符串
+	 * 
+	 * @method draw
+	 */
+	draw() {	
+		
+		//获取当前控件的绝对位置
+		let bounds = this.parent && this.parent.absoluteBounds?this.parent.absoluteBounds:this.absoluteBounds;		
+		let size = this.testSize();
+		let location = this.location;
+		let x = location.left + bounds.left;
+		let y = location.top + bounds.top;
+		//通过文字对齐方式计算起始X位置
+		switch(this.style.textAlign) {
+			case 'right': {
+				x += location.width;
+				break;
+			}
+			case 'center': {
+				x += location.width / 2;
+				break;
+			}
+		}
+		//通过垂直对齐方式计算起始Y值
+		switch(this.style.textBaseline) {
+			case 'bottom': {
+				y += location.height;
+				break;
+			}
+			case 'hanging':
+			case 'alphabetic':
+			case 'middle' : {
+				y += location.height/2;
+				break;
+			}
+
+		}
+
+		let txt = this.text;
+		if(typeof txt !== 'undefined') {
+			if(this.style.fill && this.context.fillText) {
+				if(this.style.maxWidth) {
+					this.context.fillText(txt,x,y,this.style.maxWidth);
+				}
+				else {
+					this.context.fillText(txt,x,y);
+				}
+			}
+			else if(this.context.strokeText) {
+				if(this.style.maxWidth) {
+					this.context.strokeText(txt,x,y,this.style.maxWidth);
+				}
+				else {
+					this.context.strokeText(txt,x,y);
+				}
+			}
+		}
+		//如果有指定边框，则画出边框
+		if(this.style.border) {
+			//如果指定了边框样式
+			if(this.style.border.style) {
+				this.context.save();
+				this.setStyle(this.style.border.style);
+			}
+			this.context.moveTo(this.points[0].x + bounds.left,this.points[0].y + bounds.top);
+			if(this.style.border.top) {
+				this.context.lineTo(this.points[1].x + bounds.left,this.points[1].y + bounds.top);
+			}
+			
+			if(this.style.border.right) {
+				this.context.moveTo(this.points[1].x + bounds.left,this.points[1].y + bounds.top);
+				this.context.lineTo(this.points[2].x + bounds.left,this.points[2].y + bounds.top);
+			}
+			
+			if(this.style.border.bottom) {
+				this.context.moveTo(this.points[2].x + bounds.left,this.points[2].y + bounds.top);
+				this.context.lineTo(this.points[3].x + bounds.left,this.points[3].y + bounds.top);
+			}
+			
+			if(this.style.border.left) {
+				this.context.moveTo(this.points[3].x + bounds.left,this.points[3].y + bounds.top);	
+				this.context.lineTo(this.points[0].x + bounds.left,this.points[0].y + bounds.top);
+			}
+			//如果指定了边框颜色
+			if(this.style.border.style) {
+				this.context.restore();
+			}	
+		}		
+	}
+}
+
+/**
+ * 可拉伸的缩放控件
+ * 继承jmRect
+ * 如果此控件加入到了当前控制的对象的子控件中，请在参数中加入movable:false，否则导致当前控件会偏离被控制的控件。
+ *
+ * @class jmResize
+ * @extends jmRect
+ */
+class jmResize extends jmRect {	
+
+	constructor(params, t='jmResize') {
+		params = params || {};
+		super(params, t);
+		//是否可拉伸
+		this.resizable = params.resizable === false?false:true;	
+		this.movable = params.movable;
+		this.rectSize = params.rectSize || 8;
+		this.style.close = this.style.close || true;
+
+		this.init(params);
+	}
+	/**
+	 * 拉动的小方块大小
+	 * @property rectSize
+	 * @type {number}
+	 */
+	get rectSize() {
+		return this.__pro('rectSize');
+	}
+	set rectSize(v) {
+		return this.__pro('rectSize', v);
+	}
+
+	/**
+	 * 是否可以拉大缩小
+	 * @property resizable
+	 * @type {boolean}
+	 */
+	get resizable() {
+		return this.__pro('resizable');
+	}
+	set resizable(v) {
+		return this.__pro('resizable', v);
+	}
+
+	/**
+	 * 初始化控件的8个拉伸方框
+	 *
+	 * @method init
+	 * @private
+	 */
+	init(params) {
+		//如果不可改变大小。则直接退出
+		if(this.resizable === false) return;
+		this.resizeRects = [];	
+		let rs = this.rectSize;
+		let rectStyle = this.style.rectStyle || {
+				stroke: 'red',
+				fill: 'transparent',
+				lineWidth: 2,
+				close: true,
+				zIndex:100
+			};
+		rectStyle.close = true;
+		rectStyle.fill = rectStyle.fill || 'transparent';
+		
+		for(let i = 0;i<8;i++) {
+			//生成改变大小方块
+			let r = (this.graph || params.graph).createShape(jmRect,{
+					position:{x:0,y:0},
+					width: rs,
+					height: rs,
+					style: rectStyle,
+					interactive: true
+				});
+			r.index = i;
+			r.visible = true;
+			this.resizeRects.push(r);	
+			this.children.add(r);
+			r.canMove(true,this.graph);	
+		}	
+		this.reset(0,0,0,0);//初始化位置
+		//绑定其事件
+		this.bindRectEvents();
+	}
+
+	/**
+	 * 绑定周边拉伸的小方块事件
+	 *
+	 * @method bindRectEvents
+	 * @private
+	 */
+	bindRectEvents() {		
+		for(let i =0; i<this.resizeRects.length; i++) {
+			let r = this.resizeRects[i];		
+			//小方块移动监听
+			r.on('move',function(arg) {				
+				let px=0, py=0, dx=0, dy=0;
+				if(this.index == 0) {				
+					dx = - arg.offsetX;
+					px = arg.offsetX;						
+				}
+				else if(this.index == 1) {
+					dx = - arg.offsetX;
+					px = arg.offsetX;				
+					dy = - arg.offsetY;
+					py = arg.offsetY;						
+				}
+				else if(this.index == 2) {				
+					dy = -arg.offsetY;				
+					py = arg.offsetY;						
+				}
+				else if(this.index == 3) {
+					dx = arg.offsetX;				
+					dy = -arg.offsetY;
+					py = arg.offsetY;
+				}
+				else if(this.index == 4) {
+					dx = arg.offsetX;							
+				}
+				else if(this.index == 5) {
+					dx = arg.offsetX;
+					dy = arg.offsetY;					
+				}
+				else if(this.index == 6) {
+					dy = arg.offsetY;					
+				}
+				else if(this.index == 7) {
+					dx = - arg.offsetX;
+					dx = - arg.offsetX;
+					px = arg.offsetX;
+					dy = arg.offsetY;				
+				}
+				//重新定位
+				this.parent.reset(px,py,dx,dy);
+				this.needUpdate = true;
+			});
+			//鼠标指针
+			r.bind('mousemove',function() {	
+				let rectCursors = ['w-resize','nw-resize','n-resize','ne-resize','e-resize','se-resize','s-resize','sw-resize'];		
+				this.cursor = rectCursors[this.index];
+			});
+			r.bind('mouseleave',function() {
+				this.cursor = 'default';
+			});
+		}
+		/*
+		// 如果是双指开始滑动
+		let touchPositions;
+		this.on('touchstart', (evt) => {
+			if(evt.touches && evt.touches.legnth === 2) {
+				touchPositions = evt.touches;
+			}
+		});
+
+		// 如果是双指滑动
+		//计算二手指滑动距离，然后再通过在父容器中的占比得到缩放比例
+		this.on('touchmove', (evt) => {
+			if(touchPositions && evt.touches && evt.touches.length == 2) {
+				//上次滑动二指的距离
+				const preOffX = touchPositions[0].x - touchPositions[1].x;
+				const preOffY = touchPositions[0].y - touchPositions[1].y;
+				const preDis = Math.sqrt(preOffX * preOffX + preOffY * preOffY);
+				//当次滑动二指的距离
+				const curOffX = evt.touches[0].x - evt.touches[1].x;
+				const curOffY = evt.touches[0].y - evt.touches[1].y;
+				const curDis = Math.sqrt(curOffX * curOffX + curOffY * curOffY);
+	
+				//const disx = Math.abs(preOffX - curOffX);//x轴滑行的距离
+				//const disy = Math.abs(preOffY - curOffY);//y轴滑行的距离
+				
+				const offset = curDis - preDis;
+
+				this.reset(0, 0, offset, offset);
+			}
+		});	
+		// 结束滑动
+		this.on('touchend touchcancel', (evt) => {
+			touchPositions = null;
+		});*/
+	}
+
+	/**
+	 * 按移动偏移量重置当前对象，并触发大小和位置改变事件
+	 * @method reset
+	 * @param {number} px 位置X轴偏移
+	 * @param {number} py 位置y轴偏移
+	 * @param {number} dx 大小x轴偏移
+	 * @param {number} dy 大小y轴偏移
+	 */
+	reset(px, py, dx, dy) {
+		let minWidth = typeof this.style.minWidth=='undefined'?5:this.style.minWidth;
+		let minHeight = typeof this.style.minHeight=='undefined'?5:this.style.minHeight;
+
+		let location = this.getLocation();
+		if(dx != 0 || dy != 0) {
+			let w = location.width + dx;
+			let h = location.height + dy;
+			if(w >= minWidth || h >= minHeight) {
+				if(w >= minWidth) {
+					this.width = w;
+				}
+				else {
+					px = 0;
+					dx = 0;
+				}
+				if(h >= minHeight) {
+					this.height = h;
+				}
+				else {
+					py = 0;
+					dy = 0;
+				}
+				//如果当前控件能移动才能改变其位置
+				if(this.movable !== false && (px||py)) {
+					let p = this.position;
+					p.x = location.left + px;
+					p.y = location.top + py;
+					this.position = p;
+				}			
+				//触发大小改变事件
+				this.emit('resize',px,py,dx,dy);
+			}	
+		}
+
+		for(let i in this.resizeRects) {
+			let r = this.resizeRects[i];
+			switch(r.index) {
+				case 0: {
+					r.position.x = -r.width / 2;
+					r.position.y = (location.height - r.height) / 2;
+					break;
+				}	
+				case 1: {
+					r.position.x = -r.width / 2;
+					r.position.y = -r.height / 2;
+					break;
+				}		
+				case 2: {
+					r.position.x = (location.width - r.width) / 2;
+					r.position.y = -r.height / 2;
+					break;
+				}
+				case 3: {
+					r.position.x = location.width - r.width / 2;
+					r.position.y = -r.height / 2;
+					break;
+				}
+				case 4: {
+					r.position.x = location.width - r.width / 2;
+					r.position.y = (location.height - r.height) / 2;
+					break;
+				}
+				case 5: {
+					r.position.x = location.width - r.width / 2;
+					r.position.y = location.height - r.height /2;
+					break;
+				}
+				case 6: {
+					r.position.x = (location.width - r.height) / 2;
+					r.position.y = location.height - r.height / 2;
+					break;
+				}
+				case 7: {
+					r.position.x = -r.width / 2;
+					r.position.y = location.height - r.height / 2;
+					break;
+				}
+			}
+		}
+	}
+}
+
+/**
+ * 事件模型
+ *
+ * @class jmEvents
+ * @for jmGraph
+ */
+class jmEvents {
+
+	constructor(container, target) {
+		this.container = container;
+		this.target = target || container;
+		this.mouseHandler = new jmMouseEvent(this, container, target);
+		this.keyHandler = new jmKeyEvent(this, container, target);
+	}
+
+	touchStart(evt) {
+		evt = evt || window.event;
+		this.container.raiseEvent('touchstart',evt);
+		let t = evt.target || evt.srcElement;
+		if(t == this.target) {
+			//if(evt.preventDefault) evt.preventDefault();
+			return false;
+		}
+	};
+
+	touchMove(evt) {
+		evt = evt || window.event;
+		this.container.raiseEvent('touchmove',evt);
+		let t = evt.target || evt.srcElement;
+		if(t == this.target) {
+			//if(evt.preventDefault) evt.preventDefault();
+			return false;
+		}
+	};
+
+	touchEnd(evt) {
+		evt = evt || window.event;
+		
+		this.container.raiseEvent('touchend',evt);
+		let t = evt.target || evt.srcElement;
+		if(t == this.target) {
+			//if(evt.preventDefault) evt.preventDefault();
+			return false;
+		}
+	};
+
+	touchCancel(evt) {
+		evt = evt || window.event;
+		
+		this.container.raiseEvent('touchcancel',evt);
+		let t = evt.target || evt.srcElement;
+		if(t == this.target) {
+			//if(evt.preventDefault) evt.preventDefault();
+			return false;
+		}
+	};
+
+	// 销毁
+	destory() {
+		this.mouseHandler.destory();
+		this.keyHandler.destory();
+	}
+}
+
+/**
+ * 鼠标事件处理对象，container 为事件主体，target为响应事件对象
+ */
+class jmMouseEvent {
+	constructor(instance, container, target) {
+		this.instance = instance;
+		this.container = container;
+		this.target = target || container;
+
+		this.eventEvents = {};// 所有绑定的事件
+
+		this.init(instance, container, target);
+	}
+	
+	init(instance, container, target) {
+		let canvas = this.target;	
+		let doc = typeof typeof document != 'undefined'?document:null;
+		//禁用鼠标右健系统菜单
+		//canvas.oncontextmenu = function() {
+		//	return false;
+		//};
+
+		this.eventEvents['mousedown'] = jmUtils.bindEvent(this.target,'mousedown',function(evt) {
+			evt = evt || window.event;
+			let r = container.raiseEvent('mousedown',evt);
+			//if(r === false) {
+				//if(evt.preventDefault) evt.preventDefault();
+				//return false;
+			//}				
+		});
+		
+		this.eventEvents['mousedown'] = jmUtils.bindEvent(this.target,'mousemove',function(evt) {	
+			evt = evt || window.event;		
+			let target = evt.target || evt.srcElement;
+			if(target == canvas) {
+				let r = container.raiseEvent('mousemove',evt);
+				//if(r === false) {
+					if(evt.preventDefault) evt.preventDefault();
+					return false;
+				//}		
+			}				
+		});
+		
+		this.eventEvents['mousedown'] = jmUtils.bindEvent(this.target,'mouseover',function(evt) {
+			evt = evt || window.event;
+			container.raiseEvent('mouseover',evt);
+		});
+		this.eventEvents['mouseleave'] = jmUtils.bindEvent(this.target,'mouseleave',function(evt) {
+			evt = evt || window.event;
+			container.raiseEvent('mouseleave',evt);
+		});			
+		this.eventEvents['mouseout'] = jmUtils.bindEvent(this.target,'mouseout',function(evt) {
+			evt = evt || window.event;
+			container.raiseEvent('mouseout',evt);
+		});
+		doc && (this.eventEvents['mouseup'] = jmUtils.bindEvent(doc,'mouseup',function(evt) {
+			evt = evt || window.event;
+			//let target = evt.target || evt.srcElement;
+			//if(target == canvas) {						
+				let r = container.raiseEvent('mouseup',evt);
+				if(r === false) {
+					if(evt.preventDefault) evt.preventDefault();
+					return false;
+				}					
+			//}
+		}));
+		
+		this.eventEvents['dblclick'] = jmUtils.bindEvent(this.target,'dblclick',function(evt) {
+			evt = evt || window.event;
+			container.raiseEvent('dblclick',evt);
+		});
+		this.eventEvents['click'] = jmUtils.bindEvent(this.target,'click',function(evt) {
+			evt = evt || window.event;
+			container.raiseEvent('click',evt);
+		});
+
+		doc && (this.eventEvents['resize'] = jmUtils.bindEvent(doc,'resize',function(evt) {
+			evt = evt || window.event;
+			return container.raiseEvent('resize',evt);
+		}));
+
+		// passive: false 为了让浏览器不告警并且preventDefault有效
+		// 另一种处理：touch-action: none; 这样任何触摸事件都不会产生默认行为，但是 touch 事件照样触发。
+		this.eventEvents['touchstart'] = jmUtils.bindEvent(this.target,'touchstart', function(evt) {
+			return instance.touchStart(evt);
+		},{ passive: false });
+
+		this.eventEvents['touchmove'] = jmUtils.bindEvent(this.target,'touchmove', function(evt) {
+			return instance.touchMove(evt);
+		},{ passive: false });
+
+		doc && (this.eventEvents['touchend'] = jmUtils.bindEvent(doc,'touchend', function(evt) {
+			return instance.touchEnd(evt);
+		},{ passive: false }));
+
+		doc && (this.eventEvents['touchcancel'] = jmUtils.bindEvent(doc,'touchcancel', function(evt) {
+			return instance.touchCancel(evt);
+		},{ passive: false }));
+	}
+
+	// 销毁所有事件
+	destory() {
+		for(let name in this.eventEvents) {
+			const event = this.eventEvents[name];
+			if(!event || !event.fun) continue;
+			jmUtils.removeEvent(event.target, name, event.fun);
+		}
+	}
+}
+
+/**
+ * 健盘事件处理对象，container 为事件主体，target为响应事件对象
+ */
+class jmKeyEvent {
+	constructor(instance, container,target) {
+		this.instance = instance;
+		this.container = container;
+		this.target = target || container;
+
+		this.eventEvents = {};// 所有绑定的事件
+
+		this.init(container, target);
+	}
+
+	/**
+	 * 初始化健盘事件
+	 */
+	init(container, target) {
+		let doc = typeof typeof document != 'undefined'?document:null;
+		/**
+		 * 检查是否触发健盘事件至画布
+		 * 如果触发对象为输入框等对象则不响应事件
+		 *  
+		 */
+		let checkKeyEvent = (evt) => {
+			let target = evt.srcElement || evt.target;
+			if(target && (target.tagName == 'INPUT' 
+				|| target.tagName == 'TEXTAREA'
+				|| target.tagName == 'ANCHOR' 
+				|| target.tagName == 'FORM' 
+				|| target.tagName == 'FILE'
+				|| target.tagName == 'IMG'
+				|| target.tagName == 'HIDDEN'
+				|| target.tagName == 'RADIO'
+				|| target.tagName == 'TEXT'	)) {
+				return false;
+			}
+			return true;
+		};
+
+		doc && (this.eventEvents['touchcancel'] = jmUtils.bindEvent(doc,'keypress',function(evt) {
+			evt = evt || window.event;
+			if(!checkKeyEvent(evt)) return;//如果事件为其它输入框，则不响应
+			let r = container.raiseEvent('keypress',evt);
+			if(r === false && evt.preventDefault) 
+				evt.preventDefault();
+			return r;
+		}));
+		doc && (this.eventEvents['touchcancel'] = jmUtils.bindEvent(doc,'keydown',function(evt) {
+			evt = evt || window.event;
+			if(!checkKeyEvent(evt)) return;//如果事件为其它输入框，则不响应
+			let r = container.raiseEvent('keydown',evt);
+			if(r === false && evt.preventDefault) 
+				evt.preventDefault();
+			return r;
+		}));
+		doc && (this.eventEvents['touchcancel'] = jmUtils.bindEvent(doc,'keyup',function(evt) {
+			evt = evt || window.event;
+			if(!checkKeyEvent(evt)) return;//如果事件为其它输入框，则不响应
+			let r = container.raiseEvent('keyup',evt);
+			if(r === false && evt.preventDefault) 
+				evt.preventDefault();
+			return r;
+		}));			
+	}
+
+	// 销毁所有事件
+	destory() {
+		for(let name in this.eventEvents) {
+			const event = this.eventEvents[name];
+			if(!event || !event.fun) continue;
+			jmUtils.removeEvent(event.target, name, event.fun);
+		}
+	}
+}
+
+/**
  * jmGraph画图类库
  * 对canvas画图api进行二次封装，使其更易调用，省去很多重复的工作。
  *
@@ -3492,407 +5077,46 @@ class jmGraph extends jmControl {
 	}
 }
 
-/**
- * 圆弧图型 继承自jmPath
- *
- * @class jmArc
- * @extends jmPath
- * @param {object} params center=当前圆弧中心,radius=圆弧半径,start=圆弧起始角度,end=圆弧结束角度,anticlockwise=  false  顺时针，true 逆时针
- */
-class jmArc extends jmPath {
+const shapes = {
+    "arc": jmArc,
+    "arraw": jmArraw,
+    "bezier": jmBezier,
+    "circle": jmCircle,
+    "harc": jmHArc,
+    "line": jmLine,
+    "prismatic": jmPrismatic,
+    "rect": jmRect,
+    "arrawline": jmArrawLine,
+    "image": jmImage,
+    "img": jmImage,
+    "label": jmLabel,
+    "resize": jmResize
+};
 
-	constructor(params, t='jmArc') {
-		if(!params) params = {};
-		super(params, t);
+class jmGraph$1 extends jmGraph {
+    constructor(canvas, option, callback) {
 
-		this.center = params.center || {x:0,y:0};
-		this.radius = params.radius || 0;
+        const targetType = new.target;
+        //不是用new实例化的话，返回一个promise
+		if(!targetType || !(targetType.prototype instanceof jmGraph)) {
+			return new Promise(function(resolve, reject){				
+				var g = new jmGraph$1(canvas, option, callback);
+				if(resolve) resolve(g);				
+			});
+        }
 
-		this.startAngle = params.start || params.startAngle || 0;
-		this.endAngle = params.end || params.endAngle || Math.PI * 2;		
+        if(typeof option == 'function') {
+			callback = option;
+			option = {};
+        }        
+        
 
-		this.anticlockwise = params.anticlockwise  || 0;
-
-		this.isFan = !!params.isFan;
-	}	
-
-	/**
-	 * 中心点
-	 * point格式：{x:0,y:0,m:true}
-	 * @property center
-	 * @type {point}
-	 */
-	get center() {
-		return this.__pro('center');
-	}
-	set center(v) {
-		this.needUpdate = true;
-		return this.__pro('center', v);
-	}
-
-	/**
-	 * 半径
-	 * @property radius
-	 * @type {number}
-	 */
-	get radius() {
-		return this.__pro('radius');
-	}
-	set radius(v) {
-		this.needUpdate = true;
-		return this.__pro('radius', v);
-	}
-
-	/**
-	 * 扇形起始角度
-	 * @property startAngle
-	 * @type {number}
-	 */
-	get startAngle() {
-		return this.__pro('startAngle');
-	}
-	set startAngle(v) {
-		this.needUpdate = true;
-		return this.__pro('startAngle', v);
-	}
-
-	/**
-	 * 扇形结束角度
-	 * @property endAngle
-	 * @type {number}
-	 */
-	get endAngle() {
-		return this.__pro('endAngle');
-	}
-	set endAngle(v) {
-		this.needUpdate = true;
-		return this.__pro('endAngle', v);
-	}
-
-	/**
-	 * 可选。规定应该逆时针还是顺时针绘图
-	 * false  顺时针，true 逆时针
-	 * @property anticlockwise
-	 * @type {boolean}
-	 */
-	get anticlockwise() {
-		return this.__pro('anticlockwise');
-	}
-	set anticlockwise(v) {
-		this.needUpdate = true;
-		return this.__pro('anticlockwise', v);
-	}
-
-
-	/**
-	 * 初始化图形点
-	 * 
-	 * @method initPoint
-	 * @private
-	 * @for jmArc
-	 */
-	initPoints() {
-		let location = this.getLocation();//获取位置参数
-		let mw = 0;
-		let mh = 0;
-		let cx = location.center.x ;
-		let cy = location.center.y ;
-		//如果设定了半径。则以半径为主	
-		if(location.radius) {
-			mw = mh = location.radius;
-		}
-		else {
-			mw = location.width / 2;
-			mh = location.height / 2;
-		}	
-		
-		let start = this.startAngle;
-		let end = this.endAngle;
-
-		if((mw == 0 && mh == 0) || start == end) return;
-
-		let anticlockwise = this.anticlockwise;
-		this.points = [];
-		let step = 1 / Math.max(mw, mh);
-
-		//如果是逆时针绘制，则角度为负数，并且结束角为2Math.PI-end
-		if(anticlockwise) {
-			let p2 =  Math.PI * 2;
-			start = p2 - start;
-			end = p2 - end;
-		}
-		if(start > end) step = -step;
-
-		if(this.isFan) this.points.push(location.center);// 如果是扇形，则从中心开始画
-		
-		//椭圆方程x=a*cos(r) ,y=b*sin(r)	
-		for(let r=start;;r += step) {	
-			if(step > 0 && r > end) r = end;
-			else if(step < 0 && r < end) r = end;
-
-			let p = {
-				x : Math.cos(r) * mw + cx,
-				y : Math.sin(r) * mh + cy
-			};
-			this.points.push(p);
-
-			if(r == end) break;
-		}
-		return this.points;
-	}
-}
-
-/**
- * 画一条直线
- *
- * @class jmLine
- * @extends jmPath
- * @param {object} params 直线参数:start=起始点,end=结束点,lineType=线类型(solid=实线，dotted=虚线),dashLength=虚线间隔(=4)
- */
-class jmLine extends jmPath {	
-	
-	constructor(params, t='jmLine') {
-		super(params, t);
-
-		this.start = params.start || {x:0,y:0};
-		this.end = params.end || {x:0,y:0};
-		this.style.lineType = this.style.lineType || 'solid';
-		this.style.dashLength = this.style.dashLength || 4;
-	}	
-
-	/**
-	 * 控制起始点
-	 * 
-	 * @property start
-	 * @for jmLine
-	 * @type {point}
-	 */
-	get start() {
-		return this.__pro('start');
-	}
-	set start(v) {
-		this.needUpdate = true;
-		return this.__pro('start', v);
-	}
-
-	/**
-	 * 控制结束点
-	 * 
-	 * @property end
-	 * @for jmLine
-	 * @type {point}
-	 */
-	get end() {
-		return this.__pro('end');
-	}
-	set end(v) {
-		this.needUpdate = true;
-		return this.__pro('end', v);
-	}
-
-	/**
-	 * 初始化图形点,如呆为虚线则根据跳跃间隔描点
-	 * @method initPoints
-	 * @private
-	 */
-	initPoints() {	
-		let start = this.start;
-		let end = this.end;
-		this.points = [];	
-		this.points.push(start);
-
-		if(this.style.lineType === 'dotted') {			
-			let dx = end.x - start.x;
-			let dy = end.y - start.y;
-			let lineLen = Math.sqrt(dx * dx + dy * dy);
-			dx = dx / lineLen;
-			dy = dy / lineLen;
-			let dottedstart = false;
-
-			let dashLen = this.style.dashLength || 5;
-			let dottedsp = dashLen / 2;
-			for(let l=dashLen; l<=lineLen;) {
-				if(dottedstart == false) {
-					this.points.push({x: start.x + dx * l, y: start.y + dy * l});
-					l += dottedsp;
-				}
-				else {				
-					this.points.push({x: start.x + dx * l, y: start.y+ dy * l, m: true});
-					l += dashLen;
-				}
-				dottedstart = !dottedstart;				
-			}
-		}
-		this.points.push(end);
-		return this.points;
-	}
-}
-
-/**
- * 画矩形
- *
- * @class jmRect
- * @extends jmPath
- * @param {object} params 参数 position=矩形左上角顶点坐标,width=宽，height=高,radius=边角弧度
- */ 
-class jmRect extends jmPath {		
-
-	constructor(params, t='jmRect') {
-		params = params||{};
-		super(params, t);
-
-		this.style.close = true;
-		this.radius = params.radius || this.style.radius || 0;
-	}
-	/**
-	 * 圆角半径
-	 * @property radius
-	 * @type {number}
-	 */
-	get radius() {
-		return this.__pro('radius');
-	}
-	set radius(v) {
-		this.needUpdate = true;
-		return this.__pro('radius', v);
-	}	
-
-	/**
-	 * 当前位置左上角
-	 * @property position
-	 * @type {point}
-	 */
-	get position() {
-		return this.__pro('position');
-	}
-	set position(v) {
-		this.needUpdate = true;
-		return this.__pro('position', v);
-	}
-
-	/**
-	 * 获取当前控件的边界
-	 *
-	 * @method getBounds
-	 * @return {bound} 当前控件边界
-	 */
-	getBounds() {
-		let rect = {};
-		this.initPoints();
-		let p = this.getLocation();
-		rect.left = p.left; 
-		rect.top = p.top; 
-		
-		rect.right = p.left + p.width; 
-		rect.bottom = p.top + p.height; 
-		
-		rect.width = rect.right - rect.left;
-		rect.height = rect.bottom - rect.top;
-		return rect;
-	}
-	
-	/**
-	 * 重写检查坐标是否在区域内
-	 *
-	 * @method checkPoint
-	 * @param {point} p 待检查的坐标
-	 * @return {boolean} 如果在则返回true,否则返回false
-	 */
-	/*checkPoint(p) {	
-		//生成当前坐标对应的父级元素的相对位置
-		let abounds = this.bounds || this.getBounds();
-
-		if(p.x > abounds.right || p.x < abounds.left) {
-			return false;
-		}
-		if(p.y > abounds.bottom || p.y < abounds.top) {
-			return false;
-		}
-		
-		return true;
-	}*/
-
-	/**
-	 * 初始化图形点
-	 * 如果有边角弧度则类型圆绝计算其描点
-	 * 
-	 * @method initPoints
-	 * @private
-	 */
-	initPoints() {
-		let location = this.getLocation();	
-		let p1 = {x:location.left,y:location.top};
-		let p2 = {x:location.left + location.width,y:location.top};
-		let p3 = {x:location.left + location.width,y:location.top + location.height};
-		let p4 = {x:location.left,y:location.top + location.height};
-
-		//如果指定为虚线 , 则初始化一个直线组件，来构建虚线点集合
-		if(this.style.lineType === 'dotted' && !this.dottedLine) {
-			this.dottedLine = this.graph.createShape(jmLine, {style: this.style});
-		}
-		
-		//如果有边界弧度则借助圆弧对象计算描点
-		if(location.radius && location.radius < location.width/2 && location.radius < location.height/2) {
-			let q = Math.PI / 2;
-			let arc = this.graph.createShape(jmArc,{radius:location.radius,anticlockwise:false});
-			arc.center = {x:location.left + location.radius,y:location.top+location.radius};
-			arc.startAngle = Math.PI;
-			arc.endAngle = Math.PI + q;
-			let ps1 = arc.initPoints();
-			
-			arc = this.graph.createShape(jmArc,{radius:location.radius,anticlockwise:false});
-			arc.center = {x:p2.x - location.radius,y:p2.y + location.radius};
-			arc.startAngle = Math.PI + q;
-			arc.endAngle = Math.PI * 2;
-			let ps2 = arc.initPoints();
-			
-			arc = this.graph.createShape(jmArc,{radius:location.radius,anticlockwise:false});
-			arc.center = {x:p3.x - location.radius,y:p3.y - location.radius};
-			arc.startAngle = 0;
-			arc.endAngle = q;
-			let ps3 = arc.initPoints();
-			
-			arc = this.graph.createShape(jmArc,{radius:location.radius,anticlockwise:false});
-			arc.center = {x:p4.x + location.radius,y:p4.y - location.radius};
-			arc.startAngle = q;
-			arc.endAngle = Math.PI;
-			let ps4 = arc.initPoints();
-			this.points = ps1.concat(ps2,ps3,ps4);
-		}
-		else {
-			this.points = [];
-			this.points.push(p1);
-			//如果是虚线
-			if(this.dottedLine) {
-				this.dottedLine.start = p1;
-				this.dottedLine.end = p2;
-				this.points = this.points.concat(this.dottedLine.initPoints());
-			}
-			this.points.push(p2);
-			//如果是虚线
-			if(this.dottedLine) {
-				this.dottedLine.start = p2;
-				this.dottedLine.end = p3;
-				this.points = this.points.concat(this.dottedLine.initPoints());
-			}
-			this.points.push(p3);
-			//如果是虚线
-			if(this.dottedLine) {
-				this.dottedLine.start = p3;
-				this.dottedLine.end = p4;
-				this.points = this.points.concat(this.dottedLine.initPoints());
-			}
-			this.points.push(p4);
-			//如果是虚线
-			if(this.dottedLine) {
-				this.dottedLine.start = p4;
-				this.dottedLine.end = p1;
-				this.points = this.points.concat(this.dottedLine.initPoints());
-			}
-		}		
-		
-		return this.points;
-	}
+        // 合并shapes
+        option = Object.assign({}, option);
+        option.shapes = Object.assign(shapes, option.shapes||{});
+        
+        super(canvas, option, callback);
+    }
 }
 
 /**
@@ -4147,420 +5371,6 @@ var defaultStyle = {
 };
 
 /**
- * 画箭头,继承自jmPath
- *
- * @class jmArraw
- * @extends jmPath
- * @param {object} 生成箭头所需的参数
- */
-class jmArraw extends jmPath {	
-
-	constructor(params, t='jmArraw') {
-		super(params, t);
-		this.style.lineJoin = 'miter';
-		this.style.lineCap = 'square';
-
-		this.angle = params.angle  || 0;
-		this.start = params.start  || {x:0,y:0};
-		this.end = params.end  ||  {x:0,y:0};
-		this.offsetX = params.offsetX || 5;
-		this.offsetY = params.offsetY || 8;
-	}
-
-	/**
-	 * 控制起始点
-	 *
-	 * @property start
-	 * @for jmArraw
-	 * @type {point}
-	 */
-	get start() {
-		return this.__pro('start');
-	}
-	set start(v) {
-		this.needUpdate = true;
-		return this.__pro('start', v);
-	}
-
-	/**
-	 * 控制结束点
-	 *
-	 * @property end
-	 * @for jmArraw
-	 * @type {point} 结束点
-	 */
-	get end() {
-		return this.__pro('end');
-	}
-	set end(v) {
-		this.needUpdate = true;
-		return this.__pro('end', v);
-	}
-
-	/**
-	 * 箭头角度
-	 *
-	 * @property angle
-	 * @for jmArraw
-	 * @type {number} 箭头角度
-	 */
-	get angle() {
-		return this.__pro('angle');
-	}
-	set angle(v) {
-		this.needUpdate = true;
-		return this.__pro('angle', v);
-	}
-
-	/**
-	 * 箭头X偏移量
-	 *
-	 * @property offsetX
-	 * @for jmArraw
-	 * @type {number}
-	 */
-	get offsetX() {
-		return this.__pro('offsetX');
-	}
-	set offsetX(v) {
-		this.needUpdate = true;
-		return this.__pro('offsetX', v);
-	}
-
-	/**
-	 * 箭头Y偏移量
-	 *
-	 * @property offsetY
-	 * @for jmArraw
-	 * @type {number}
-	 */
-	get offsetY() {
-		return this.__pro('offsetY');
-	}
-	set offsetY(v) {
-		this.needUpdate = true;
-		return this.__pro('offsetY', v);
-	}
-
-	/**
-	 * 初始化图形点
-	 * 
-	 * @method initPoint
-	 * @private
-	 * @param {boolean} solid 是否为实心的箭头
-	 * @for jmArraw
-	 */
-	initPoints(solid) {	
-		let rotate = this.angle;
-		let start = this.start;
-		let end = this.end;
-		if(!end) return;
-		//计算箭头指向角度
-		if(!rotate) {
-			rotate = Math.atan2(end.y - start.y,end.x - start.x);
-		}
-		this.points = [];
-		let offx = this.offsetX;
-		let offy = this.offsetY;
-		//箭头相对于线的偏移角度
-		let r = Math.atan2(offx,offy);
-		let r1 = rotate + r;
-		let rsin = Math.sin(r1);
-		let rcos = Math.cos(r1);
-		let sq = Math.sqrt(offx * offx  + offy * offy);
-		let ystep = rsin * sq;
-		let xstep = rcos * sq;
-		
-		let p1 = {
-			x:end.x - xstep,
-			y:end.y - ystep
-		};
-		let r2 = rotate - r;
-		rsin = Math.sin(r2);
-		rcos = Math.cos(r2);
-		ystep = rsin * sq;
-		xstep = rcos * sq;
-		let p2 = {
-			x:end.x - xstep,
-			y:end.y - ystep
-		};
-
-		let s = jmUtils.clone(end);  
-		s.m = true;  
-		this.points.push(s);
-		this.points.push(p1);
-		//如果实心箭头则封闭路线
-		if(solid || this.style.fill) {    	
-			this.points.push(p2);
-			this.points.push(end);
-		}
-		else {
-			this.points.push(s);
-			this.points.push(p2);
-		}		
-		return this.points;
-	}
-
-}
-
-/**
- * 带箭头的直线,继承jmPath
- *
- * @class jmArrawLine
- * @extends jmLine
- * @param {object} params 生成当前直线的参数对象，(style=当前线条样式,start=直线起始点,end=直线终结点)
- */	
-class jmArrawLine extends jmLine {	
-
-	constructor(params, t) {
-
-		params.start = params.start || {x:0,y:0};
-		params.end = params.end || {x:0,y:0};
-
-		super(params, t||'jmArrawLine');
-		this.style.lineJoin = this.style.lineJoin || 'miter';
-		this.arraw = new jmArraw(params);
-	}
-
-	/**
-	 * 初始化直线和箭头描点
-	 *
-	 * @method initPoints
-	 * @private
-	 */
-	initPoints() {	
-		this.points = super.initPoints();
-		if(this.arrawVisible !== false) {
-			this.points = this.points.concat(this.arraw.initPoints());
-		}
-		return this.points;
-	}
-}
-
-/**
- * 显示文字控件
- *
- * @class jmLabel
- * @extends jmControl
- * @param {object} params params参数:style=样式，value=显示的文字
- */
-class jmLabel extends jmControl {
-
-	constructor(params, t) {
-		params = params || {};
-		super(params, t||'jmLabel');
-
-		this.style.font = this.style.font || "15px Arial";
-		this.style.fontFamily = this.style.fontFamily || 'Arial';
-		this.style.fontSize = this.style.fontSize || 15;
-
-		// 显示不同的 textAlign 值
-		//文字水平对齐
-		this.style.textAlign = this.style.textAlign || 'left';
-		//文字垂直对齐
-		this.style.textBaseline = this.style.textBaseline || 'middle';
-		this.text = params.text || '';
-
-		this.center = params.center || null;
-	}
-
-	/**
-	 * 显示的内容
-	 * @property text
-	 * @type {string}
-	 */
-	get text() {
-		return this.__pro('text');
-	}
-	set text(v) {
-		this.needUpdate = true;
-		return this.__pro('text', v);
-	}
-
-	/**
-	 * 中心点
-	 * point格式：{x:0,y:0,m:true}
-	 * @property center
-	 * @type {point}
-	 */
-	get center() {
-		return this.__pro('center');
-	}
-	set center(v) {
-		this.needUpdate = true;
-		return this.__pro('center', v);
-	}	
-
-	/**
-	 * 当前位置左上角
-	 * @property position
-	 * @type {point}
-	 */
-	get position() {
-		return this.__pro('position');
-	}
-	set position(v) {
-		this.needUpdate = true;
-		return this.__pro('position', v);
-	}
-
-	/**
-	 * 在基础的getLocation上，再加上一个特殊的center处理
-	 * 
-	 * @method getLocation
-	 * @returns {Object}
-	 */
-	getLocation() {
-		let location = super.getLocation();
-		let size = this.testSize();	
-		
-		location.width = location.width || size.width;
-		location.height = location.height || size.height;	
-
-		//如果没有指定位置，但指定了中心，则用中心来计算坐标
-		if(!location.left && !location.top && location.center) {
-			location.left = location.center.x - location.width / 2;
-			location.top = location.center.y - location.height / 2;
-		}
-		return location;
-	}
-
-	/**
-	 * 初始化图形点,主要用于限定控件边界。
-	 *
-	 * @method initPoints
-	 * @return {array} 所有边界点数组
-	 * @private
-	 */
-	initPoints() {	
-		this.__size = null;
-		let location = this.getLocation();
-
-		this.points = [{x: location.left, y: location.top}];
-		this.points.push({x: location.left + location.width, y: location.top});
-		this.points.push({x: location.left + location.width, y: location.top + location.height});
-		this.points.push({x: location.left, y: location.top + location.height});
-		return this.points;
-	}
-
-	/**
-	 * 测试获取文本所占大小
-	 *
-	 * @method testSize
-	 * @return {object} 含文本大小的对象
-	 */
-	testSize() {
-		if(this.__size) return this.__size;
-		
-		this.context.save();
-		// 修改字体，用来计算
-		this.setStyle({
-			font: this.style.font || (this.style.fontSize + 'px ' + this.style.fontFamily)
-		});
-		//计算宽度
-		this.__size = this.context.measureText?
-							this.context.measureText(this.text):
-							{width:15};
-		this.context.restore();
-		this.__size.height = this.style.fontSize?this.style.fontSize:15;
-		if(!this.width) this.width = this.__size.width;
-		if(!this.height) this.height = this.__size.height;
-		return this.__size;
-	}
-
-	/**
-	 * 根据位置偏移画字符串
-	 * 
-	 * @method draw
-	 */
-	draw() {	
-		
-		//获取当前控件的绝对位置
-		let bounds = this.parent && this.parent.absoluteBounds?this.parent.absoluteBounds:this.absoluteBounds;		
-		let size = this.testSize();
-		let location = this.location;
-		let x = location.left + bounds.left;
-		let y = location.top + bounds.top;
-		//通过文字对齐方式计算起始X位置
-		switch(this.style.textAlign) {
-			case 'right': {
-				x += location.width;
-				break;
-			}
-			case 'center': {
-				x += location.width / 2;
-				break;
-			}
-		}
-		//通过垂直对齐方式计算起始Y值
-		switch(this.style.textBaseline) {
-			case 'bottom': {
-				y += location.height;
-				break;
-			}
-			case 'hanging':
-			case 'alphabetic':
-			case 'middle' : {
-				y += location.height/2;
-				break;
-			}
-
-		}
-
-		let txt = this.text;
-		if(typeof txt !== 'undefined') {
-			if(this.style.fill && this.context.fillText) {
-				if(this.style.maxWidth) {
-					this.context.fillText(txt,x,y,this.style.maxWidth);
-				}
-				else {
-					this.context.fillText(txt,x,y);
-				}
-			}
-			else if(this.context.strokeText) {
-				if(this.style.maxWidth) {
-					this.context.strokeText(txt,x,y,this.style.maxWidth);
-				}
-				else {
-					this.context.strokeText(txt,x,y);
-				}
-			}
-		}
-		//如果有指定边框，则画出边框
-		if(this.style.border) {
-			//如果指定了边框样式
-			if(this.style.border.style) {
-				this.context.save();
-				this.setStyle(this.style.border.style);
-			}
-			this.context.moveTo(this.points[0].x + bounds.left,this.points[0].y + bounds.top);
-			if(this.style.border.top) {
-				this.context.lineTo(this.points[1].x + bounds.left,this.points[1].y + bounds.top);
-			}
-			
-			if(this.style.border.right) {
-				this.context.moveTo(this.points[1].x + bounds.left,this.points[1].y + bounds.top);
-				this.context.lineTo(this.points[2].x + bounds.left,this.points[2].y + bounds.top);
-			}
-			
-			if(this.style.border.bottom) {
-				this.context.moveTo(this.points[2].x + bounds.left,this.points[2].y + bounds.top);
-				this.context.lineTo(this.points[3].x + bounds.left,this.points[3].y + bounds.top);
-			}
-			
-			if(this.style.border.left) {
-				this.context.moveTo(this.points[3].x + bounds.left,this.points[3].y + bounds.top);	
-				this.context.lineTo(this.points[0].x + bounds.left,this.points[0].y + bounds.top);
-			}
-			//如果指定了边框颜色
-			if(this.style.border.style) {
-				this.context.restore();
-			}	
-		}		
-	}
-}
-
-/**
  * 轴
  *
  * @class jmAxis
@@ -4748,7 +5558,7 @@ class jmAxis extends jmArrawLine {
       if (!text) continue; /// 只有一条数据，就取这条数据就可以了	
 
       const w = (this.data.length === 1 ? 1 : i) * step;
-      const label = this.graph.createShape(jmLabel, {
+      const label = this.graph.createShape('label', {
         style: this.style.xLabel
       });
       label.data = d; // 当前点的数据结构值
@@ -4765,7 +5575,7 @@ class jmAxis extends jmArrawLine {
 
       if (this.style.grid && this.style.grid.y) {
         // 它的坐标是相对于轴的，所以Y轴会用负的区域高度
-        const line = this.graph.createShape(jmLine, {
+        const line = this.graph.createShape('line', {
           start: {
             x: pos.x,
             y: 0
@@ -4846,7 +5656,7 @@ class jmAxis extends jmArrawLine {
       if (p > max || i === count) p = max;
       const h = (p - min) * step; // 当前点的偏移高度
 
-      const label = this.graph.graph.createShape(jmLabel, {
+      const label = this.graph.graph.createShape('label', {
         style: this.style.yLabel
       });
       label.text = format.call(this, p, label); // 格式化label
@@ -4882,7 +5692,7 @@ class jmAxis extends jmArrawLine {
 
         if (this.style.grid && this.style.grid.x) {
           // 它的坐标是相对于轴的，所以Y轴会用负的区域高度
-          const line = this.graph.createShape(jmLine, {
+          const line = this.graph.createShape('line', {
             start: {
               x: 0,
               y: offy
@@ -5183,7 +5993,7 @@ class jmLegend extends jmRect {
 jmLegend.prototype.append = function (series, shape, options = {}) {
   // 如果不显示图例，就不处理
   if (this.visible === false) return;
-  const panel = this.graph.createShape(jmRect, {
+  const panel = this.graph.createShape('rect', {
     style: this.graph.utils.clone(this.style.item),
     position: {
       x: 0,
@@ -5199,7 +6009,7 @@ jmLegend.prototype.append = function (series, shape, options = {}) {
 
   if (name) {
     //生成图例名称
-    const label = this.graph.createShape(jmLabel, {
+    const label = this.graph.createShape('label', {
       style: panel.style.label,
       text: name || ''
     });
@@ -5315,58 +6125,6 @@ jmLegend.prototype.reset = function () {
     }
   }
 };
-
-/**
- * 画规则的圆弧
- *
- * @class jmCircle
- * @extends jmArc
- * @param {object} params 圆的参数:center=圆中心,radius=圆半径,优先取此属性，如果没有则取宽和高,width=圆宽,height=圆高
- */
-class jmCircle extends jmArc {		
-	
-	constructor(params, t='jmCircle') {
-		super(params, t);		
-	}
-	/**
-	 * 初始化图形点
-	 * 
-	 * @method initPoint
-	 * @private
-	 * @for jmCircle
-	 */
-	initPoints() {			
-		let location = this.getLocation();
-		
-		if(!location.radius) {
-			location.radius = Math.min(location.width , location.height) / 2;
-		}
-		this.points = [];
-		this.points.push({x:location.center.x - location.radius,y:location.center.y - location.radius});
-		this.points.push({x:location.center.x + location.radius,y:location.center.y - location.radius});
-		this.points.push({x:location.center.x + location.radius,y:location.center.y + location.radius});
-		this.points.push({x:location.center.x - location.radius,y:location.center.y + location.radius});
-	}
-
-	/**
-	 * 重写基类画图，此处为画一个完整的圆 
-	 *
-	 * @method draw
-	 */
-	draw() {
-		let bounds = this.parent && this.parent.absoluteBounds?this.parent.absoluteBounds:this.absoluteBounds;	
-		let location = this.getLocation();
-		
-		if(!location.radius) {
-			location.radius = Math.min(location.width , location.height) / 2;
-		}
-		let start = this.startAngle;
-		let end = this.endAngle;
-		let anticlockwise = this.anticlockwise;
-		//context.arc(x,y,r,sAngle,eAngle,counterclockwise);
-		this.context.arc(location.center.x + bounds.left,location.center.y + bounds.top, location.radius, start,end,anticlockwise);
-	}
-}
 
 var utils = {
   /**
@@ -5669,7 +6427,7 @@ class jmSeries extends jmPath {
     const style = this.graph.utils.clone(this.style);
     style.fill = style.color; //delete style.stroke;
 
-    const shape = this.graph.createShape(jmRect, {
+    const shape = this.graph.createShape('rect', {
       style
     });
     this.graph.legend.append(this, shape);
@@ -5721,7 +6479,7 @@ class jmSeries extends jmPath {
   createKeyPoint(point) {
     for (const opt of this.keyPoints) {
       if (opt.xValue !== point.xValue) return;
-      const pointShape = this.graph.createShape(jmCircle, {
+      const pointShape = this.graph.createShape('circle', {
         style: Object.assign({
           stroke: this.style.stroke,
           fill: this.style.stroke
@@ -5739,7 +6497,7 @@ class jmSeries extends jmPath {
   createLabel(point) {
     for (const opt of this.labels) {
       if (opt.xValue !== point.xValue || !opt.text) return;
-      const label = this.graph.createShape(jmLabel, {
+      const label = this.graph.createShape('label', {
         style: Object.assign({
           stroke: this.style.stroke,
           fill: this.style.stroke,
@@ -6039,114 +6797,6 @@ class jmStackBarSeries extends jmBarSeries {
 }
 
 /**
- * 画空心圆弧,继承自jmPath
- *
- * @class jmHArc
- * @extends jmArc
- * @param {object} params 空心圆参数:minRadius=中心小圆半径,maxRadius=大圆半径,start=起始角度,end=结束角度,anticlockwise=false  顺时针，true 逆时针
- */
-
-class jmHArc extends jmArc {
-		
-	constructor(params, t='jmHArc') {
-		super(params, t);
-
-		this.minRadius = params.minRadius || style.minRadius || 0;
-		this.maxRadius = params.maxRadius || style.maxRadius || 0;
-	}
-
-	/**
-	 * 设定或获取内空心圆半径
-	 * 
-	 * @property minRadius
-	 * @for jmHArc
-	 * @type {number} 
-	 */
-	get minRadius() {
-		return this.__pro('minRadius');
-	}
-	set minRadius(v) {
-		this.needUpdate = true;
-		return this.__pro('minRadius', v);
-	}
-
-	/**
-	 * 设定或获取外空心圆半径
-	 * 
-	 * @property maxRadius
-	 * @for jmHArc
-	 * @type {number} 
-	 */
-	get maxRadius() {
-		return this.__pro('maxRadius');
-	}
-	set maxRadius(v) {
-		this.needUpdate = true;
-		return this.__pro('maxRadius', v);
-	}
-
-	/**
-	 * 初始化图形点
-	 *
-	 * @method initPoints
-	 * @private
-	 */
-	initPoints() {	
-		let location = this.getLocation();	
-		//如果设定了半径。则以半径为主
-		let minr = this.minRadius;
-		let maxr = this.maxRadius;
-		
-		let start = this.startAngle;
-		let end = this.endAngle;
-		let anticlockwise = this.anticlockwise;
-
-		//如果是逆时针绘制，则角度为负数，并且结束角为2Math.PI-end
-		if(anticlockwise) {
-			let p2 =  Math.PI*2;
-			start = p2 - start;
-			end = p2 - end;
-		}
-
-		let step = 0.1;
-		if(start > end) step = -step;
-
-		let minps = [];
-		let maxps = [];
-		//椭圆方程x=a*cos(r) ,y=b*sin(r)
-		for(let r=start;;r += step) {
-			if(step > 0 && r > end) {
-				r = end;
-			}
-			else if(step < 0 && r < end) {
-				r = end;
-			}
-
-			let cos = Math.cos(r);
-			let sin = Math.sin(r);
-			let p1 = {
-				x : cos * minr + location.center.x,
-				y : sin * minr + location.center.y
-			};
-			let p2 = {
-				x : cos * maxr + location.center.x,
-				y : sin * maxr + location.center.y
-			};
-			minps.push(p1);
-			maxps.push(p2);
-
-			if(r === end) break;
-		}
-		
-		maxps.reverse();//大圆逆序
-		if(!this.style || !this.style.close) {
-			maxps[0].m = true;//开始画大圆时表示为移动
-		}		
-		this.points = minps.concat(maxps);
-	}
-}
-
-/**
  * 饼图
  *
  * @class jmPieSeries
@@ -6294,41 +6944,41 @@ class jmPieSeries extends jmSeries {
 
         if (center && radius) {
           const arcWidth = this.style.arcWidth || radius * 0.2;
-          let curRadius = radius; // 如果有指定动态半径，则调用
+          p.radius = radius; // 如果有指定动态半径，则调用
 
           if (typeof this.options.radius === 'function') {
-            curRadius = this.options.radius.call(this, p, radius, i);
+            p.radius = this.options.radius.call(this, p, radius, i);
           }
 
-          let maxRadius = curRadius; // 如果有指定动态半径，则调用
+          p.maxRadius = p.radius; // 如果有指定动态半径，则调用
 
           if (typeof this.options.maxRadius === 'function') {
-            maxRadius = this.options.maxRadius.call(this, p, maxRadius, i);
+            p.maxRadius = this.options.maxRadius.call(this, p, p.maxRadius, i);
           }
 
-          let minRadius = curRadius - arcWidth; // 如果有指定动态半径，则调用
+          p.minRadius = p.radius - arcWidth; // 如果有指定动态半径，则调用
 
           if (typeof this.options.minRadius === 'function') {
-            minRadius = this.options.minRadius.call(this, p, minRadius, i);
+            p.minRadius = this.options.minRadius.call(this, p, p.minRadius, i);
           }
 
-          let curCenter = center; // 如果有指定动态半径，则调用
+          p.center = center; // 如果有指定动态半径，则调用
 
           if (typeof this.options.center === 'function') {
-            curCenter = this.options.center.call(this, p, curCenter, i);
+            p.center = this.options.center.call(this, p, p.center, i);
           }
 
-          p.shape = this.graph.createShape(this.style.isHollow ? jmHArc : jmArc, {
+          p.shape = this.graph.createShape(this.style.isHollow ? 'harc' : 'arc', {
             style: p.style,
             startAngle: p.startAngle,
             endAngle: p.endAngle,
             anticlockwise: anticlockwise,
             isFan: true,
             // 表示画扇形
-            center: curCenter,
-            radius: curRadius,
-            maxRadius,
-            minRadius
+            center: p.center,
+            radius: p.radius,
+            maxRadius: p.maxRadius,
+            minRadius: p.minRadius
           });
           /**
            * 因为jmgraph是按图形形状来计算所占区域和大小的， 这里我们把扇形占区域改为整个图圆。这样计算大小和渐变时才好闭合。
@@ -6341,11 +6991,11 @@ class jmPieSeries extends jmSeries {
               width: 0,
               height: 0,
               center: this.center,
-              radius: curRadius
+              radius: p.radius
             };
-            local.left = this.center.x - curRadius;
-            local.top = this.center.y - curRadius;
-            local.width = local.height = curRadius * 2;
+            local.left = this.center.x - p.radius;
+            local.top = this.center.y - p.radius;
+            local.width = local.height = p.radius * 2;
             return local;
           };
 
@@ -6388,9 +7038,16 @@ class jmPieSeries extends jmSeries {
 
   createLabel(point) {
     if (this.style.label && this.style.label.show === false) return;
-    const text = this.options.labelFormat ? this.options.labelFormat(point) : point.step;
+    const text = this.options.labelFormat ? this.options.labelFormat.call(this, point) : point.step;
+    if (!text) return; // v如果指定了为控件，则直接加入
+
+    if (text instanceof jmControl) {
+      point.shape.children.add(text);
+      return text;
+    }
+
     const self = this;
-    const label = this.graph.createShape(jmLabel, {
+    const label = this.graph.createShape('label', {
       style: this.style.label,
       text: text,
       position: function () {
@@ -6449,7 +7106,7 @@ jmPieSeries.prototype.createLegend = function () {
     const style = this.graph.utils.clone(p.style);
     style.fill = style.fill; //delete style.stroke;
 
-    const shape = this.graph.createShape(jmRect, {
+    const shape = this.graph.createShape('rect', {
       style: style,
       position: {
         x: 0,
@@ -6476,115 +7133,6 @@ jmPieSeries.prototype.createLegend = function () {
     });
   }
 };
-
-/**
- * 贝塞尔曲线,继承jmPath
- * N阶，参数points中为控制点
- *
- * @class jmBezier
- * @extends jmPath
- * @param {object} params 参数
- */ 
-class jmBezier extends jmPath {	
-	
-	constructor(params, t='jmBezier') {
-		// 典线默认不封闭
-		if(params.style && typeof params.style.close !== true) {
-			params.style.close = false;
-		}
-
-		super(params, t);
-		this.cpoints = params.points || [];
-	}	
-	
-	/**
-	 * 控制点
-	 *
-	 * @property cpoints
-	 * @for jmBezier
-	 * @type {array}
-	 */
-	get cpoints() {
-		return this.__pro('cpoints');
-	}
-	set cpoints(v) {
-		this.needUpdate = true;
-		return this.__pro('cpoints', v);
-	}
-	
-	/**
-	 * 初始化图形点
-	 *
-	 * @method initPoints
-	 * @private
-	 */
-	initPoints() {
-		
-		this.points = [];
-		
-		let cps = this.cpoints;
-		for(let t = 0;t <= 1;t += 0.01) {
-			let p = this.getPoint(cps,t);
-			this.points.push(p);
-		}	
-		this.points.push(cps[cps.length - 1]);
-		return this.points;
-	}
-
-	/**
-	 * 根据控制点和参数t生成贝塞尔曲线轨迹点
-	 *
-	 * @method getPoint
-	 * @param {array} ps 控制点集合
-	 * @param {number} t 参数(0-1)
-	 * @return {array} 所有轨迹点的数组
-	 */
-	getPoint(ps, t) {
-		if(ps.length == 1) return ps[0];
-		if(ps.length == 2) {					
-			let p = {};
-			p.x = (ps[1].x - ps[0].x) * t + ps[0].x;
-			p.y = (ps[1].y - ps[0].y) * t + ps[0].y;
-			return p;	
-		}
-		if(ps.length > 2) {
-			let nps = [];
-			for(let i = 0;i < ps.length - 1;i++) {
-				let p = this.getPoint([ps[i],ps[i+1]],t);
-				if(p) nps.push(p);
-			}
-			return this.getPoint(nps,t);
-		}
-	}
-
-	/**
-	 * 对控件进行平移
-	 * 遍历控件所有描点或位置，设置其偏移量。
-	 *
-	 * @method offset
-	 * @param {number} x x轴偏移量
-	 * @param {number} y y轴偏移量
-	 * @param {boolean} [trans] 是否传递,监听者可以通过此属性是否决定是否响应移动事件,默认=true
-	 */
-	offset(x, y, trans) {	
-		let p = this.cpoints;
-		if(p) {			
-			let len = p.length;
-			for(let i=0; i < len;i++) {
-				p[i].x += x;
-				p[i].y += y;
-			}		
-			
-			//触发控件移动事件	
-			this.emit('move',{
-				offsetX: x,
-				offsetY: y,
-				trans: trans
-			});
-			this.getLocation(true);	//重置
-		}
-	}
-}
 
 /**
  * 图形基类
@@ -6684,7 +7232,7 @@ class jmLineSeries extends jmSeries {
 
 
   createPointItem(p) {
-    const pointShape = this.graph.createShape(jmCircle, {
+    const pointShape = this.graph.createShape('circel', {
       style: this.style.item,
       center: p,
       radius: this.style.radius || 3
@@ -6714,7 +7262,7 @@ class jmLineSeries extends jmSeries {
         y: p.y
       }; //圆滑线条使用的贝塞尔对象
 
-      this.__bezier = this.__bezier || this.graph.createShape(jmBezier);
+      this.__bezier = this.__bezier || this.graph.createShape('bezier');
       this.__bezier.cpoints = [startPoint, p1, p2, p3, p]; //设置控制点
 
       const bzpoints = this.__bezier.initPoints();
@@ -6731,7 +7279,7 @@ class jmLineSeries extends jmSeries {
 
     if (startPoint && startPoint.y != undefined && startPoint.y != null) {
       //使用线条来画虚线效果
-      this.__line = this.__line || this.graph.createShape(jmLine, {
+      this.__line = this.__line || this.graph.createShape('line', {
         style: this.style
       });
       this.__line.start = startPoint;
@@ -6776,7 +7324,7 @@ class jmLineSeries extends jmSeries {
         x: this.graph.style.legend.item.shape.width,
         y: 0
       };
-      this.__bezier = this.__bezier || this.graph.createShape(jmBezier);
+      this.__bezier = this.__bezier || this.graph.createShape('bezier');
       this.__bezier.cpoints = [p1, p2, p3, p4]; //设置控制点		
 
       shape.points = this.__bezier.initPoints();
@@ -6813,7 +7361,7 @@ class jmLineSeries extends jmSeries {
       style.fill = style.fill.call(this, style);
     }
 
-    const area = this.graph.createShape(jmPath, {
+    const area = this.graph.createShape('path', {
       points: this.graph.utils.clone(points, true),
       style,
       width: this.graph.chartArea.width,
@@ -6967,7 +7515,7 @@ class jmStackLineSeries extends jmLineSeries {
         x: this.graph.style.legend.item.shape.width,
         y: 0
       };
-      this.__bezier = this.__bezier || this.graph.createShape(jmBezier);
+      this.__bezier = this.__bezier || this.graph.createShape('bezier');
       this.__bezier.cpoints = [p1, p2, p3, p4]; //设置控制点		
 
       shape.points = this.__bezier.initPoints();
@@ -7051,7 +7599,7 @@ class jmMarkLine extends jmLine {
         this.start.x = this.end.x = isTocuhGraph ? point.x + graph.chartArea.position.x : point.x;
 
         for (const p of point.points) {
-          this.markArc = graph.createShape(jmCircle, {
+          this.markArc = graph.createShape('circle', {
             style: this.style,
             radius: (this.style.radius || 5) * this.graph.devicePixelRatio
           });
@@ -7166,7 +7714,7 @@ class jmMarkLine extends jmLine {
  * @param {element} container 图表容器
  */
 
-class jmChart extends jmGraph {
+class jmChart extends jmGraph$1 {
   constructor(container, options) {
     options = options || {};
     const enableAnimate = !!options.enableAnimate;
@@ -7231,7 +7779,7 @@ class jmChart extends jmGraph {
      * @type jmControl
      */
     if (!this.chartArea) {
-      this.chartArea = this.createShape(jmRect, {
+      this.chartArea = this.createShape('rect', {
         style: this.style.chartArea,
         position: {
           x: 0,
@@ -7288,7 +7836,7 @@ class jmChart extends jmGraph {
       cn.style.position = 'absolute';
       cn.style.top = 0;
       cn.style.left = 0;
-      this.touchGraph = graph = new jmGraph(cn, options);
+      this.touchGraph = graph = new jmGraph$1(cn, options);
       container.appendChild(cn);
       this.touchGraph.chartGraph = this;
       this.on('propertyChange', (name, args) => {

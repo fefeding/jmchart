@@ -1,7 +1,4 @@
-import jmBezier from 'jmgraph/src/shapes/jmBezier.js';
-import jmCircle from 'jmgraph/src/shapes/jmCircle.js';
-import jmLine from 'jmgraph/src/shapes/jmLine.js';
-import jmPath from 'jmgraph/src/core/jmPath.js';
+
 import jmLineSeries from './lineSeries.js';
 
 /**
@@ -121,7 +118,7 @@ export default class jmStackLineSeries extends jmLineSeries {
 			var p3 = {x:this.graph.style.legend.item.shape.width / 3 * 2,y:this.graph.style.legend.item.shape.height/3*2};
 			var p4 = {x:this.graph.style.legend.item.shape.width,y:0};	
 
-			this.__bezier = this.__bezier || this.graph.createShape(jmBezier);
+			this.__bezier = this.__bezier || this.graph.createShape('bezier');
 			this.__bezier.cpoints = [
 				p1,p2,p3,p4
 			];//设置控制点		

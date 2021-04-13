@@ -1,6 +1,6 @@
-import  jmArrawLine from 'jmgraph/src/shapes/jmArrawLine.js';
-import  jmLabel from 'jmgraph/src/shapes/jmLabel.js';
-import  jmLine from 'jmgraph/src/shapes/jmLine.js';
+import  {
+	jmArrawLine
+} from 'jmgraph';
 
 /**
  * 轴
@@ -216,7 +216,7 @@ export default class jmAxis extends jmArrawLine {
 			/// 只有一条数据，就取这条数据就可以了	
 			const w = (this.data.length === 1? 1: i) * step;
 
-			const label = this.graph.createShape(jmLabel, {
+			const label = this.graph.createShape('label', {
 				style: this.style.xLabel
 			});
 			label.data = d; // 当前点的数据结构值
@@ -236,7 +236,7 @@ export default class jmAxis extends jmArrawLine {
 			// 指定要显示网格
 			if(this.style.grid && this.style.grid.y) {
 				// 它的坐标是相对于轴的，所以Y轴会用负的区域高度
-				const line = this.graph.createShape(jmLine, {
+				const line = this.graph.createShape('line', {
 					start: {
 						x: pos.x,
 						y: 0
@@ -318,7 +318,7 @@ export default class jmAxis extends jmArrawLine {
 			p = min + pervalue * i;
 			if(p > max || i === count) p = max;
 			const h = (p - min) * step; // 当前点的偏移高度
-			const label = this.graph.graph.createShape(jmLabel, {
+			const label = this.graph.graph.createShape('label', {
 				style: this.style.yLabel
 			});
 			
@@ -359,7 +359,7 @@ export default class jmAxis extends jmArrawLine {
 				// 指定要显示网格
 				if(this.style.grid && this.style.grid.x) {
 					// 它的坐标是相对于轴的，所以Y轴会用负的区域高度
-					const line = this.graph.createShape(jmLine, {
+					const line = this.graph.createShape('line', {
 						start: {
 							x: 0,
 							y: offy

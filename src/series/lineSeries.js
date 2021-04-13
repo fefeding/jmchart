@@ -1,7 +1,4 @@
-import jmBezier from 'jmgraph/src/shapes/jmBezier.js';
-import jmCircle from 'jmgraph/src/shapes/jmCircle.js';
-import jmLine from 'jmgraph/src/shapes/jmLine.js';
-import jmPath from 'jmgraph/src/core/jmPath.js';
+
 import jmSeries from './series.js';
 
 /**
@@ -109,7 +106,7 @@ export default class jmLineSeries extends jmSeries {
 
 	// 生成点的小圆圈
 	createPointItem(p) {
-		const pointShape = this.graph.createShape(jmCircle, {
+		const pointShape = this.graph.createShape('circel', {
 			style: this.style.item,
 			center: p,
 			radius: this.style.radius || 3
@@ -131,7 +128,7 @@ export default class jmLineSeries extends jmSeries {
 			const p3 = {x: p.x - (p.x - startPoint.x) / 5, y: p.y};
 
 			//圆滑线条使用的贝塞尔对象
-			this.__bezier = this.__bezier || this.graph.createShape(jmBezier);
+			this.__bezier = this.__bezier || this.graph.createShape('bezier');
 			this.__bezier.cpoints = [
 				startPoint,
 				p1,
@@ -151,7 +148,7 @@ export default class jmLineSeries extends jmSeries {
 		const startPoint = shapePoints[shapePoints.length - 1];
 		if(startPoint && startPoint.y != undefined && startPoint.y != null) {
 			//使用线条来画虚线效果
-			this.__line = this.__line || this.graph.createShape(jmLine, {
+			this.__line = this.__line || this.graph.createShape('line', {
 				style: this.style,						
 			});	
 			this.__line.start = startPoint;
@@ -181,7 +178,7 @@ export default class jmLineSeries extends jmSeries {
 			var p3 = {x:this.graph.style.legend.item.shape.width / 3 * 2,y:this.graph.style.legend.item.shape.height/3*2};
 			var p4 = {x:this.graph.style.legend.item.shape.width,y:0};	
 
-			this.__bezier = this.__bezier || this.graph.createShape(jmBezier);
+			this.__bezier = this.__bezier || this.graph.createShape('bezier');
 			this.__bezier.cpoints = [
 				p1,p2,p3,p4
 			];//设置控制点		
@@ -220,7 +217,7 @@ export default class jmLineSeries extends jmSeries {
 		else if(typeof style.fill === 'function') {
 			style.fill = style.fill.call(this, style);
 		}
-		const area = this.graph.createShape(jmPath, {
+		const area = this.graph.createShape('path', {
 			points: this.graph.utils.clone(points, true),
 			style,
 			width: this.graph.chartArea.width,

@@ -1,7 +1,6 @@
-import jmRect from 'jmgraph/src/shapes/jmRect.js';
-import jmArc from 'jmgraph/src/shapes/jmArc.js';
-import jmHArc from 'jmgraph/src/shapes/jmHArc.js';
-import jmLabel from 'jmgraph/src/shapes/jmLabel.js';
+import {
+	jmControl
+} from 'jmgraph';
 import jmSeries from './series.js';
 
 /**
@@ -159,36 +158,36 @@ export default class jmPieSeries extends jmSeries {
 
 				if(center && radius) {
 					const arcWidth = this.style.arcWidth || radius*0.2;
-					let curRadius = radius;
+					p.radius = radius;
 					// 如果有指定动态半径，则调用
 					if(typeof this.options.radius === 'function') {
-						curRadius = this.options.radius.call(this, p, radius, i);
+						p.radius = this.options.radius.call(this, p, radius, i);
 					}
-					let maxRadius = curRadius;
+					p.maxRadius = p.radius;
 					// 如果有指定动态半径，则调用
 					if(typeof this.options.maxRadius === 'function') {
-						maxRadius = this.options.maxRadius.call(this, p, maxRadius, i);
+						p.maxRadius = this.options.maxRadius.call(this, p, p.maxRadius, i);
 					}
-					let minRadius = curRadius - arcWidth;
+					p.minRadius = p.radius - arcWidth;
 					// 如果有指定动态半径，则调用
 					if(typeof this.options.minRadius === 'function') {
-						minRadius = this.options.minRadius.call(this, p, minRadius, i);
+						p.minRadius = this.options.minRadius.call(this, p, p.minRadius, i);
 					}
-					let curCenter = center;
+					p.center = center;
 					// 如果有指定动态半径，则调用
 					if(typeof this.options.center === 'function') {
-						curCenter = this.options.center.call(this, p, curCenter, i);
+						p.center = this.options.center.call(this, p, p.center, i);
 					}
-					p.shape = this.graph.createShape(this.style.isHollow? jmHArc : jmArc, {
+					p.shape = this.graph.createShape(this.style.isHollow? 'harc' : 'arc', {
 						style: p.style,
 						startAngle: p.startAngle,
 						endAngle: p.endAngle,
 						anticlockwise: anticlockwise,
 						isFan: true, // 表示画扇形
-						center: curCenter,
-						radius: curRadius,
-						maxRadius,
-						minRadius
+						center: p.center,
+						radius: p.radius,
+						maxRadius: p.maxRadius,
+						minRadius: p.minRadius
 					});
 
 					/**
@@ -201,12 +200,12 @@ export default class jmPieSeries extends jmSeries {
 							width: 0,
 							height: 0,
 							center: this.center,
-							radius: curRadius
+							radius: p.radius
 						};
 
-						local.left = this.center.x - curRadius;
-						local.top = this.center.y - curRadius;
-						local.width = local.height = curRadius * 2;
+						local.left = this.center.x - p.radius;
+						local.top = this.center.y - p.radius;
+						local.width = local.height = p.radius * 2;
 						
 						return local;
 					}
@@ -248,11 +247,17 @@ export default class jmPieSeries extends jmSeries {
 	createLabel(point) {
 		if(this.style.label && this.style.label.show === false) return;
 
-		const text = this.options.labelFormat?this.options.labelFormat(point): point.step;
-
+		const text = this.options.labelFormat?this.options.labelFormat.call(this, point): point.step;
+		if(!text) return;
+		
+		// v如果指定了为控件，则直接加入
+		if(text instanceof jmControl) {
+			point.shape.children.add(text);
+			return text;
+		}
 		const self = this;
 		
-		const label = this.graph.createShape(jmLabel, {
+		const label = this.graph.createShape('label', {
 			style: this.style.label,
 			text: text,
 			position: function() {
@@ -316,7 +321,7 @@ jmPieSeries.prototype.createLegend = function() {
 		const style = this.graph.utils.clone(p.style);
 		style.fill = style.fill;	
 		//delete style.stroke;
-		const shape = this.graph.createShape(jmRect,{
+		const shape = this.graph.createShape('rect',{
 			style: style,
 			position : {x: 0, y: 0}
 		});
