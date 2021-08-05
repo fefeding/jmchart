@@ -84,8 +84,6 @@ export default class jmLineSeries extends jmSeries {
 
 			// 生成关健值标注
 			this.createKeyPoint(p);
-			// 生成标注
-			this.createLabel(p);
 		}
 
 		// 如果所有都已经结束，则重置成初始化状态
@@ -106,16 +104,14 @@ export default class jmLineSeries extends jmSeries {
 
 	// 生成点的小圆圈
 	createPointItem(p) {
-		const pointShape = this.graph.createShape('circel', {
+		const pointShape = this.graph.createShape('circle', {
 			style: this.style.item,
 			center: p,
 			radius: this.style.radius || 3
 		});
 	
 		pointShape.zIndex = (pointShape.style.zIndex || 1) + 1;	
-		this.graph.chartArea.children.add(pointShape);
-		this.shapes.add(pointShape);
-		return pointShape;
+		return this.addShape(pointShape);
 	}
 
 	// 根据上下点生成平滑曲线
@@ -236,8 +232,7 @@ export default class jmLineSeries extends jmSeries {
 			});
 		}
 
-		this.graph.chartArea.children.add(area);
-		this.shapes.add(area);
+		this.addShape(area);
 	}
 }
 

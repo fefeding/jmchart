@@ -6433,46 +6433,15 @@ class jmSeries extends jmPath {
     this.graph.legend.append(this, shape);
   }
   /**
-   * 添加关健点
-   * @param {object} options 关健点的参数，
-   * {
-   * xValue 对应的X轴值
-   * 	radius: 大小,
-   * style: {
-   * stroke: 边颜色
-   * fill: 填充色
-   * }
-   * }
+   * 在图上加下定制图形
+   * @param {jmShape} shape  图形
    */
 
 
-  addKeyPoint(options) {
-    if (!options) return;
-    this.keyPoints.push(options);
-    return options;
-  }
-  /**
-   * 添加标注
-   * @param {object} options 参数，
-   * {
-   * xValue 对应的X轴值
-   * text 显示文案
-   * width: 宽,
-   * height: 高
-   * 可以参考jmLabel样式
-   * style: {
-   * stroke: 边颜色
-   * fill: 填充色
-   * font: 字体
-   * }
-   * }
-   */
-
-
-  addLabel(options) {
-    if (!options) return;
-    this.labels.push(options);
-    return options;
+  addShape(shape) {
+    this.graph.chartArea.children.add(shape);
+    this.shapes.add(shape);
+    return shape;
   } // 在关健点生成高亮点
 
 
@@ -6488,40 +6457,7 @@ class jmSeries extends jmPath {
         radius: opt.radius || 5
       });
       pointShape.zIndex = 20;
-      this.graph.chartArea.children.add(pointShape);
-      this.shapes.add(pointShape);
-    }
-  } // 在关健点生成标注
-
-
-  createLabel(point) {
-    for (const opt of this.labels) {
-      if (opt.xValue !== point.xValue || !opt.text) return;
-      const label = this.graph.createShape('label', {
-        style: Object.assign({
-          stroke: this.style.stroke,
-          fill: this.style.stroke,
-          textAlign: 'center',
-          textBaseline: 'middle',
-          border: {
-            top: true,
-            left: true,
-            right: true,
-            bottom: true,
-            style: {
-              fill: '#000'
-            }
-          }
-        }, opt.style || {}),
-        text: opt.text,
-        position: point
-      });
-      const size = label.testSize();
-      label.position.y -= size.height + 10;
-      label.position.x -= size.width / 2;
-      label.zIndex = 20;
-      this.graph.chartArea.children.add(label);
-      this.shapes.add(label);
+      this.addShape(pointShape);
     }
   }
 
@@ -6573,8 +6509,7 @@ class jmBarSeries extends jmSeries {
         continue;
       }
 
-      const sp = this.shapes.add(this.graph.createPath(null, this.graph.utils.clone(this.style)));
-      this.children.add(sp); //绑定提示框
+      const sp = this.addShape(this.graph.createPath(null, this.graph.utils.clone(this.style))); //绑定提示框
       //this.bindTooltip(sp, point);
       //首先确定p1和p4,因为他们是底脚。会固定
 
@@ -6646,6 +6581,17 @@ class jmBarSeries extends jmSeries {
       this.barTotalWidth = maxBarWidth * this.graph.barSeriesCount;
     }
   }
+  /**
+   * 在图上加下定制图形
+   * @param {jmShape} shape  图形
+   */
+
+
+  addShape(shape) {
+    this.children.add(shape);
+    this.shapes.add(shape);
+    return shape;
+  }
 
 }
 
@@ -6701,8 +6647,7 @@ class jmStackBarSeries extends jmBarSeries {
           style.fill = this.graph.getColor(index);
         }
 
-        const sp = this.shapes.add(this.graph.createPath(null, style));
-        this.children.add(sp);
+        const sp = this.addShape(this.graph.createPath(null, style));
         const p = point.points[index];
         let startY = topStartY;
         if (p.yValue < this.baseYValue) startY = bottomStartY; //首先确定p1和p4,因为他们是底脚。会固定
@@ -7003,8 +6948,7 @@ class jmPieSeries extends jmSeries {
             return this.getLocation();
           };
 
-          this.shapes.add(p.shape);
-          this.graph.chartArea.children.add(p.shape); // 如果有点击事件
+          this.addShape(p.shape); // 如果有点击事件
 
           if (this.options.onClick) {
             p.shape.on('click', e => {
@@ -7210,9 +7154,7 @@ class jmLineSeries extends jmSeries {
 
       shapePoints.push(p); // 生成关健值标注
 
-      this.createKeyPoint(p); // 生成标注
-
-      this.createLabel(p);
+      this.createKeyPoint(p);
     } // 如果所有都已经结束，则重置成初始化状态
 
 
@@ -7232,15 +7174,13 @@ class jmLineSeries extends jmSeries {
 
 
   createPointItem(p) {
-    const pointShape = this.graph.createShape('circel', {
+    const pointShape = this.graph.createShape('circle', {
       style: this.style.item,
       center: p,
       radius: this.style.radius || 3
     });
     pointShape.zIndex = (pointShape.style.zIndex || 1) + 1;
-    this.graph.chartArea.children.add(pointShape);
-    this.shapes.add(pointShape);
-    return pointShape;
+    return this.addShape(pointShape);
   } // 根据上下点生成平滑曲线
 
 
@@ -7379,8 +7319,7 @@ class jmLineSeries extends jmSeries {
       });
     }
 
-    this.graph.chartArea.children.add(area);
-    this.shapes.add(area);
+    this.addShape(area);
   }
 
 }

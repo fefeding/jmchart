@@ -141,7 +141,7 @@
                         // 最大值和最小值，如果不指定会自动计算，
                         // 如果指定了也只是指定了最大或最小边界，如果有数值超过它，依然以事实数值为准
                         minYValue: 0.95,
-                        //maxYValue: 1.5,
+                        maxYValue: 1.5,
                         // 格式化y轴标签值
                         yLabelFormat: function(v) {
                             return v.toFixed? (v.toFixed(2)+ '%') : v;
@@ -278,7 +278,8 @@
 
                 (function load() {
                     //var w = Math.max((window.innerWidth || window.document.body.clientWidth) * 0.8, 400);
-                    //var h = Math.min((window.innerHeight || window.document.body.clientHeight) * 0.5, 280);			
+                    //var h = Math.min((window.innerHeight || window.document.body.clientHeight) * 0.5, 280);		
+                    app.chartData = [];	
                     inichart();
 
                     //setTimeout(()=>{
@@ -289,11 +290,11 @@
     
                 function inichart() {
     
-                    const datacount = 500;   
+                    const datacount = 200;   
                     
                     // 动态加入数据
                     function animate() {
-                        
+                        const data = [];
                         for(let i =0; i<datacount; i++) {
                             const d = {
                                 x :  '2019-05-' + i,
@@ -302,17 +303,17 @@
                                 y3:  Math.random(),
                             };
                             
-                            if(app.chartData.length < datacount) {
-                                app.chartData.push(d);  
+                            if(data.length < datacount) {
+                                data.push(d);  
                                 
                                 //setTimeout(animate, 200); // 一直加
                             }
                             else {
-                                app.chartData.shift();   
-                                app.chartData.push(d); 
+                                data.shift();   
+                                data.push(d); 
                             }
                         }
-                        //setTimeout(animate, 50); // 一直加
+                        app.chartData = data;
                     }
                     
                     animate();    

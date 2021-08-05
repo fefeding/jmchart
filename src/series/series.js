@@ -300,43 +300,13 @@ export default class jmSeries extends jmPath {
 	}
 
 	/**
-	 * 添加关健点
-	 * @param {object} options 关健点的参数，
-	 * {
-	 * xValue 对应的X轴值
-	 * 	radius: 大小,
-	 * style: {
-	 * stroke: 边颜色
-	 * fill: 填充色
-	 * }
-	 * }
+	 * 在图上加下定制图形
+	 * @param {jmShape} shape  图形
 	 */
-	addKeyPoint(options) {
-		if(!options) return;
-		this.keyPoints.push(options);
-		return options;
-	}
-
-	/**
-	 * 添加标注
-	 * @param {object} options 参数，
-	 * {
-	 * xValue 对应的X轴值
-	 * text 显示文案
-	 * width: 宽,
-	 * height: 高
-	 * 可以参考jmLabel样式
-	 * style: {
-	 * stroke: 边颜色
-	 * fill: 填充色
-	 * font: 字体
-	 * }
-	 * }
-	 */
-	addLabel(options) {
-		if(!options) return;
-		this.labels.push(options);
-		return options;
+	addShape(shape) {
+		this.graph.chartArea.children.add(shape);
+		this.shapes.add(shape);
+		return shape;
 	}
 
 	// 在关健点生成高亮点
@@ -354,43 +324,7 @@ export default class jmSeries extends jmPath {
 			});
 		
 			pointShape.zIndex = 20;	
-			this.graph.chartArea.children.add(pointShape);
-			this.shapes.add(pointShape);
-		}
-	}
-
-	// 在关健点生成标注
-	createLabel(point) {
-		for(const opt of this.labels) {
-			if(opt.xValue !== point.xValue || !opt.text) return;
-
-			const label = this.graph.createShape('label', {
-				style: Object.assign({
-					stroke: this.style.stroke,
-					fill: this.style.stroke,
-					textAlign: 'center',
-					textBaseline: 'middle',
-					border: {
-						top: true,
-						left: true,
-						right: true,
-						bottom: true,
-						style: {
-							fill: '#000'
-						}
-					}
-				}, opt.style||{}),
-				text: opt.text,
-				position: point
-			});
-
-			const size = label.testSize();
-			label.position.y -= (size.height + 10);
-			label.position.x -= size.width / 2;
-		
-			label.zIndex = 20;	
-			this.graph.chartArea.children.add(label);
-			this.shapes.add(label);
+			this.addShape(pointShape);
 		}
 	}
 };

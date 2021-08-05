@@ -44,8 +44,8 @@ export default class jmBarSeries extends jmSeries {
 				continue;
 			}
 		
-			const sp = this.shapes.add(this.graph.createPath(null, this.graph.utils.clone(this.style)));
-			this.children.add(sp);
+			const sp = this.addShape(this.graph.createPath(null, this.graph.utils.clone(this.style)));
+			
 			//绑定提示框
 			//this.bindTooltip(sp, point);
 
@@ -108,5 +108,16 @@ export default class jmBarSeries extends jmSeries {
 			this.barWidth = maxBarWidth;
 			this.barTotalWidth = maxBarWidth * this.graph.barSeriesCount;
 		}
+	}
+	
+
+	/**
+	 * 在图上加下定制图形
+	 * @param {jmShape} shape  图形
+	 */
+	 addShape(shape) {
+		this.children.add(shape);
+		this.shapes.add(shape);
+		return shape;
 	}
 }

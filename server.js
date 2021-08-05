@@ -2,9 +2,7 @@ const express = require('express');
 const rollup = require('rollup');
 const rollupOptions = require('./rollup.config.js');
 
-const app = express();
 
-app.use(express.static("."));
 
 //rollupOptions.output.format = 'esm';// 方便调用
 const esmWatcher = rollup.watch(rollupOptions);
@@ -21,12 +19,25 @@ esmWatcher.on('event', event => {
   console.log(event);
 
   //const bundle = await rollup.rollup(inputOptions);
-
+  if(event && event.code == 'END') {
+    startServer();
+  }
 });
 
+// 启动server
+
+
+let serverInstance = null;
 const port = process.env.PORT || 8800;
 const ip = process.env.IP || '127.0.0.1';
 
-app.listen(port, ip);
+function startServer() {
 
-console.log(`dev server listend at ${port}`);
+  if(!serverInstance) {
+    const app = express();
+    app.use(express.static("."));
+    serverInstance = app.listen(port, ip);
+  }
+
+  console.log(`dev server listend at ${port}`);
+}

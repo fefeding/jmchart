@@ -8,6 +8,7 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "clone": "git clone https://ghproxy.com/https://github.com/jiamao/jmchart.git",
     "dev": "node server.js",
     "push": "npm publish --registry=https://registry.npmjs.org",
     "build": "node build.js"

@@ -213,8 +213,7 @@ export default class jmPieSeries extends jmSeries {
 						return this.getLocation();
 					}
 
-					this.shapes.add(p.shape);
-					this.graph.chartArea.children.add(p.shape);
+					this.addShape(p.shape);
 
 					// 如果有点击事件
 					if(this.options.onClick) {
