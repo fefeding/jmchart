@@ -235,7 +235,10 @@ export default class jmPieSeries extends jmSeries {
 					this.createLabel(p);// 生成标签
 				}
 				points.push(p);
-				index++;				
+				index++;	
+				
+				// 生成标点的回调
+				this.emit('onPointCreated', p);			
 			}			
 		}
 		

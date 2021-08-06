@@ -91,6 +91,9 @@ export default class jmStackBarSeries extends jmBarSeries {
 				sp.points.push(p3); 
 				sp.points.push(p4); 
 			}			
+
+			// 生成标点的回调
+			this.emit('onPointCreated', point);		
 		}
 
 		if(aniIsEnd) {			

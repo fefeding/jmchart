@@ -309,22 +309,29 @@ export default class jmSeries extends jmPath {
 		return shape;
 	}
 
-	// 在关健点生成高亮点
-	createKeyPoint(point) {
-		for(const opt of this.keyPoints) {
-			if(opt.xValue !== point.xValue) return;
+	/**
+	 * 获取指定事件的集合
+	 * 比如mousedown,mouseup等
+	 *
+	 * @method getEvent
+	 * @param {string} name 事件名称
+	 * @return {list} 事件委托的集合
+	 */
+	getEvent(name) {	
+			
+		const event = this.options? this.options[name]: null;
+		if(!event) {
+			return super.getEvent(name);
+		}
+		else {
+			const events = new jmList();
+			events.add(event);
 
-			const pointShape = this.graph.createShape('circle', {
-				style: Object.assign({
-					stroke: this.style.stroke,
-					fill: this.style.stroke
-				}, opt.style||{}),
-				center: point,
-				radius: opt.radius || 5
-			});
-		
-			pointShape.zIndex = 20;	
-			this.addShape(pointShape);
+			const oldevents = super.getEvent(name);
+			if(oldevents) {
+				events.concat(oldevents);
+			}
+			return events;
 		}
 	}
 };

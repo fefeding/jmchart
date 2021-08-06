@@ -95,6 +95,10 @@
 						},
 						legendFormat: function(options) {
 							return '图例2';
+						},
+						// 生成点的回调
+						onPointCreated(point) {
+							console.log('onPointCreated', point);
 						}
 					});		
 					

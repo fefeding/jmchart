@@ -78,6 +78,10 @@ export default class jmStackLineSeries extends jmLineSeries {
 
 			startShapePoints.push(p.points[0]);
 			endShapePoints.push(p.points[1]);
+			
+
+			// 生成标点的回调
+			this.emit('onPointCreated', p);
 		}
 
 		// 如果所有都已经结束，则重置成初始化状态

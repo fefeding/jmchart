@@ -83,7 +83,7 @@ export default class jmLineSeries extends jmSeries {
 			shapePoints.push(p);
 
 			// 生成关健值标注
-			this.createKeyPoint(p);
+			this.emit('onPointCreated', p);
 		}
 
 		// 如果所有都已经结束，则重置成初始化状态

@@ -6442,22 +6442,32 @@ class jmSeries extends jmPath {
     this.graph.chartArea.children.add(shape);
     this.shapes.add(shape);
     return shape;
-  } // 在关健点生成高亮点
+  }
+  /**
+   * 获取指定事件的集合
+   * 比如mousedown,mouseup等
+   *
+   * @method getEvent
+   * @param {string} name 事件名称
+   * @return {list} 事件委托的集合
+   */
 
 
-  createKeyPoint(point) {
-    for (const opt of this.keyPoints) {
-      if (opt.xValue !== point.xValue) return;
-      const pointShape = this.graph.createShape('circle', {
-        style: Object.assign({
-          stroke: this.style.stroke,
-          fill: this.style.stroke
-        }, opt.style || {}),
-        center: point,
-        radius: opt.radius || 5
-      });
-      pointShape.zIndex = 20;
-      this.addShape(pointShape);
+  getEvent(name) {
+    const event = this.options ? this.options[name] : null;
+
+    if (!event) {
+      return super.getEvent(name);
+    } else {
+      const events = new jmList();
+      events.add(event);
+      const oldevents = super.getEvent(name);
+
+      if (oldevents) {
+        events.concat(oldevents);
+      }
+
+      return events;
     }
   }
 
@@ -6552,7 +6562,9 @@ class jmBarSeries extends jmSeries {
       sp.points.push(p1);
       sp.points.push(p2);
       sp.points.push(p3);
-      sp.points.push(p4);
+      sp.points.push(p4); // 生成标点的回调
+
+      this.emit('onPointCreated', point);
     }
 
     if (aniIsEnd) {
@@ -6694,7 +6706,10 @@ class jmStackBarSeries extends jmBarSeries {
         sp.points.push(p2);
         sp.points.push(p3);
         sp.points.push(p4);
-      }
+      } // 生成标点的回调
+
+
+      this.emit('onPointCreated', point);
     }
 
     if (aniIsEnd) {
@@ -6972,7 +6987,9 @@ class jmPieSeries extends jmSeries {
         }
 
         points.push(p);
-        index++;
+        index++; // 生成标点的回调
+
+        this.emit('onPointCreated', p);
       }
     }
 
@@ -7154,7 +7171,7 @@ class jmLineSeries extends jmSeries {
 
       shapePoints.push(p); // 生成关健值标注
 
-      this.createKeyPoint(p);
+      this.emit('onPointCreated', p);
     } // 如果所有都已经结束，则重置成初始化状态
 
 
@@ -7399,7 +7416,9 @@ class jmStackLineSeries extends jmLineSeries {
         }
 
       startShapePoints.push(p.points[0]);
-      endShapePoints.push(p.points[1]);
+      endShapePoints.push(p.points[1]); // 生成标点的回调
+
+      this.emit('onPointCreated', p);
     } // 如果所有都已经结束，则重置成初始化状态
 
 
