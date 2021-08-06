@@ -2887,13 +2887,13 @@ class jmArc extends jmPath {
 /**
  * 画箭头,继承自jmPath
  *
- * @class jmArraw
+ * @class jmArrow
  * @extends jmPath
  * @param {object} 生成箭头所需的参数
  */
-class jmArraw extends jmPath {	
+class jmArrow extends jmPath {	
 
-	constructor(params, t='jmArraw') {
+	constructor(params, t='jmArrow') {
 		super(params, t);
 		this.style.lineJoin = 'miter';
 		this.style.lineCap = 'square';
@@ -2909,7 +2909,7 @@ class jmArraw extends jmPath {
 	 * 控制起始点
 	 *
 	 * @property start
-	 * @for jmArraw
+	 * @for jmArrow
 	 * @type {point}
 	 */
 	get start() {
@@ -2924,7 +2924,7 @@ class jmArraw extends jmPath {
 	 * 控制结束点
 	 *
 	 * @property end
-	 * @for jmArraw
+	 * @for jmArrow
 	 * @type {point} 结束点
 	 */
 	get end() {
@@ -2939,7 +2939,7 @@ class jmArraw extends jmPath {
 	 * 箭头角度
 	 *
 	 * @property angle
-	 * @for jmArraw
+	 * @for jmArrow
 	 * @type {number} 箭头角度
 	 */
 	get angle() {
@@ -2954,7 +2954,7 @@ class jmArraw extends jmPath {
 	 * 箭头X偏移量
 	 *
 	 * @property offsetX
-	 * @for jmArraw
+	 * @for jmArrow
 	 * @type {number}
 	 */
 	get offsetX() {
@@ -2969,7 +2969,7 @@ class jmArraw extends jmPath {
 	 * 箭头Y偏移量
 	 *
 	 * @property offsetY
-	 * @for jmArraw
+	 * @for jmArrow
 	 * @type {number}
 	 */
 	get offsetY() {
@@ -2986,7 +2986,7 @@ class jmArraw extends jmPath {
 	 * @method initPoint
 	 * @private
 	 * @param {boolean} solid 是否为实心的箭头
-	 * @for jmArraw
+	 * @for jmArrow
 	 */
 	initPoints(solid) {	
 		let rotate = this.angle;
@@ -3620,20 +3620,20 @@ class jmRect extends jmPath {
 /**
  * 带箭头的直线,继承jmPath
  *
- * @class jmArrawLine
+ * @class jmArrowLine
  * @extends jmLine
  * @param {object} params 生成当前直线的参数对象，(style=当前线条样式,start=直线起始点,end=直线终结点)
  */	
-class jmArrawLine extends jmLine {	
+class jmArrowLine extends jmLine {	
 
 	constructor(params, t) {
 
 		params.start = params.start || {x:0,y:0};
 		params.end = params.end || {x:0,y:0};
 
-		super(params, t||'jmArrawLine');
+		super(params, t||'jmArrowLine');
 		this.style.lineJoin = this.style.lineJoin || 'miter';
-		this.arraw = new jmArraw(params);
+		this.arrow = new jmArrow(params);
 	}
 
 	/**
@@ -3644,8 +3644,8 @@ class jmArrawLine extends jmLine {
 	 */
 	initPoints() {	
 		this.points = super.initPoints();
-		if(this.arrawVisible !== false) {
-			this.points = this.points.concat(this.arraw.initPoints());
+		if(this.ArrowVisible !== false) {
+			this.points = this.points.concat(this.arrow.initPoints());
 		}
 		return this.points;
 	}
@@ -5079,14 +5079,14 @@ class jmGraph extends jmControl {
 
 const shapes = {
     "arc": jmArc,
-    "arraw": jmArraw,
+    "arrow": jmArrow,
     "bezier": jmBezier,
     "circle": jmCircle,
     "harc": jmHArc,
     "line": jmLine,
     "prismatic": jmPrismatic,
     "rect": jmRect,
-    "arrawline": jmArrawLine,
+    "Arrowline": jmArrowLine,
     "image": jmImage,
     "img": jmImage,
     "label": jmLabel,
@@ -5381,7 +5381,7 @@ var defaultStyle = {
  * @param {object} [style] 样式
  */
 
-class jmAxis extends jmArrawLine {
+class jmAxis extends jmArrowLine {
   constructor(options) {
     super(options); //初始化不显示箭头
 
@@ -5397,7 +5397,7 @@ class jmAxis extends jmArrawLine {
 
     _defineProperty(this, "scalePoints", []);
 
-    this.arrawVisible = !!options.arrawVisible;
+    this.arrowVisible = !!options.arrowVisible;
     this.zeroBase = options.zeroBase || false;
     this.labelCount = options.labelCount || 5;
     this.type = options.type || 'x'; // 为横轴x或纵轴y
@@ -6030,18 +6030,15 @@ jmLegend.prototype.append = function (series, shape, options = {}) {
   /*const hover = options.hover || function() {	
   	//应用图的动态样式		
   	//Object.assign(series.style, series.style.hover);
-  
-  	//Object.assign(this.style, this.style.hover || {});
-  
-  	//series.graph.refresh();
+  		//Object.assign(this.style, this.style.hover || {});
+  		//series.graph.refresh();
   };
   panel.bind('mouseover', hover);
   //执行离开
   const leave = options.leave || function() {	
   	//应用图的普通样式		
   	//Object.assign(series.style, series.style.normal);
-  
-  	//Object.assign(this.style, this.style.normal || {});
+  		//Object.assign(this.style, this.style.normal || {});
   	//jmUtils.apply(this.series.style.normal,this.series.style);
   	//series.graph.refresh();
   };

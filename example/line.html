@@ -99,6 +99,38 @@
 						// 生成点的回调
 						onPointCreated(point) {
 							console.log('onPointCreated', point);
+							if(point.data.x === 10) {
+								const w = 40;
+								const h = 20;
+								const p1 = {
+											x: point.x - w / 2,
+											y: point.y - 40
+										};
+								
+								const labelPath = this.graph.createShape('path', {
+									style: {
+										stroke: 'red',
+										fill: '#cccccc',
+										close: true
+									},
+									points: [
+										p1,
+										{
+											x: p1.x + w,
+											y: p1.y
+										},
+										{
+											x: p1.x + w,
+											y: point.y - 20
+										},
+										{
+											x: p1.x,
+											y: point.y - 20
+										}
+									]
+								});
+								this.addShape(labelPath);
+							}
 						}
 					});		
 					

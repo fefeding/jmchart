@@ -1,5 +1,5 @@
 import  {
-	jmArrawLine
+	jmArrowLine
 } from 'jmgraph';
 
 /**
@@ -13,12 +13,12 @@ import  {
  * @param {object} [style] 样式
  */
 
-export default class jmAxis extends jmArrawLine {
+export default class jmAxis extends jmArrowLine {
 	constructor(options) {		
 		super(options);
 
 		//初始化不显示箭头
-		this.arrawVisible = !!options.arrawVisible;
+		this.arrowVisible = !!options.arrowVisible;
 		this.zeroBase = options.zeroBase || false;
 
 		this.labelCount = options.labelCount || 5;
