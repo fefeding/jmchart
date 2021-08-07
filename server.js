@@ -31,6 +31,8 @@ let serverInstance = null;
 const port = process.env.PORT || 8800;
 const ip = process.env.IP || '127.0.0.1';
 
+startServer();
+
 function startServer() {
 
   if(!serverInstance) {
