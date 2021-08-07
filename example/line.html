@@ -98,39 +98,9 @@
 						},
 						// 生成点的回调
 						onPointCreated(point) {
-							console.log('onPointCreated', point);
+							//console.log('onPointCreated', point);
 							if(point.data.x === 10) {
-								const w = 40;
-								const h = 20;
-								const p1 = {
-											x: point.x - w / 2,
-											y: point.y - 40
-										};
-								
-								const labelPath = this.graph.createShape('path', {
-									style: {
-										stroke: 'red',
-										fill: '#cccccc',
-										zIndex: 100,
-										close: true
-									},
-									points: [
-										p1,
-										{
-											x: p1.x + w,
-											y: p1.y
-										},
-										{
-											x: p1.x + w,
-											y: point.y - 20
-										},
-										{
-											x: p1.x,
-											y: point.y - 20
-										}
-									]
-								});
-								this.addShape(labelPath);
+								addPointMarkLabel.call(this, point);
 							}
 						}
 					});		
@@ -242,6 +212,73 @@
 					chart.utils.bindEvent(document.getElementById('btnRedraw'),'click',animate);
 					
 				}
+			
+				// 创建点的标注
+			function addPointMarkLabel(point) {
+				const w = 40 * this.graph.devicePixelRatio;
+				const h = 20 * this.graph.devicePixelRatio;
+				const bottom = 20 * this.graph.devicePixelRatio;
+				const arrowOffset = 10 * this.graph.devicePixelRatio;
+
+				// 标注图形左上角
+				const p1 = {
+							x: point.x - w / 2,
+							y: point.y - bottom - h
+						};
+				const p2 = {
+							x: p1.x,
+							y: p1.y + h
+						};
+				const p3 = {
+							x: p2.x + w,
+							y: p2.y
+						};
+				const p4 = {
+							x: p3.x,
+							y: p1.y
+						};
+				
+				const labelPath = this.graph.createShape('path', {
+					style: {
+						stroke: 'red',
+						fill: '#55cccccc',
+						zIndex: 18,
+						close: true
+					},
+					points: [
+						p1,
+						p2,
+						{
+							x: point.x - arrowOffset / 2,
+							y: p2.y
+						},
+						{
+							x: point.x,
+							y: p2.y + arrowOffset
+						},
+						{
+							x: point.x + arrowOffset / 2,
+							y: p2.y
+						},
+						p3,
+						p4
+					]
+				});
+				const label = this.graph.createShape('label', {
+					style: {
+						textAlign: 'center',
+						textBaseline: 'middle',
+						fill: 'red'
+					},
+					center: {
+						x: w / 2,
+						y: h / 2 + 2
+					},
+					text: '买入'
+				});
+				labelPath.children.add(label);
+				this.addShape(labelPath);
+			}
 		</script>
 	</head>
 	<body>
