@@ -146,7 +146,7 @@ export default {
 		cursor: 'default',
 		radius: 3,
 		fill: null,	
-		showItem: true,	// 是否展示圆点
+		showItem: false,	// 是否展示圆点
 		item: {
 			fill: '#fff',
 			zIndex: 19

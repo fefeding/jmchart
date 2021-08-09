@@ -5278,7 +5278,7 @@ var defaultStyle = {
     cursor: 'default',
     radius: 3,
     fill: null,
-    showItem: true,
+    showItem: false,
     // 是否展示圆点
     item: {
       fill: '#fff',
@@ -5482,7 +5482,7 @@ class jmAxis extends jmArrowLine {
       case 'y':
         {
           const index = this.index || 1;
-          const xoffset = bounds.left; //初始化显示标签个数
+          let xoffset = bounds.left; //初始化显示标签个数
 
           this.labelCount = this.style.yLabel.count || 5; //多Y轴时，第二个为右边第一轴，其它的依此递推
 
@@ -5649,6 +5649,8 @@ class jmAxis extends jmArrowLine {
     let pervalue = mm / count || 1; //if(pervalue > 1 || pervalue < -1) pervalue = Math.floor(pervalue);		
 
     const format = this.options.format || this.format;
+    const marginLeft = this.style.yLabel.margin.left * this.graph.devicePixelRatio || 0;
+    const marginRight = this.style.yLabel.margin.right * this.graph.devicePixelRatio || 0;
     let p = 0;
 
     for (let i = 0; i < count + 1; i++) {
@@ -5668,16 +5670,15 @@ class jmAxis extends jmArrowLine {
       // label的位置
 
       const pos = {
-        x: this.style.yLabel.margin.left * this.graph.devicePixelRatio - this.start.x,
+        x: 0,
         y: 0
-      };
-      let axiswidth = 0; //计算标签位置
+      }; //轴的宽度
+
+      const axiswidth = marginLeft + marginRight + w;
+      this.width = Math.max(axiswidth, this.width); //计算标签位置
 
       if (index <= 1) {
-        //轴的宽度
-        axiswidth = this.style.yLabel.margin.right * this.graph.devicePixelRatio + w + label.style.length;
-        this.width = Math.max(axiswidth, this.width); //pos.x = - axiswidth;
-
+        pos.x = -w - marginRight;
         pos.y = offy - label.height / 2; //在轴上画小标记m表示移至当前点开画
 
         this.scalePoints.push({
@@ -5686,7 +5687,7 @@ class jmAxis extends jmArrowLine {
           m: true
         });
         this.scalePoints.push({
-          x: this.start.x - label.style.length,
+          x: this.start.x,
           y: offy + this.end.y
         }); // 指定要显示网格
 
@@ -5706,10 +5707,7 @@ class jmAxis extends jmArrowLine {
           this.children.add(line);
         }
       } else {
-        //轴的宽度
-        axiswidth = this.style.yLabel.margin.left * this.graph.devicePixelRatio + w + label.style.length;
-        this.width = Math.max(axiswidth, this.width); //pos.x = this.style.yLabel.margin.left * this.graph.devicePixelRatio + label.style.length;
-
+        pos.x = marginLeft;
         pos.y = offy - label.height / 2; //在轴上画小标记m表示移至当前点开画
 
         this.scalePoints.push({
@@ -5718,7 +5716,7 @@ class jmAxis extends jmArrowLine {
           m: true
         });
         this.scalePoints.push({
-          x: this.start.x + label.style.length,
+          x: this.start.x,
           y: offy + this.end.y
         });
       } // label对齐方式
