@@ -378,7 +378,8 @@ export default class jmChart extends jmGraph  {
 			options = Object.assign({
 				field: this.xField,
 				type: 'x',
-				format: this.options.xLabelFormat
+				format: this.options.xLabelFormat,
+				...this.options.yAxisOption
 			}, options || {});
 			
 			if(typeof this.options.minXValue !== 'undefined') {
@@ -409,7 +410,8 @@ export default class jmChart extends jmGraph  {
 			index: 1,
 			type: 'y',
 			format: this.options.yLabelFormat,
-			zeroBase: this.baseY === 0
+			zeroBase: this.baseY === 0,
+			...this.options.xAxisOption,
 		}, options || {});
 		if(typeof this.options.minYValue !== 'undefined') {
 			options.minYValue = typeof options.minYValue === 'undefined'?this.options.minYValue:Math.min(this.options.minYValue, options.minYValue);

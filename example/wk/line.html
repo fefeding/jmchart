@@ -61,6 +61,12 @@
                                 left: 100,
                                 right: 100
 							}
+						},
+						xAxisOption: {
+							arrowVisible: false
+						},
+						yAxisOption: {
+							arrowVisible: false
 						}
 					});
 					chart.legend.legendPosition = 'top';
@@ -125,14 +131,6 @@
                                     }
                                 });
                             }
-                            if(point.data.y1 >= 10) {
-                                addPointMark(point, this, {
-                                    style: {
-                                        fill: '#88cccccc',
-                                        stroke: 'red'
-                                    }
-                                });
-                            }
 						}
 					});		
 					
@@ -141,7 +139,44 @@
                         legendLabel: '图例3',
                         index: 2,
 						style: {
-							showItem: false
+							showItem: false,
+							// 画圆滑的曲线 
+							curve: true,// 填充图形
+							area: {
+								// 自定义填充颜色处理
+								fill: function(style) {
+									// 根据颜色生成渐变效果
+									const color = this.graph.utils.hexToRGBA(this.style.stroke);
+									return `linear-gradient(50% 0 50% 100%, 
+										rgba(${color.r},${color.g},${color.b}, 0) 1, 
+										rgba(${color.r},${color.g},${color.b}, 0) 0.8,
+										rgba(${color.r},${color.g},${color.b}, 0.3) 0.5,
+										rgba(${color.r},${color.g},${color.b}, 0.5) 0.2, 
+										rgba(${color.r},${color.g},${color.b}, 0.8) 0)`;
+								}
+							}
+						},
+						// 生成点的回调
+						onPointCreated(point) {
+							//console.log('onPointCreated', point);							
+                            if(point.index % 7 === 0) {
+                                addPointMark(point, this, {
+                                    style: {
+                                        fill: this.style.stroke,
+                                        stroke: '#ffffff',
+										lineWidth: 3,
+                                    }
+                                });
+                            }
+							else if(point.index % 5 === 0) {
+                                addPointMark(point, this, {
+                                    style: {
+                                        fill: '#ffffff',
+                                        stroke: 'green',
+										lineWidth: 2,
+                                    }
+                                });
+                            }
 						}
 					});	
 
@@ -154,12 +189,8 @@
 							for(var i = 0;i<datacount;i++) {
 								var data = {
 									x : i,
-									y1 :  Math.random() * 200 - 100,
-									y2: Math.random() * 200 + 50,
-									y3: Math.random() * 200 + 50,
-									y4:Math.random() * 200 + 50,
-									y5:Math.random() * 200 + 50,
-									y6:Math.random() * 200 + 50,
+									y1: Math.random() * 5 + i,
+									y2: Math.random() * 10 + i * 5,
 								};
 								if(i == 3) {
 									data.y = null;
@@ -193,7 +224,7 @@
             
             function addPointMark(point, serie, options) {
                 const mark = serie.graph.createShape('circle', {
-                    radius: 5 * serie.graph.devicePixelRatio,
+                    radius: 6 * serie.graph.devicePixelRatio,
                     style: {
                         fill: 'red',
                         zIndex: 18,
@@ -233,7 +264,7 @@
 					style: {
 						stroke: 'red',
 						fill: '#55cccccc',
-						zIndex: 18,
+						zIndex: 20,
                         close: true,
                         ...options.style
 					},

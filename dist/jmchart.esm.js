@@ -3644,7 +3644,7 @@ class jmArrowLine extends jmLine {
 	 */
 	initPoints() {	
 		this.points = super.initPoints();
-		if(this.ArrowVisible !== false) {
+		if(this.arrowVisible !== false) {
 			this.points = this.points.concat(this.arrow.initPoints());
 		}
 		return this.points;
@@ -6028,15 +6028,18 @@ jmLegend.prototype.append = function (series, shape, options = {}) {
   /*const hover = options.hover || function() {	
   	//应用图的动态样式		
   	//Object.assign(series.style, series.style.hover);
-  		//Object.assign(this.style, this.style.hover || {});
-  		//series.graph.refresh();
+  
+  	//Object.assign(this.style, this.style.hover || {});
+  
+  	//series.graph.refresh();
   };
   panel.bind('mouseover', hover);
   //执行离开
   const leave = options.leave || function() {	
   	//应用图的普通样式		
   	//Object.assign(series.style, series.style.normal);
-  		//Object.assign(this.style, this.style.normal || {});
+  
+  	//Object.assign(this.style, this.style.normal || {});
   	//jmUtils.apply(this.series.style.normal,this.series.style);
   	//series.graph.refresh();
   };
@@ -6373,6 +6376,7 @@ class jmSeries extends jmPath {
       const xv = s[this.xAxis.field];
       const p = {
         data: s,
+        index: i,
         xValue: xv,
         xLabel: xv,
         points: []
@@ -8021,7 +8025,8 @@ class jmChart extends jmGraph$1 {
       options = Object.assign({
         field: this.xField,
         type: 'x',
-        format: this.options.xLabelFormat
+        format: this.options.xLabelFormat,
+        ...this.options.yAxisOption
       }, options || {});
 
       if (typeof this.options.minXValue !== 'undefined') {
@@ -8056,7 +8061,8 @@ class jmChart extends jmGraph$1 {
       index: 1,
       type: 'y',
       format: this.options.yLabelFormat,
-      zeroBase: this.baseY === 0
+      zeroBase: this.baseY === 0,
+      ...this.options.xAxisOption
     }, options || {});
 
     if (typeof this.options.minYValue !== 'undefined') {

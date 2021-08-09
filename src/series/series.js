@@ -246,6 +246,7 @@ export default class jmSeries extends jmPath {
 
 			const p = {				
 				data: s,
+				index: i,
 				xValue: xv,
 				xLabel: xv,
 				points: []
