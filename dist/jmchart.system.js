@@ -6033,18 +6033,15 @@ System.register([], function (exports, module) {
         /*const hover = options.hover || function() {	
         	//应用图的动态样式		
         	//Object.assign(series.style, series.style.hover);
-        
-        	//Object.assign(this.style, this.style.hover || {});
-        
-        	//series.graph.refresh();
+        		//Object.assign(this.style, this.style.hover || {});
+        		//series.graph.refresh();
         };
         panel.bind('mouseover', hover);
         //执行离开
         const leave = options.leave || function() {	
         	//应用图的普通样式		
         	//Object.assign(series.style, series.style.normal);
-        
-        	//Object.assign(this.style, this.style.normal || {});
+        		//Object.assign(this.style, this.style.normal || {});
         	//jmUtils.apply(this.series.style.normal,this.series.style);
         	//series.graph.refresh();
         };
