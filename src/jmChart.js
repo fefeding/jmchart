@@ -130,10 +130,10 @@ export default class jmChart extends jmGraph  {
 
 	// 创建一个操作层，以免每次刷新
 	createTouchGraph(container, options) {
-		if(container.tagName === 'CANVAS') {
+		if(container && container.tagName === 'CANVAS') {
 			container = container.parentElement;
 		}
-		container.style.position = 'relative';
+		container && (container.style.position = 'relative');
 
 		options = this.utils.clone(options, {
 			autoRefresh: true
@@ -142,7 +142,8 @@ export default class jmChart extends jmGraph  {
 		let graph = this.touchGraph = this;
 
 		// 生成图层, 当图刷新慢时，需要用一个操作图层来进行滑动等操作重绘
-		if(options.touchGraph) {
+		// isWXMiniApp 非微信小程序下才能创建
+		if(!graph.isWXMiniApp && container && options.touchGraph) {
 			let cn = document.createElement('canvas');
 			cn.width = container.offsetWidth||container.clientWidth;
 			cn.height = container.offsetHeight||container.clientHeight;

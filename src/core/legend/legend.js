@@ -52,7 +52,7 @@ jmLegend.prototype.append = function(series, shape, options = {}) {
 	shape.width = panel.style.shape.width;
 	shape.height = panel.style.shape.height;
 	
-	name = options.name || series.legendLabel;
+	let name = options.name || series.legendLabel;
 	name = series.option.legendFormat? series.option.legendFormat.call(series, options): name; 
 
 	if(name) {

@@ -4611,6 +4611,7 @@ define(['exports'], function (exports) { 'use strict';
   		if(typeof wx != 'undefined' && wx.createCanvasContext) {
   			this.context = wx.createCanvasContext(canvas);
   			canvas = wx.createSelectorQuery().select('#' + canvas);
+  			this.isWXMiniApp = true;// 微信小程序平台
   		}
   		else {
   			if(typeof canvas === 'string' && typeof document != 'undefined') {
@@ -4943,7 +4944,7 @@ define(['exports'], function (exports) { 'use strict';
   	* @param {string} value 样式值
   	*/
   	css(name, value) {
-  		if(this.canvas) {
+  		if(this.canvas && this.canvas.style) {
   			if(typeof value != 'undefined') this.canvas.style[name] = value;
   			return this.canvas.style[name];
   		}
@@ -5059,16 +5060,26 @@ define(['exports'], function (exports) { 'use strict';
   		if(this.___isAutoRefreshing) return;
   		const self = this;
   		this.___isAutoRefreshing = true;
+  		let requestAnimationFrameFun = null;
+  		if(typeof requestAnimationFrame === 'undefined') {
+  			requestAnimationFrameFun = (fun) => {
+  				if(this.__requestAnimationFrameFunHandler) clearTimeout(this.__requestAnimationFrameFunHandler);
+  				this.__requestAnimationFrameFunHandler = setTimeout(fun, 20);
+  			};
+  		}
+  		else {
+  			requestAnimationFrameFun = requestAnimationFrame;
+  		}
   		function update() {
   			if(self.destoryed) {
   				self.___isAutoRefreshing = false;
   				return;// 已销毁
   			}
   			if(self.needUpdate) self.redraw();
-  			requestAnimationFrame(update);
+  			requestAnimationFrameFun(update);
   			if(callback) callback();
   		}
-  		requestAnimationFrame(update);
+  		requestAnimationFrameFun(update);
   		return this;
   	}
 
@@ -6004,7 +6015,7 @@ define(['exports'], function (exports) { 'use strict';
     panel.children.add(shape);
     shape.width = panel.style.shape.width;
     shape.height = panel.style.shape.height;
-    name = options.name || series.legendLabel;
+    let name = options.name || series.legendLabel;
     name = series.option.legendFormat ? series.option.legendFormat.call(series, options) : name;
 
     if (name) {
@@ -7778,17 +7789,18 @@ define(['exports'], function (exports) { 'use strict';
 
 
     createTouchGraph(container, options) {
-      if (container.tagName === 'CANVAS') {
+      if (container && container.tagName === 'CANVAS') {
         container = container.parentElement;
       }
 
-      container.style.position = 'relative';
+      container && (container.style.position = 'relative');
       options = this.utils.clone(options, {
         autoRefresh: true
       }, true);
       let graph = this.touchGraph = this; // 生成图层, 当图刷新慢时，需要用一个操作图层来进行滑动等操作重绘
+      // isWXMiniApp 非微信小程序下才能创建
 
-      if (options.touchGraph) {
+      if (!graph.isWXMiniApp && container && options.touchGraph) {
         let cn = document.createElement('canvas');
         cn.width = container.offsetWidth || container.clientWidth;
         cn.height = container.offsetHeight || container.clientHeight;
