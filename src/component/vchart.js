@@ -19,14 +19,14 @@ export default {
     data: function() {
         return {
             //chartData: this.chartData,
-            options: this.chartOptions
+            option: this.chartOptions
         }
     },
     // jmChart实例
     chartInstance: null,
 
     mounted () {
-        this.options = Object.assign({
+        this.option = Object.assign({
             enableAnimate: false,
             legendPosition: 'top',
             legendVisible: true, // 不显示图例    
@@ -75,7 +75,7 @@ export default {
         initChart() {
             if(this.chartInstance) return;
             
-            this.chartInstance = new jmChart(this.$refs.jmChartContainer, this.options);
+            this.chartInstance = new jmChart(this.$refs.jmChartContainer, this.option);
             
             if(this.chartData && this.chartData.length) this.refresh(); // 这里有死循环的问题，但上面 chartInstance不为空就返回了，就没有这个问题了
 

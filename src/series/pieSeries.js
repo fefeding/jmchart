@@ -94,10 +94,10 @@ export default class jmPieSeries extends jmSeries {
 
 	// 当前总起画角度
 	get startAngle() {
-		return this.options.startAngle || 0;
+		return this.option.startAngle || 0;
 	}
 	set startAngle(v) {
-		this.options.startAngle = v;
+		this.option.startAngle = v;
 	}
 
 	/**
@@ -118,7 +118,7 @@ export default class jmPieSeries extends jmSeries {
 
 		let cm = Math.PI * 2;
 		//规定应该逆时针还是顺时针绘图 false  顺时针，true 逆时针
-		const anticlockwise = this.options.anticlockwise || false;
+		const anticlockwise = this.option.anticlockwise || false;
 		// 每项之间的间隔角度  顺时钟为正，否则为负
 		const marginAngle = (Number(this.style.marginAngle) || 0);
 
@@ -160,23 +160,23 @@ export default class jmPieSeries extends jmSeries {
 					const arcWidth = this.style.arcWidth || radius*0.2;
 					p.radius = radius;
 					// 如果有指定动态半径，则调用
-					if(typeof this.options.radius === 'function') {
-						p.radius = this.options.radius.call(this, p, radius, i);
+					if(typeof this.option.radius === 'function') {
+						p.radius = this.option.radius.call(this, p, radius, i);
 					}
 					p.maxRadius = p.radius;
 					// 如果有指定动态半径，则调用
-					if(typeof this.options.maxRadius === 'function') {
-						p.maxRadius = this.options.maxRadius.call(this, p, p.maxRadius, i);
+					if(typeof this.option.maxRadius === 'function') {
+						p.maxRadius = this.option.maxRadius.call(this, p, p.maxRadius, i);
 					}
 					p.minRadius = p.radius - arcWidth;
 					// 如果有指定动态半径，则调用
-					if(typeof this.options.minRadius === 'function') {
-						p.minRadius = this.options.minRadius.call(this, p, p.minRadius, i);
+					if(typeof this.option.minRadius === 'function') {
+						p.minRadius = this.option.minRadius.call(this, p, p.minRadius, i);
 					}
 					p.center = center;
 					// 如果有指定动态半径，则调用
-					if(typeof this.options.center === 'function') {
-						p.center = this.options.center.call(this, p, p.center, i);
+					if(typeof this.option.center === 'function') {
+						p.center = this.option.center.call(this, p, p.center, i);
 					}
 					p.shape = this.graph.createShape(this.style.isHollow? 'harc' : 'arc', {
 						style: p.style,
@@ -216,19 +216,19 @@ export default class jmPieSeries extends jmSeries {
 					this.addShape(p.shape);
 
 					// 如果有点击事件
-					if(this.options.onClick) {
+					if(this.option.onClick) {
 						p.shape.on('click', (e) => {
-							this.options.onClick.call(this, p, e);
+							this.option.onClick.call(this, p, e);
 						});
 					}
-					if(this.options.onOver) {
+					if(this.option.onOver) {
 						p.shape.on('mouseover touchover', (e) => {
-							this.options.onOver.call(this, p, e);
+							this.option.onOver.call(this, p, e);
 						});
 					}
-					if(this.options.onLeave) {
+					if(this.option.onLeave) {
 						p.shape.on('mouseleave touchleave', (e) => {
-							this.options.onLeave.call(this, p, e);
+							this.option.onLeave.call(this, p, e);
 						});
 					}
 
@@ -249,7 +249,7 @@ export default class jmPieSeries extends jmSeries {
 	createLabel(point) {
 		if(this.style.label && this.style.label.show === false) return;
 
-		const text = this.options.labelFormat?this.options.labelFormat.call(this, point): point.step;
+		const text = this.option.labelFormat?this.option.labelFormat.call(this, point): point.step;
 		if(!text) return;
 		
 		// v如果指定了为控件，则直接加入

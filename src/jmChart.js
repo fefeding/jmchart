@@ -65,23 +65,23 @@ export default class jmChart extends jmGraph  {
 	 * 是否启用动画
 	 */
 	get enableAnimate() {
-		if(typeof this.options.enableAnimate !== 'undefined') return !!this.options.enableAnimate;
+		if(typeof this.option.enableAnimate !== 'undefined') return !!this.option.enableAnimate;
 		else {
 			return false;
 		}
 	}
 	set enableAnimate(v) {
-		this.options.enableAnimate = v;
+		this.option.enableAnimate = v;
 	}	
 
 	/**
 	 * Y轴的基线 默认是0
 	 */
 	get baseY() {
-		return this.options.baseY;
+		return this.option.baseY;
 	}
 	set baseY(v) {
-		this.options.baseY = v;
+		this.option.baseY = v;
 	}
 
 	// 初始化图表
@@ -378,15 +378,15 @@ export default class jmChart extends jmGraph  {
 			options = Object.assign({
 				field: this.xField,
 				type: 'x',
-				format: this.options.xLabelFormat,
-				...this.options.yAxisOption
+				format: this.option.xLabelFormat,
+				...this.option.yAxisOption
 			}, options || {});
 			
-			if(typeof this.options.minXValue !== 'undefined') {
-				options.minXValue = typeof options.minXValue === 'undefined'?this.options.minXValue:Math.min(this.options.minXValue, options.minXValue);
+			if(typeof this.option.minXValue !== 'undefined') {
+				options.minXValue = typeof options.minXValue === 'undefined'?this.option.minXValue:Math.min(this.option.minXValue, options.minXValue);
 			}
-			if(typeof this.options.maxXValue !== 'undefined') {
-				options.maxXValue =  typeof options.maxXValue === 'undefined'?this.options.maxXValue:Math.max(this.options.maxXValue, options.maxXValue);
+			if(typeof this.option.maxXValue !== 'undefined') {
+				options.maxXValue =  typeof options.maxXValue === 'undefined'?this.option.maxXValue:Math.max(this.option.maxXValue, options.maxXValue);
 			}
 			this.xAxis = this.createAxis(options);
 		}
@@ -409,15 +409,15 @@ export default class jmChart extends jmGraph  {
 		options = Object.assign({
 			index: 1,
 			type: 'y',
-			format: this.options.yLabelFormat,
+			format: this.option.yLabelFormat,
 			zeroBase: this.baseY === 0,
-			...this.options.xAxisOption,
+			...this.option.xAxisOption,
 		}, options || {});
-		if(typeof this.options.minYValue !== 'undefined') {
-			options.minYValue = typeof options.minYValue === 'undefined'?this.options.minYValue:Math.min(this.options.minYValue, options.minYValue);
+		if(typeof this.option.minYValue !== 'undefined') {
+			options.minYValue = typeof options.minYValue === 'undefined'?this.option.minYValue:Math.min(this.option.minYValue, options.minYValue);
 		}
-		if(typeof this.options.maxYValue !== 'undefined') {
-			options.maxYValue =  typeof options.maxYValue === 'undefined'?this.options.maxYValue:Math.max(this.options.maxYValue, options.maxYValue);
+		if(typeof this.option.maxYValue !== 'undefined') {
+			options.maxYValue =  typeof options.maxYValue === 'undefined'?this.option.maxYValue:Math.max(this.option.maxYValue, options.maxYValue);
 		}
 		
 		var yaxis = this.yAxises[options.index] || (this.yAxises[options.index] = this.createAxis(options));

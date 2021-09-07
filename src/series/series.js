@@ -17,7 +17,7 @@ export default class jmSeries extends jmPath {
 	constructor(options) {
 		super(options);
 
-		this.options = options;
+		this.option = options;
 
 		this.field = options.field || options.fields || '';
 		this.index = options.index || 1;
@@ -29,7 +29,7 @@ export default class jmSeries extends jmPath {
 		// 生成当前Y轴
 		this.yAxis = this.yAxis || this.graph.createYAxis({
 			index: this.index,
-			format: options.yLabelFormat || this.graph.options.yLabelFormat
+			format: options.yLabelFormat || this.graph.option.yLabelFormat
 		});
 		
 		// 初始化一些参数， 因为这里有多个Y轴的可能，所以每次都需要重调一次init
@@ -52,13 +52,13 @@ export default class jmSeries extends jmPath {
 
 	//是否启用动画效果
 	get enableAnimate() {
-		if(typeof this.options.enableAnimate !== 'undefined') return !!this.options.enableAnimate;
+		if(typeof this.option.enableAnimate !== 'undefined') return !!this.option.enableAnimate;
 		else {
 			return this.graph.enableAnimate;
 		}
 	}
 	set enableAnimate(v) {
-		this.options.enableAnimate = v;
+		this.option.enableAnimate = v;
 	}
 
 	/**
@@ -320,7 +320,7 @@ export default class jmSeries extends jmPath {
 	 */
 	getEvent(name) {	
 			
-		const event = this.options? this.options[name]: null;
+		const event = this.option? this.option[name]: null;
 		if(!event) {
 			return super.getEvent(name);
 		}

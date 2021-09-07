@@ -1368,7 +1368,7 @@ class jmControl extends jmProperty {
 		
 		this.on = this.bind;
 		
-		this.options = params;
+		this.option = params;
 	}
 
 	//# region 定义属性
@@ -2419,22 +2419,22 @@ class jmControl extends jmProperty {
 	raiseEvent(name, args) {
 		if(this.visible === false) return ;//如果不显示则不响应事件	
 		if(!args.position) {		
-			let graph = this.graph;
+			const graph = this.graph;
 
-			let srcElement = args.srcElement || args.target;			
+			const srcElement = args.srcElement || args.target;			
 			
-			let position = jmUtils.getEventPosition(args, graph.scaleSize);//初始化事件位置		
+			const position = jmUtils.getEventPosition(args, graph.scaleSize);//初始化事件位置		
 
 			// 如果有指定scale高清处理，需要对坐标处理
 			// 因为是对canvas放大N倍，再把style指定为当前大小，所以坐标需要放大N    && srcElement === graph.canvas      
 			if(graph.devicePixelRatio > 0) {
-				position.x = position.offsetX = position.x * devicePixelRatio;
-				position.y = position.offsetY = position.y * devicePixelRatio;
+				position.x = position.offsetX = position.x * graph.devicePixelRatio;
+				position.y = position.offsetY = position.y * graph.devicePixelRatio;
 			}
 		
 			args = {
 				position: position,
-				button: args.button == 0||position.isTouch?1:args.button,
+				button: args.button == 0 || position.isTouch? 1: args.button,
 				keyCode: args.keyCode || args.charCode || args.which,
 				ctrlKey: args.ctrlKey,
 				cancel : false,
@@ -3967,7 +3967,7 @@ class jmLabel extends jmControl {
 		
 		//获取当前控件的绝对位置
 		let bounds = this.parent && this.parent.absoluteBounds?this.parent.absoluteBounds:this.absoluteBounds;		
-		let size = this.testSize();
+		this.testSize();
 		let location = this.location;
 		let x = location.left + bounds.left;
 		let y = location.top + bounds.top;
@@ -4411,7 +4411,7 @@ class jmMouseEvent {
 
 		this.eventEvents['mousedown'] = jmUtils.bindEvent(this.target,'mousedown',function(evt) {
 			evt = evt || window.event;
-			let r = container.raiseEvent('mousedown',evt);
+			container.raiseEvent('mousedown',evt);
 			//if(r === false) {
 				//if(evt.preventDefault) evt.preventDefault();
 				//return false;
@@ -4422,7 +4422,7 @@ class jmMouseEvent {
 			evt = evt || window.event;		
 			let target = evt.target || evt.srcElement;
 			if(target == canvas) {
-				let r = container.raiseEvent('mousemove',evt);
+				container.raiseEvent('mousemove',evt);
 				//if(r === false) {
 					if(evt.preventDefault) evt.preventDefault();
 					return false;
@@ -4584,7 +4584,7 @@ class jmKeyEvent {
  * @param {object} option 参数：{width:宽,height:高}
  * @param {function} callback 初始化后的回调
  */
-class jmGraph extends jmControl {
+class jmGraph$1 extends jmControl {
 
 	constructor(canvas, option, callback) {
 		if(typeof option == 'function') {
@@ -4761,7 +4761,7 @@ class jmGraph extends jmControl {
 	 * @return {jmGraph} jmGraph实例对象
 	 */
 	static create(...args) {
-		return new jmGraph(...args);
+		return new jmGraph$1(...args);
 	}
 
 	/**
@@ -5090,21 +5090,26 @@ const shapes = {
     "line": jmLine,
     "prismatic": jmPrismatic,
     "rect": jmRect,
-    "Arrowline": jmArrowLine,
+    "arrowline": jmArrowLine,
     "image": jmImage,
     "img": jmImage,
     "label": jmLabel,
     "resize": jmResize
 };
 
-class jmGraph$1 extends jmGraph {
+class jmGraph extends jmGraph$1 {
     constructor(canvas, option, callback) {
-
+        
         const targetType = new.target;
+
+        // 合并shapes
+        option = Object.assign({}, option);
+        option.shapes = Object.assign(shapes, option.shapes||{});
+        
         //不是用new实例化的话，返回一个promise
-		if(!targetType || !(targetType.prototype instanceof jmGraph)) {
+		if(!targetType || !(targetType.prototype instanceof jmGraph$1)) {
 			return new Promise(function(resolve, reject){				
-				var g = new jmGraph$1(canvas, option, callback);
+				var g = new jmGraph(canvas, option, callback);
 				if(resolve) resolve(g);				
 			});
         }
@@ -5112,12 +5117,7 @@ class jmGraph$1 extends jmGraph {
         if(typeof option == 'function') {
 			callback = option;
 			option = {};
-        }        
-        
-
-        // 合并shapes
-        option = Object.assign({}, option);
-        option.shapes = Object.assign(shapes, option.shapes||{});
+        } 
         
         super(canvas, option, callback);
     }
@@ -5550,7 +5550,7 @@ class jmAxis extends jmArrowLine {
     //var count = this.style.xLabel.count || this.data.length;	
     //字符串轴。则显示每个标签	
 
-    const format = this.options.format || this.format;
+    const format = this.option.format || this.format;
     const top = (this.style.xLabel.margin.top || 0) * this.graph.devicePixelRatio;
 
     for (let i = 0; i < this.data.length; i++) {
@@ -5652,7 +5652,7 @@ class jmAxis extends jmArrowLine {
 
     let pervalue = mm / count || 1; //if(pervalue > 1 || pervalue < -1) pervalue = Math.floor(pervalue);		
 
-    const format = this.options.format || this.format;
+    const format = this.option.format || this.format;
     const marginLeft = this.style.yLabel.margin.left * this.graph.devicePixelRatio || 0;
     const marginRight = this.style.yLabel.margin.right * this.graph.devicePixelRatio || 0;
     let p = 0;
@@ -6007,7 +6007,7 @@ jmLegend.prototype.append = function (series, shape, options = {}) {
   shape.width = panel.style.shape.width;
   shape.height = panel.style.shape.height;
   name = options.name || series.legendLabel;
-  name = series.options.legendFormat ? series.options.legendFormat.call(series, options) : name;
+  name = series.option.legendFormat ? series.option.legendFormat.call(series, options) : name;
 
   if (name) {
     //生成图例名称
@@ -6032,15 +6032,18 @@ jmLegend.prototype.append = function (series, shape, options = {}) {
   /*const hover = options.hover || function() {	
   	//应用图的动态样式		
   	//Object.assign(series.style, series.style.hover);
-  		//Object.assign(this.style, this.style.hover || {});
-  		//series.graph.refresh();
+  
+  	//Object.assign(this.style, this.style.hover || {});
+  
+  	//series.graph.refresh();
   };
   panel.bind('mouseover', hover);
   //执行离开
   const leave = options.leave || function() {	
   	//应用图的普通样式		
   	//Object.assign(series.style, series.style.normal);
-  		//Object.assign(this.style, this.style.normal || {});
+  
+  	//Object.assign(this.style, this.style.normal || {});
   	//jmUtils.apply(this.series.style.normal,this.series.style);
   	//series.graph.refresh();
   };
@@ -6178,7 +6181,7 @@ class jmSeries extends jmPath {
 
     _defineProperty(this, "baseYValue", 0);
 
-    this.options = options;
+    this.option = options;
     this.field = options.field || options.fields || '';
     this.index = options.index || 1;
     this.legendLabel = options.legendLabel || '';
@@ -6189,7 +6192,7 @@ class jmSeries extends jmPath {
 
     this.yAxis = this.yAxis || this.graph.createYAxis({
       index: this.index,
-      format: options.yLabelFormat || this.graph.options.yLabelFormat
+      format: options.yLabelFormat || this.graph.option.yLabelFormat
     }); // 初始化一些参数， 因为这里有多个Y轴的可能，所以每次都需要重调一次init
 
     this.yAxis.init({
@@ -6213,13 +6216,13 @@ class jmSeries extends jmPath {
 
 
   get enableAnimate() {
-    if (typeof this.options.enableAnimate !== 'undefined') return !!this.options.enableAnimate;else {
+    if (typeof this.option.enableAnimate !== 'undefined') return !!this.option.enableAnimate;else {
       return this.graph.enableAnimate;
     }
   }
 
   set enableAnimate(v) {
-    this.options.enableAnimate = v;
+    this.option.enableAnimate = v;
   }
   /**
    * 图例名称
@@ -6278,7 +6281,7 @@ class jmSeries extends jmPath {
       } // 下一个点
 
 
-      if ( p.x > x) {
+      if (p.x > x) {
         // 没有上一个，只能返回这个了
         if (prePoint && x - prePoint.x < p.x - x) return prePoint;else return p;
       }
@@ -6454,7 +6457,7 @@ class jmSeries extends jmPath {
 
 
   getEvent(name) {
-    const event = this.options ? this.options[name] : null;
+    const event = this.option ? this.option[name] : null;
 
     if (!event) {
       return super.getEvent(name);
@@ -6841,11 +6844,11 @@ class jmPieSeries extends jmSeries {
 
 
   get startAngle() {
-    return this.options.startAngle || 0;
+    return this.option.startAngle || 0;
   }
 
   set startAngle(v) {
-    this.options.startAngle = v;
+    this.option.startAngle = v;
   }
   /**
    * 生成序列图描点
@@ -6866,7 +6869,7 @@ class jmPieSeries extends jmSeries {
 
     let cm = Math.PI * 2; //规定应该逆时针还是顺时针绘图 false  顺时针，true 逆时针
 
-    const anticlockwise = this.options.anticlockwise || false; // 每项之间的间隔角度  顺时钟为正，否则为负
+    const anticlockwise = this.option.anticlockwise || false; // 每项之间的间隔角度  顺时钟为正，否则为负
 
     const marginAngle = Number(this.style.marginAngle) || 0;
 
@@ -6906,26 +6909,26 @@ class jmPieSeries extends jmSeries {
           const arcWidth = this.style.arcWidth || radius * 0.2;
           p.radius = radius; // 如果有指定动态半径，则调用
 
-          if (typeof this.options.radius === 'function') {
-            p.radius = this.options.radius.call(this, p, radius, i);
+          if (typeof this.option.radius === 'function') {
+            p.radius = this.option.radius.call(this, p, radius, i);
           }
 
           p.maxRadius = p.radius; // 如果有指定动态半径，则调用
 
-          if (typeof this.options.maxRadius === 'function') {
-            p.maxRadius = this.options.maxRadius.call(this, p, p.maxRadius, i);
+          if (typeof this.option.maxRadius === 'function') {
+            p.maxRadius = this.option.maxRadius.call(this, p, p.maxRadius, i);
           }
 
           p.minRadius = p.radius - arcWidth; // 如果有指定动态半径，则调用
 
-          if (typeof this.options.minRadius === 'function') {
-            p.minRadius = this.options.minRadius.call(this, p, p.minRadius, i);
+          if (typeof this.option.minRadius === 'function') {
+            p.minRadius = this.option.minRadius.call(this, p, p.minRadius, i);
           }
 
           p.center = center; // 如果有指定动态半径，则调用
 
-          if (typeof this.options.center === 'function') {
-            p.center = this.options.center.call(this, p, p.center, i);
+          if (typeof this.option.center === 'function') {
+            p.center = this.option.center.call(this, p, p.center, i);
           }
 
           p.shape = this.graph.createShape(this.style.isHollow ? 'harc' : 'arc', {
@@ -6965,21 +6968,21 @@ class jmPieSeries extends jmSeries {
 
           this.addShape(p.shape); // 如果有点击事件
 
-          if (this.options.onClick) {
+          if (this.option.onClick) {
             p.shape.on('click', e => {
-              this.options.onClick.call(this, p, e);
+              this.option.onClick.call(this, p, e);
             });
           }
 
-          if (this.options.onOver) {
+          if (this.option.onOver) {
             p.shape.on('mouseover touchover', e => {
-              this.options.onOver.call(this, p, e);
+              this.option.onOver.call(this, p, e);
             });
           }
 
-          if (this.options.onLeave) {
+          if (this.option.onLeave) {
             p.shape.on('mouseleave touchleave', e => {
-              this.options.onLeave.call(this, p, e);
+              this.option.onLeave.call(this, p, e);
             });
           }
 
@@ -6999,7 +7002,7 @@ class jmPieSeries extends jmSeries {
 
   createLabel(point) {
     if (this.style.label && this.style.label.show === false) return;
-    const text = this.options.labelFormat ? this.options.labelFormat.call(this, point) : point.step;
+    const text = this.option.labelFormat ? this.option.labelFormat.call(this, point) : point.step;
     if (!text) return; // v如果指定了为控件，则直接加入
 
     if (text instanceof jmControl) {
@@ -7166,8 +7169,8 @@ class jmLineSeries extends jmSeries {
         shapePoints = this.createCurePoints(shapePoints, p);
       } // 如果是虚线
       else if (this.style.lineType === 'dotted') {
-          shapePoints = this.createDotLine(shapePoints, p);
-        }
+        shapePoints = this.createDotLine(shapePoints, p);
+      }
 
       shapePoints.push(p); // 生成关健值标注
 
@@ -7411,9 +7414,9 @@ class jmStackLineSeries extends jmLineSeries {
         endShapePoints = this.createCurePoints(endShapePoints, p.points[1]);
       } // 如果是虚线
       else if (this.style.lineType === 'dotted') {
-          startShapePoints = this.createDotLine(startShapePoints, p.points[0]);
-          endShapePoints = this.createDotLine(endShapePoints, p.points[1]);
-        }
+        startShapePoints = this.createDotLine(startShapePoints, p.points[0]);
+        endShapePoints = this.createDotLine(endShapePoints, p.points[1]);
+      }
 
       startShapePoints.push(p.points[0]);
       endShapePoints.push(p.points[1]); // 生成标点的回调
@@ -7672,7 +7675,7 @@ class jmMarkLine extends jmLine {
  * @param {element} container 图表容器
  */
 
-class jmChart extends jmGraph$1 {
+class jmChart extends jmGraph {
   constructor(container, options) {
     options = options || {};
     const enableAnimate = !!options.enableAnimate;
@@ -7707,13 +7710,13 @@ class jmChart extends jmGraph$1 {
    * 是否启用动画
    */
   get enableAnimate() {
-    if (typeof this.options.enableAnimate !== 'undefined') return !!this.options.enableAnimate;else {
+    if (typeof this.option.enableAnimate !== 'undefined') return !!this.option.enableAnimate;else {
       return false;
     }
   }
 
   set enableAnimate(v) {
-    this.options.enableAnimate = v;
+    this.option.enableAnimate = v;
   }
   /**
    * Y轴的基线 默认是0
@@ -7721,11 +7724,11 @@ class jmChart extends jmGraph$1 {
 
 
   get baseY() {
-    return this.options.baseY;
+    return this.option.baseY;
   }
 
   set baseY(v) {
-    this.options.baseY = v;
+    this.option.baseY = v;
   } // 初始化图表
 
 
@@ -7794,7 +7797,7 @@ class jmChart extends jmGraph$1 {
       cn.style.position = 'absolute';
       cn.style.top = 0;
       cn.style.left = 0;
-      this.touchGraph = graph = new jmGraph$1(cn, options);
+      this.touchGraph = graph = new jmGraph(cn, options);
       container.appendChild(cn);
       this.touchGraph.chartGraph = this;
       this.on('propertyChange', (name, args) => {
@@ -8026,16 +8029,16 @@ class jmChart extends jmGraph$1 {
       options = Object.assign({
         field: this.xField,
         type: 'x',
-        format: this.options.xLabelFormat,
-        ...this.options.yAxisOption
+        format: this.option.xLabelFormat,
+        ...this.option.yAxisOption
       }, options || {});
 
-      if (typeof this.options.minXValue !== 'undefined') {
-        options.minXValue = typeof options.minXValue === 'undefined' ? this.options.minXValue : Math.min(this.options.minXValue, options.minXValue);
+      if (typeof this.option.minXValue !== 'undefined') {
+        options.minXValue = typeof options.minXValue === 'undefined' ? this.option.minXValue : Math.min(this.option.minXValue, options.minXValue);
       }
 
-      if (typeof this.options.maxXValue !== 'undefined') {
-        options.maxXValue = typeof options.maxXValue === 'undefined' ? this.options.maxXValue : Math.max(this.options.maxXValue, options.maxXValue);
+      if (typeof this.option.maxXValue !== 'undefined') {
+        options.maxXValue = typeof options.maxXValue === 'undefined' ? this.option.maxXValue : Math.max(this.option.maxXValue, options.maxXValue);
       }
 
       this.xAxis = this.createAxis(options);
@@ -8061,17 +8064,17 @@ class jmChart extends jmGraph$1 {
     options = Object.assign({
       index: 1,
       type: 'y',
-      format: this.options.yLabelFormat,
+      format: this.option.yLabelFormat,
       zeroBase: this.baseY === 0,
-      ...this.options.xAxisOption
+      ...this.option.xAxisOption
     }, options || {});
 
-    if (typeof this.options.minYValue !== 'undefined') {
-      options.minYValue = typeof options.minYValue === 'undefined' ? this.options.minYValue : Math.min(this.options.minYValue, options.minYValue);
+    if (typeof this.option.minYValue !== 'undefined') {
+      options.minYValue = typeof options.minYValue === 'undefined' ? this.option.minYValue : Math.min(this.option.minYValue, options.minYValue);
     }
 
-    if (typeof this.options.maxYValue !== 'undefined') {
-      options.maxYValue = typeof options.maxYValue === 'undefined' ? this.options.maxYValue : Math.max(this.options.maxYValue, options.maxYValue);
+    if (typeof this.option.maxYValue !== 'undefined') {
+      options.maxYValue = typeof options.maxYValue === 'undefined' ? this.option.maxYValue : Math.max(this.option.maxYValue, options.maxYValue);
     }
 
     var yaxis = this.yAxises[options.index] || (this.yAxises[options.index] = this.createAxis(options));
@@ -8133,14 +8136,14 @@ var vchart = {
   data: function () {
     return {
       //chartData: this.chartData,
-      options: this.chartOptions
+      option: this.chartOptions
     };
   },
   // jmChart实例
   chartInstance: null,
 
   mounted() {
-    this.options = Object.assign({
+    this.option = Object.assign({
       enableAnimate: false,
       legendPosition: 'top',
       legendVisible: true,
@@ -8186,7 +8189,7 @@ var vchart = {
     // 初始化图表组件
     initChart() {
       if (this.chartInstance) return;
-      this.chartInstance = new jmChart(this.$refs.jmChartContainer, this.options);
+      this.chartInstance = new jmChart(this.$refs.jmChartContainer, this.option);
       if (this.chartData && this.chartData.length) this.refresh(); // 这里有死循环的问题，但上面 chartInstance不为空就返回了，就没有这个问题了
       // touch改变数据点事件
 
@@ -8238,6 +8241,6 @@ var vchart = {
   template: `<div ref="jmChartContainer" :style="{width: width, height: height}"></div>`
 };
 
-exports.default = jmChart;
+exports['default'] = jmChart;
 exports.jmChart = jmChart;
 exports.vChart = vchart;

@@ -203,7 +203,7 @@ export default class jmAxis extends jmArrowLine {
 		//最多显示标签个数
 		//var count = this.style.xLabel.count || this.data.length;	
 		//字符串轴。则显示每个标签	
-		const format = this.options.format || this.format;
+		const format = this.option.format || this.format;
 		const top = (this.style.xLabel.margin.top || 0) * this.graph.devicePixelRatio;	
 		for(let i=0; i< this.data.length;i++) {	
 			const d = this.data[i];
@@ -311,7 +311,7 @@ export default class jmAxis extends jmArrowLine {
 		let pervalue = (mm / count) || 1;
 		//if(pervalue > 1 || pervalue < -1) pervalue = Math.floor(pervalue);		
 			
-		const format = this.options.format || this.format;
+		const format = this.option.format || this.format;
 		const marginLeft = this.style.yLabel.margin.left * this.graph.devicePixelRatio || 0;
 		const marginRight = this.style.yLabel.margin.right * this.graph.devicePixelRatio || 0;
 		let p = 0;
