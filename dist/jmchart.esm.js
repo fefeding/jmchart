@@ -6475,9 +6475,9 @@ class jmSeries extends jmPath {
       return text;
     }
 
-    const style = this.graph.utils.clone({ ...this.style.label,
+    const style = this.graph.utils.clone({ ...this.graph.style.itemLabel,
       zIndex: 21
-    }, this.graph.style.itemLabel);
+    }, this.style.label);
     const barWidth = (this.barTotalWidth || 0) / 2 - (this.barWidth || 0) * (this.barIndex || 0) - (this.barWidth || 0) / 2;
     const baseOffset = point.y - this.baseY;
     const label = this.graph.createShape('label', {
