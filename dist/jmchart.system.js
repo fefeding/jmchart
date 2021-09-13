@@ -6480,14 +6480,21 @@ System.register([], function (exports) {
             return text;
           }
 
-          const style = this.graph.utils.clone({ ...this.graph.style.itemLabel,
-            zIndex: 21
-          }, this.style.label);
+          const style = this.graph.utils.clone(this.graph.style.itemLabel, {
+            zIndex: 21,
+            ...this.style.label
+          });
+
+          if (typeof style.fill === 'function') {
+            style.fill = style.fill.call(this, point);
+          }
+
           const barWidth = (this.barTotalWidth || 0) / 2 - (this.barWidth || 0) * (this.barIndex || 0) - (this.barWidth || 0) / 2;
           const baseOffset = point.y - this.baseY;
           const label = this.graph.createShape('label', {
             style,
             text: text,
+            data: point,
             position: function () {
               const offh = style.offset || 5;
               const size = this.testSize();

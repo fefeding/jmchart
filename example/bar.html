@@ -72,7 +72,11 @@
 							label: {
 								show: true,
 								offset: 5, // 离柱偏移量
-								fill: 'red'
+								fill: function(point) {
+									console.log(point);
+									if(point.yValue < 0) return 'green';
+									else return 'red';
+								}
 							}
 						},
 						itemLabelFormat(p) {
