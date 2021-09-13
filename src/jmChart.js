@@ -295,7 +295,7 @@ export default class jmChart extends jmGraph  {
 		//初始化图序列，并初始化轴值,生成图例项
 		this.series.each(function(i, serie) {
 			//设定边框颜色和数据项图示颜 色
-			serie.style.color = serie.style.color || serie.graph.getColor(i);
+			if(!serie.style.color) serie.style.color = serie.graph.getColor(i);
 			//如果排版指定非内缩的方式，但出现了柱图，还是会采用内缩一个刻度的方式
 			if(serie.graph.style.layout != 'inside') {
 				if(serie instanceof jmBarSeries) {			

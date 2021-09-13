@@ -62,7 +62,7 @@
 						legendFormat: function(options) {
 							return 'test' + options.data.x;
 						},
-						labelFormat: function(point) {
+						itemLabelFormat: function(point) {
 							//return (point.step * 100).toFixed(2) + '%';
 							//return point.data.name;
 							const label = this.graph.createShape('label', {
@@ -214,7 +214,7 @@
 						legendFormat: function(options) {
 							return 'test' + options.data.x;
 						},
-						labelFormat: function(point) {
+						itemLabelFormat: function(point) {
 							return point.data.name + ':' + (point.step * 100).toFixed(2) + '$';
 						},
 						/*radius: function(p, radius, index) {

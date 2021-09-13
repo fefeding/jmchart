@@ -60,6 +60,17 @@
 					
 					var bar1 = chart.createSeries('bar', {
 						field: 'y1',
+						style: {
+							// 渐变色
+							color: 'linear-gradient(50% 0 50% 100%, #ccc 0, #000 0.5, #fff 1)',
+							label: {
+								show: true,
+								offset: 5 // 离柱偏移量
+							}
+						},
+						itemLabelFormat(p) {
+							return p.yValue.toFixed(2);
+						},
 						// 图例格式化，如果不给定，则采用legendLabel
 						legendFormat: function(options) {
 							return '图1';
@@ -71,6 +82,16 @@
 					
 					var bar2 = chart.createSeries('bar', {
 						field: 'y8',
+						style: {
+							// 自定义单个bar的颜色
+							color: function(p) {
+								if(p && p.xValue == 3) {
+									return 'green';
+								}
+								// 默认值
+								return 'linear-gradient(50% 0 50% 100%, #ff0000 0, #00ff00 0.5, #0000ff 1)';
+							}
+						},
 						// 图例格式化，如果不给定，则采用legendLabel
 						legendFormat: function(options) {
 							return '图4';

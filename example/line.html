@@ -79,6 +79,9 @@
 						style: {
 							// 画圆滑的曲线 
 							curve: true,// 填充图形
+							label: {
+								show: true
+							},
                             area: {
                                 // 自定义填充颜色处理
                                 fill: function(style) {
@@ -92,6 +95,9 @@
                                         rgba(${color.r},${color.g},${color.b}, 0.8) 0)`;
                                 }
                             }
+						},
+						itemLabelFormat: function(p) {
+							return p.yValue.toFixed(0);
 						},
 						legendFormat: function(options) {
 							return '图例2';
