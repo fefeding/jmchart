@@ -363,6 +363,7 @@ export default class jmChart extends jmGraph  {
 		options.style = options.style? this.utils.clone(this.style.axis, options.style, true) : this.style.axis;
 
 		const axis = this.createShape(jmAxis, options);
+		if(typeof options.visible !== 'undefined') axis.visible = options.visible;
 		this.children.add(axis);
 		return axis;
 	}
@@ -379,6 +380,7 @@ export default class jmChart extends jmGraph  {
 			options = Object.assign({
 				field: this.xField,
 				type: 'x',
+				visible: this.style.axis.x === false? false: true,
 				format: this.option.xLabelFormat,
 				...this.option.yAxisOption
 			}, options || {});
@@ -403,13 +405,14 @@ export default class jmChart extends jmGraph  {
 	 * @param {bool} 是否从0开始
 	 */ 
 	createYAxis(options) {	
-
+		
 		if(!this.yAxises) {
 			this.yAxises = {};		
 		}
 		options = Object.assign({
 			index: 1,
-			type: 'y',
+			type: 'y',			
+			visible: this.style.axis.y === false? false: true,
 			format: this.option.yLabelFormat,
 			zeroBase: this.baseY === 0,
 			...this.option.xAxisOption,
