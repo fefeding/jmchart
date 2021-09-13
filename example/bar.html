@@ -96,6 +96,10 @@
 								}
 								// 默认值
 								return 'linear-gradient(50% 0 50% 100%, #ff0000 0, #00ff00 0.5, #0000ff 1)';
+							},
+							label: {
+								show: false,
+								offset: 5 // 离柱偏移量
 							}
 						},
 						// 图例格式化，如果不给定，则采用legendLabel
@@ -105,7 +109,7 @@
 						yLabelFormat: (v, label) => {
 							return v.toFixed(0);
 						}
-					});	
+					});
 		
 					const datacount = 10;
 					function animate() {

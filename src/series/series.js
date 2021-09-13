@@ -331,10 +331,11 @@ export default class jmSeries extends jmPath {
 		}
 
 		const style = this.graph.utils.clone({
-			...this.style.label
+			...this.style.label,
+			zIndex: 21
 		}, this.graph.style.itemLabel);
 		
-		const barWidth = (this.barWidth || 1) / 2;
+		const barWidth = (this.barTotalWidth||0) / 2 - (this.barWidth||0) * (this.barIndex||0) - (this.barWidth||0) / 2;
 		const baseOffset = point.y - this.baseY;
 		const label = this.graph.createShape('label', {
 			style,
