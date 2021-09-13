@@ -72,6 +72,12 @@
 							label: {
 								show: true,
 								offset: 5, // 离柱偏移量
+								shadow: {
+									x: 0,
+									y: 0,
+									blur: 0,
+									color: 'transparent'
+								},
 								fill: function(point) {
 									console.log(point);
 									if(point.yValue < 0) return 'green';
