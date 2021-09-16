@@ -15,6 +15,8 @@ stackLine[http://jiamao.github.io/jmchart/example/stackLine.html]
 
 vue[http://jiamao.github.io/jmchart/example/vue.html]
 
+微信小程序[https://github.com/jiamao/mini-jmchart]
+
 
 安装
 ---
