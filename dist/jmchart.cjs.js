@@ -3967,7 +3967,7 @@ class jmLabel extends jmControl {
 		
 		//获取当前控件的绝对位置
 		let bounds = this.parent && this.parent.absoluteBounds?this.parent.absoluteBounds:this.absoluteBounds;		
-		this.testSize();
+		let size = this.testSize();
 		let location = this.location;
 		let x = location.left + bounds.left;
 		let y = location.top + bounds.top;
@@ -4411,7 +4411,7 @@ class jmMouseEvent {
 
 		this.eventEvents['mousedown'] = jmUtils.bindEvent(this.target,'mousedown',function(evt) {
 			evt = evt || window.event;
-			container.raiseEvent('mousedown',evt);
+			let r = container.raiseEvent('mousedown',evt);
 			//if(r === false) {
 				//if(evt.preventDefault) evt.preventDefault();
 				//return false;
@@ -4422,7 +4422,7 @@ class jmMouseEvent {
 			evt = evt || window.event;		
 			let target = evt.target || evt.srcElement;
 			if(target == canvas) {
-				container.raiseEvent('mousemove',evt);
+				let r = container.raiseEvent('mousemove',evt);
 				//if(r === false) {
 					if(evt.preventDefault) evt.preventDefault();
 					return false;
@@ -4584,7 +4584,7 @@ class jmKeyEvent {
  * @param {object} option 参数：{width:宽,height:高}
  * @param {function} callback 初始化后的回调
  */
-class jmGraph$1 extends jmControl {
+class jmGraph extends jmControl {
 
 	constructor(canvas, option, callback) {
 		if(typeof option == 'function') {
@@ -4762,7 +4762,7 @@ class jmGraph$1 extends jmControl {
 	 * @return {jmGraph} jmGraph实例对象
 	 */
 	static create(...args) {
-		return new jmGraph$1(...args);
+		return new jmGraph(...args);
 	}
 
 	/**
@@ -5108,7 +5108,7 @@ const shapes = {
     "resize": jmResize
 };
 
-class jmGraph extends jmGraph$1 {
+class jmGraph$1 extends jmGraph {
     constructor(canvas, option, callback) {
         
         const targetType = new.target;
@@ -5118,9 +5118,9 @@ class jmGraph extends jmGraph$1 {
         option.shapes = Object.assign(shapes, option.shapes||{});
         
         //不是用new实例化的话，返回一个promise
-		if(!targetType || !(targetType.prototype instanceof jmGraph$1)) {
+		if(!targetType || !(targetType.prototype instanceof jmGraph)) {
 			return new Promise(function(resolve, reject){				
-				var g = new jmGraph(canvas, option, callback);
+				var g = new jmGraph$1(canvas, option, callback);
 				if(resolve) resolve(g);				
 			});
         }
@@ -6049,18 +6049,15 @@ jmLegend.prototype.append = function (series, shape, options = {}) {
   /*const hover = options.hover || function() {	
   	//应用图的动态样式		
   	//Object.assign(series.style, series.style.hover);
-  
-  	//Object.assign(this.style, this.style.hover || {});
-  
-  	//series.graph.refresh();
+  		//Object.assign(this.style, this.style.hover || {});
+  		//series.graph.refresh();
   };
   panel.bind('mouseover', hover);
   //执行离开
   const leave = options.leave || function() {	
   	//应用图的普通样式		
   	//Object.assign(series.style, series.style.normal);
-  
-  	//Object.assign(this.style, this.style.normal || {});
+  		//Object.assign(this.style, this.style.normal || {});
   	//jmUtils.apply(this.series.style.normal,this.series.style);
   	//series.graph.refresh();
   };
@@ -6298,7 +6295,7 @@ class jmSeries extends jmPath {
       } // 下一个点
 
 
-      if (p.x > x) {
+      if ( p.x > x) {
         // 没有上一个，只能返回这个了
         if (prePoint && x - prePoint.x < p.x - x) return prePoint;else return p;
       }
@@ -6658,8 +6655,14 @@ class jmBarSeries extends jmSeries {
     //计算每个柱子占宽
     //每项柱子占宽除以柱子个数,默认最大宽度为30
     const maxWidth = this.xAxis.width / count / this.graph.barSeriesCount;
-    this.barTotalWidth = this.xAxis.width / count * (this.style.perWidth || 0.4);
-    this.barWidth = this.barTotalWidth / this.graph.barSeriesCount;
+
+    if (this.style.barWidth > 0) {
+      this.barWidth = Number(this.style.barWidth);
+      this.barTotalWidth = this.barWidth * this.graph.barSeriesCount;
+    } else {
+      this.barTotalWidth = this.xAxis.width / count * (this.style.perWidth || 0.4);
+      this.barWidth = this.barTotalWidth / this.graph.barSeriesCount;
+    }
 
     if (this.barWidth > maxWidth) {
       this.barWidth = maxWidth;
@@ -7239,8 +7242,8 @@ class jmLineSeries extends jmSeries {
         shapePoints = this.createCurePoints(shapePoints, p);
       } // 如果是虚线
       else if (this.style.lineType === 'dotted') {
-        shapePoints = this.createDotLine(shapePoints, p);
-      }
+          shapePoints = this.createDotLine(shapePoints, p);
+        }
 
       shapePoints.push(p);
       this.createItemLabel(p); // 生成关健值标注
@@ -7485,9 +7488,9 @@ class jmStackLineSeries extends jmLineSeries {
         endShapePoints = this.createCurePoints(endShapePoints, p.points[1]);
       } // 如果是虚线
       else if (this.style.lineType === 'dotted') {
-        startShapePoints = this.createDotLine(startShapePoints, p.points[0]);
-        endShapePoints = this.createDotLine(endShapePoints, p.points[1]);
-      }
+          startShapePoints = this.createDotLine(startShapePoints, p.points[0]);
+          endShapePoints = this.createDotLine(endShapePoints, p.points[1]);
+        }
 
       startShapePoints.push(p.points[0]);
       endShapePoints.push(p.points[1]); // 生成标点的回调
@@ -7751,7 +7754,7 @@ class jmMarkLine extends jmLine {
  * @param {element} container 图表容器
  */
 
-class jmChart extends jmGraph {
+class jmChart extends jmGraph$1 {
   constructor(container, options) {
     options = options || {};
     const enableAnimate = !!options.enableAnimate;
@@ -7874,7 +7877,7 @@ class jmChart extends jmGraph {
       cn.style.position = 'absolute';
       cn.style.top = 0;
       cn.style.left = 0;
-      this.touchGraph = graph = new jmGraph(cn, options);
+      this.touchGraph = graph = new jmGraph$1(cn, options);
       container.appendChild(cn);
       this.touchGraph.chartGraph = this;
       this.on('propertyChange', (name, args) => {
@@ -8321,6 +8324,6 @@ var vchart = {
   template: `<div ref="jmChartContainer" :style="{width: width, height: height}"></div>`
 };
 
-exports['default'] = jmChart;
+exports.default = jmChart;
 exports.jmChart = jmChart;
 exports.vChart = vchart;
