@@ -6400,7 +6400,7 @@ class jmSeries extends jmPath {
         style: this.graph.utils.clone(this.style)
       }; // 这里的点应相对于chartArea
 
-      p.x = xstep * (data.length === 1 ? 1 : i) + this.xAxis.labelStart;
+      p.x = xstep * i + this.xAxis.labelStart;
 
       for (const f of fields) {
         const yv = s[f];

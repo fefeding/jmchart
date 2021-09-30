@@ -56,7 +56,7 @@
 					});
 					chart.legend.legendPosition = 'top';
 					chart.legend.visible = true;
-					chart.enableAnimate = true;
+					chart.enableAnimate = false;
 
 					// touch改变数据点事件
 					chart.on('touchPointChange', function(args) {
@@ -68,7 +68,7 @@
 						field: 'y1',
 						style: {
 							// 渐变色
-							color: 'linear-gradient(50% 0 50% 100%, #ccc 0, #000 0.5, #fff 1)',
+							color: 'linear-gradient(50% 0 50% 100%, #ccc 0, #000 0.5, #fff 1)', 
 							perWidth: 0.5, //  控制barWidth占比，优先级比barWidth低
 							//barWidth: 80,// 优先级最高
 							label: {
@@ -99,7 +99,7 @@
 						}
 					});		
 					
-					var bar2 = chart.createSeries('bar', {
+					/*var bar2 = chart.createSeries('bar', {
 						field: 'y8',
 						style: {
 							// 自定义单个bar的颜色
@@ -122,9 +122,9 @@
 						yLabelFormat: (v, label) => {
 							return v.toFixed(0);
 						}
-					});
+					});*/
 		
-					const datacount = 10;
+					const datacount = 5;
 					function animate() {
 						if(true) {
 							chart.data = [];

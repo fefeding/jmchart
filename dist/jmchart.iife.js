@@ -6403,7 +6403,7 @@
           style: this.graph.utils.clone(this.style)
         }; // 这里的点应相对于chartArea
 
-        p.x = xstep * (data.length === 1 ? 1 : i) + this.xAxis.labelStart;
+        p.x = xstep * i + this.xAxis.labelStart;
 
         for (const f of fields) {
           const yv = s[f];
@@ -6657,8 +6657,14 @@
       //计算每个柱子占宽
       //每项柱子占宽除以柱子个数,默认最大宽度为30
       const maxWidth = this.xAxis.width / count / this.graph.barSeriesCount;
-      this.barTotalWidth = this.xAxis.width / count * (this.style.perWidth || 0.4);
-      this.barWidth = this.barTotalWidth / this.graph.barSeriesCount;
+
+      if (this.style.barWidth > 0) {
+        this.barWidth = Number(this.style.barWidth);
+        this.barTotalWidth = this.barWidth * this.graph.barSeriesCount;
+      } else {
+        this.barTotalWidth = this.xAxis.width / count * (this.style.perWidth || 0.4);
+        this.barWidth = this.barTotalWidth / this.graph.barSeriesCount;
+      }
 
       if (this.barWidth > maxWidth) {
         this.barWidth = maxWidth;
