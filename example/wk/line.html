@@ -60,7 +60,8 @@
 							margin: {
                                 left: 100,
                                 right: 100
-							}
+							},
+							//layout: 'inside'
 						},
 						xAxisOption: {
 							arrowVisible: false
@@ -87,6 +88,7 @@
 						style: {
 							// 画圆滑的曲线 
 							curve: true,// 填充图形
+							showItem: true,
                             area: {
                                 // 自定义填充颜色处理
                                 fill: function(style) {
@@ -182,7 +184,7 @@
 
                     
 		
-					const datacount = 50;
+					const datacount = 20;
 					function animate() {
 						if(true) {
 							chart.data = [];

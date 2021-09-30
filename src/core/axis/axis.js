@@ -214,7 +214,7 @@ export default class jmAxis extends jmArrowLine {
 			if(!text) continue;
 
 			/// 只有一条数据，就取这条数据就可以了	
-			const w = (this.data.length === 1? 1: i) * step;
+			const w = i * step;
 
 			const label = this.graph.createShape('label', {
 				style: this.style.xLabel

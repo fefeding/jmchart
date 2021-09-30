@@ -48,11 +48,11 @@ export default class jmMarkLine extends jmLine {
         if(this.markLineType === 'y') {
             const touchPoints = []; // 命中的数据点
             let touchChange = false;
+            // chartGraph 表示图表层，有可能当前graph为操作层
+            const graph = this.graph.chartGraph || this.graph;
+            const isTocuhGraph = graph !== this.graph;// 不在图表图层，在操作图层的情况
             
-            try {
-                // chartGraph 表示图表层，有可能当前graph为操作层
-                const graph = this.graph.chartGraph || this.graph;
-                const isTocuhGraph = graph !== this.graph;// 不在图表图层，在操作图层的情况
+            try {                
                 
                 // 查找最近的X坐标
                 const findX = isTocuhGraph? (this.start.x - graph.chartArea.position.x) : this.start.x;

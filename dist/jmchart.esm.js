@@ -5574,7 +5574,7 @@ class jmAxis extends jmArrowLine {
 
       if (!text) continue; /// 只有一条数据，就取这条数据就可以了	
 
-      const w = (this.data.length === 1 ? 1 : i) * step;
+      const w = i * step;
       const label = this.graph.createShape('label', {
         style: this.style.xLabel
       });
@@ -7614,14 +7614,13 @@ class jmMarkLine extends jmLine {
     if (this.markLineType === 'y') {
       const touchPoints = []; // 命中的数据点
 
-      let touchChange = false;
+      let touchChange = false; // chartGraph 表示图表层，有可能当前graph为操作层
+
+      const graph = this.graph.chartGraph || this.graph;
+      const isTocuhGraph = graph !== this.graph; // 不在图表图层，在操作图层的情况
 
       try {
-        // chartGraph 表示图表层，有可能当前graph为操作层
-        const graph = this.graph.chartGraph || this.graph;
-        const isTocuhGraph = graph !== this.graph; // 不在图表图层，在操作图层的情况
         // 查找最近的X坐标
-
         const findX = isTocuhGraph ? this.start.x - graph.chartArea.position.x : this.start.x; // 根据线条数生成标点个数
 
         for (const serie of graph.series) {
