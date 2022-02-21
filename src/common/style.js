@@ -239,5 +239,22 @@ export default {
 			blur: 2,
 			color: '#ccc'
 		}
+	},
+	candlestick: {
+		normal: {
+			lineWidth: 1,
+			zIndex: 18,
+			cursor: 'default'
+		},
+		hover: {
+			//zIndex: 100,
+			cursor: 'pointer'
+		},
+		perWidth: 0.5,
+		// 阴线颜色
+		negativeColor: 'green',
+		// 阳线颜色
+		masculineColor: 'red',
+		lineWidth:1
 	}
 }

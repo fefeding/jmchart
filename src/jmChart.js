@@ -13,6 +13,7 @@ import jmPieSeries from './series/pieSeries.js';
 
 import jmLineSeries from './series/lineSeries.js';
 import jmStackLineSeries from './series/stackLineSeries.js';
+import jmCandlestickSeries from './series/candlestickSeries.js';
 import jmMarkLine from './core/axis/markLine';
 
 /**
@@ -444,7 +445,8 @@ export default class jmChart extends jmGraph  {
 				'bar' : jmBarSeries,
 				'stackBar' : jmStackBarSeries,
 				'pie' : jmPieSeries,
-				'stackLine' : jmStackLineSeries
+				'stackLine' : jmStackLineSeries,
+				'candlestick': jmCandlestickSeries
 			};		
 		}
 

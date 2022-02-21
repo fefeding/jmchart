@@ -5387,6 +5387,23 @@
         blur: 2,
         color: '#ccc'
       }
+    },
+    candlestick: {
+      normal: {
+        lineWidth: 1,
+        zIndex: 18,
+        cursor: 'default'
+      },
+      hover: {
+        //zIndex: 100,
+        cursor: 'pointer'
+      },
+      perWidth: 0.5,
+      // 阴线颜色
+      negativeColor: 'green',
+      // 阳线颜色
+      masculineColor: 'red',
+      lineWidth: 1
     }
   };
 
@@ -5577,7 +5594,7 @@
 
         if (!text) continue; /// 只有一条数据，就取这条数据就可以了	
 
-        const w = (this.data.length === 1 ? 1 : i) * step;
+        const w = i * step;
         const label = this.graph.createShape('label', {
           style: this.style.xLabel
         });
@@ -6414,7 +6431,8 @@
             x: p.x,
             // 高度
             height: p.height,
-            yValue: yv
+            yValue: yv,
+            field: f
           }; //如果Y值不存在。则此点无效，不画图
 
           if (yv == null || typeof yv == 'undefined') {
@@ -7572,6 +7590,104 @@
   }
 
   /**
+   * K线图
+   *
+   * @class jmCandlestickSeries
+   * @module jmChart
+   * @param {jmChart} chart 当前图表
+   * @param {array} mappings 图形字段映射
+   * @param {style} style 样式
+   */
+  //构造函数
+
+  class jmCandlestickSeries extends jmSeries {
+    constructor(options) {
+      options.style = options.style || options.graph.style.line;
+      super(options); //this.on('beginDraw', this[PreDrawKey]);
+    }
+    /**
+     * 绘制图形前 初始化线条
+     *
+     * @method preDraw
+     * @for jmLineSeries
+     */
+
+
+    init() {
+      //生成描点位
+      const {
+        points
+      } = this.initDataPoint(); //去除多余的线条
+      //当数据源线条数比现有的少时，删除多余的线条
+
+      const len = points.length;
+      this.initWidth(len);
+      const w = this.barWidth / 2; //实心处宽度的一半
+
+      for (let i = 0; i < len; i++) {
+        const p = points[i]; //如果当前点无效，则跳致下一点
+
+        if (typeof p.y === 'undefined' || p.y === null) {
+          //prePoint = null;						
+          continue;
+        }
+
+        const sp = this.addShape(this.graph.createPath([], p.style)); // max min
+
+        sp.points.push(p.points[2]);
+        sp.points.push(p.points[3]);
+        const bl = {
+          x: p.x - w,
+          m: true // 移到此处开始画
+
+        };
+        const br = {
+          x: p.x + w
+        };
+        const tl = {
+          x: p.x - w
+        };
+        const tr = {
+          x: p.x + w
+        }; // 开盘大于收盘，则阴线
+
+        if (p.points[0].yValue > p.points[1].yValue) {
+          p.style.stroke = p.style.fill = p.style.negativeColor || 'green';
+          bl.y = br.y = p.points[1].y;
+          tl.y = tr.y = p.points[0].y;
+        } else {
+          p.style.stroke = p.style.fill = p.style.masculineColor || 'red';
+          bl.y = br.y = p.points[0].y;
+          tl.y = tr.y = p.points[1].y;
+        }
+
+        sp.points.push(bl, br, tr, tl); // 生成关健值标注
+
+        this.emit('onPointCreated', p);
+      }
+    } // 计算实心体宽度
+
+
+    initWidth(count) {
+      //计算每个柱子占宽
+      //每项柱子占宽除以柱子个数,默认最大宽度为30
+      const maxWidth = this.xAxis.width / count;
+
+      if (this.style.barWidth > 0) {
+        this.barWidth = Number(this.style.barWidth);
+      } else {
+        this.barWidth = maxWidth * (this.style.perWidth || 0.4);
+      }
+
+      if (this.barWidth > maxWidth) {
+        this.barWidth = maxWidth;
+        this.barTotalWidth = maxWidth * count;
+      }
+    }
+
+  }
+
+  /**
    * 轴
    *
    * @class jmAxis
@@ -7617,14 +7733,13 @@
       if (this.markLineType === 'y') {
         const touchPoints = []; // 命中的数据点
 
-        let touchChange = false;
+        let touchChange = false; // chartGraph 表示图表层，有可能当前graph为操作层
+
+        const graph = this.graph.chartGraph || this.graph;
+        const isTocuhGraph = graph !== this.graph; // 不在图表图层，在操作图层的情况
 
         try {
-          // chartGraph 表示图表层，有可能当前graph为操作层
-          const graph = this.graph.chartGraph || this.graph;
-          const isTocuhGraph = graph !== this.graph; // 不在图表图层，在操作图层的情况
           // 查找最近的X坐标
-
           const findX = isTocuhGraph ? this.start.x - graph.chartArea.position.x : this.start.x; // 根据线条数生成标点个数
 
           for (const serie of graph.series) {
@@ -8183,7 +8298,8 @@
           'bar': jmBarSeries,
           'stackBar': jmStackBarSeries,
           'pie': jmPieSeries,
-          'stackLine': jmStackLineSeries
+          'stackLine': jmStackLineSeries,
+          'candlestick': jmCandlestickSeries
         };
       } //默认样式为类型对应的样式
 

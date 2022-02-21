@@ -27,7 +27,7 @@ export default class jmMarkLine extends jmLine {
     }
     
     // 初始化轴
-    init() {
+    init() {        
         if(!this.visible) return;
         
         // 纵标线，中间标小圆圈
