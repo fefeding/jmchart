@@ -39,7 +39,7 @@
                         //touchGraph: true, // 是否依赖生成操作图层，当点比较多时，性能低下可以把它设为true
 						autoRefresh: true,
 						//minYValue: -100,
-						//maxYValue: 400,
+						//maxYValue: 15,
                         // 格式化x标签值
                         xLabelFormat: (v, item, index) => {
                             // 只展示第一个和最后一个
@@ -103,12 +103,11 @@
                         for(var i = 0;i<datacount;i++) {
                             const d = {
                                 x : '0909' + i,
-                                start :  Math.random() * 5 + 5,
-                                end:  Math.random() * 5 + 5,
-                                max: Math.random() * 5 + 10,
-                                min: Math.random() * 5
+                                start :  Math.random() * 5 + 15,
+                                end:  Math.random() * 5 + 15
                             };
-                            
+                            d.max = Math.max(d.start, d.end) + Math.random() * 5;
+                            d.min = Math.min(d.start, d.end) - Math.random() * 5;
                             chart.data.push(d);
                         }
 						chart.refresh();
