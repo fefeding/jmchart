@@ -78,7 +78,12 @@
                                 bottom: 30
                             }
                         }
-					});				
+					});	
+                    // touch改变数据点事件
+					chart.on('touchPointChange', function(args) {
+						console.log(args);
+                        document.getElementById('mylog').innerHTML = JSON.stringify(args.points[0].data);
+					});			
 
 					const line = chart.createSeries('candlestick', {
                         // 如果字段名跟下面的一至，可以不指定
@@ -97,8 +102,8 @@
                         }
 					});
 					
-					const datacount = 21;
-					function animate() {
+					var datacount = 21;
+					function refresh() {
                         chart.data = [];
                         for(var i = 0;i<datacount;i++) {
                             const d = {
@@ -114,12 +119,15 @@
 						console.log(chart.data);
 					}
 					
-					animate();
+					refresh();
 				}
 		</script>
 	</head>
 	<body>
 		<div id="mycanvas">
+			</div>	
+        <hr />
+        <div id="mylog">
 			</div>	
 	</body>
 </html>
