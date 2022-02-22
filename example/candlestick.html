@@ -188,6 +188,7 @@
                     });	
                     chart.on('touchend touchcancel touchleave', (args) => {
                         dataTouchPosition.touching = false;
+                        dataTouchPosition.scaleTouching = false;
                     });
 				}
 
