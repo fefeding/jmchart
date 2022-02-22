@@ -143,10 +143,16 @@
                         dataTouchPosition.x = args.position.x;
                         args.event.preventDefault();// 阻止默认行为
                     });	
+
+                    // 长按了
+                    chart.on('longtapstart', (args) => {
+                        dataTouchPosition.touching = false;
+                        document.getElementById('mylog').innerHTML = 'longtapstart:';
+                    });
                     chart.on('touchmove', (args) => {
                         if(!args.target || !args.target.chartGraph) return;
                         //console.log('touchmove', args);
-                        document.getElementById('mylog').innerHTML = 'touches:' + args.event.touches.length;
+                        
                         args.event.preventDefault();// 阻止默认行为
 
                         // 双指缩放
@@ -154,7 +160,7 @@
                             const ox = dataTouchPosition.touche1X - args.event.touches[0].pageX + args.event.touches[1].pageX - dataTouchPosition.touche2X;
                             // 数据偏移量   左右各一半
                             const offDataCount = Math.round(ox / args.target.bounds.width * dataCount / 2);
-                            
+
                             if(Math.abs(offDataCount) > 0) {
                                 let index = Math.max(dataIndex + offDataCount, 0);
                                 dataCount += offDataCount * 2;
@@ -166,12 +172,14 @@
 
                                 dataTouchPosition.touche1X = args.event.touches[0].pageX;
                                 dataTouchPosition.touche2X = args.event.touches[1].pageX;
+
+                                document.getElementById('mylog').innerHTML = 'scaleTouching:' + offDataCount;
                             }
                         }
                         // 在滑动标线，则不处理
-                        else if(args.target.chartGraph.yMarkLine && args.target.chartGraph.yMarkLine.visible) {
-                            dataTouchPosition.touching = false;
-                        }
+                        //else if(args.target.chartGraph.yMarkLine && args.target.chartGraph.yMarkLine.visible) {
+                        //    dataTouchPosition.touching = false;
+                        //}
                         else if(dataTouchPosition.touching) {
                             const ox = dataTouchPosition.x - args.position.x;
                             // 数据偏移量

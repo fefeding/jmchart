@@ -8079,6 +8079,8 @@ System.register([], function (exports) {
                       this.yMarkLine.visible = true;
                       this.yMarkLine.move(args);
                     }
+
+                    this.emit('longtapstart', args);
                   }
                 }, 500);
               } else {
@@ -8094,6 +8096,7 @@ System.register([], function (exports) {
               }
 
               args.longtap = longtap;
+              args.event.preventDefault(); // 阻止默认行为		
             }); // 移动标线
 
             graph.on('mousemove touchmove', args => {

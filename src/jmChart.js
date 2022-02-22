@@ -219,6 +219,7 @@ export default class jmChart extends jmGraph  {
 								this.yMarkLine.visible = true;
 								this.yMarkLine.move(args);
 							}
+							this.emit('longtapstart', args);
 						}
 					}, 500);
 				}
@@ -232,7 +233,8 @@ export default class jmChart extends jmGraph  {
 						this.yMarkLine.move(args);
 					}
 				}	
-				args.longtap = longtap;			
+				args.longtap = longtap;	
+				args.event.preventDefault();// 阻止默认行为		
 			});
 			// 移动标线
 			graph.on('mousemove touchmove', (args) => {
