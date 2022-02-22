@@ -50,36 +50,39 @@ export default class jmCandlestickSeries extends jmSeries {
 
 			const sp = this.addShape(this.graph.createPath([], p.style));
 
-			// max min
-			sp.points.push(p.points[2]);
-			sp.points.push(p.points[3]);
-
 			const bl = {
 				x: p.x - w,
-				m: true // 移到此处开始画
+				y: p.points[0].y
 			};
 			const br = {
-				x: p.x + w
+				x: p.x + w,
+				y: p.points[0].y
 			};
 			const tl = {
-				x: p.x - w
+				x: p.x - w,
+				y: p.points[1].y
 			};
 			const tr = {
-				x: p.x + w
+				x: p.x + w,
+				y: p.points[1].y
 			};
+
+			// 默认认为是阳线
+			let tm = p.points[1];
+			let bm = p.points[0];
+			p.style.stroke = p.style.fill = p.style.masculineColor || 'red';
+
 			// 开盘大于收盘，则阴线
 			if(p.points[0].yValue > p.points[1].yValue) {
 				p.style.stroke = p.style.fill = p.style.negativeColor || 'green';
 				bl.y = br.y = p.points[1].y;
 				tl.y = tr.y = p.points[0].y;
-			}
-			else {
-				p.style.stroke = p.style.fill = p.style.masculineColor || 'red';
-				bl.y = br.y = p.points[0].y;
-				tl.y = tr.y = p.points[1].y;
-			}
 
-			sp.points.push(bl, br, tr, tl);
+				tm = p.points[0];
+				bm = p.points[1];
+			}			
+
+			sp.points.push(p.points[2], tm, tl, bl, bm, p.points[3], bm, br, tr, tm, p.points[2]);
 
 			// 生成关健值标注
 			this.emit('onPointCreated', p);

@@ -29,15 +29,15 @@
 					const chart = new jmChart('mycanvas', {
 						width: w,
 						height: h,
-                        xField: 'x',
+                        xField: 'day',
                         enableAnimate: false,
                         legendPosition: 'top',
                         legendVisible: false, // 不显示图例
 						// 最大和最小X值，  这里一般不用指定，除非硬是需要
 						minXValue : 0,
 						maxXValue : 10,
-                        //touchGraph: true, // 是否依赖生成操作图层，当点比较多时，性能低下可以把它设为true
-						autoRefresh: true,
+                        touchGraph: true, // 是否依赖生成操作图层，当点比较多时，性能低下可以把它设为true
+						//autoRefresh: true,
 						//minYValue: -100,
 						//maxYValue: 15,
                         // 格式化x标签值
@@ -57,6 +57,7 @@
 								stroke: 'red',
 								fill: '#fff',
 								lineWidth: 1,
+                                longtap: true // 长按启用
 							},
                             // x轴 Y轴隐藏
                             axis: {
@@ -82,8 +83,9 @@
                     // touch改变数据点事件
 					chart.on('touchPointChange', function(args) {
 						console.log(args);
-                        document.getElementById('mylog').innerHTML = JSON.stringify(args.points[0].data);
-					});			
+                        document.getElementById('mydatalog').innerHTML = JSON.stringify(args.points[0].data);
+					});		
+                    
 
 					const line = chart.createSeries('candlestick', {
                         // 如果字段名跟下面的一至，可以不指定
@@ -98,36 +100,101 @@
                             negativeColor: 'green',
                             // 阳线颜色
                             masculineColor: 'red',
+                            lineWidth: 2,
                             //barWidth: 15
                         }
 					});
-					
-					var datacount = 21;
+
+                    
+                    const data = createData(); // 生成测试数据
+
+                    
+                    let dataCount = 20; // 展示数据个数
+                    let dataIndex = data.length - dataCount; // 展示数据起始索引
+
 					function refresh() {
-                        chart.data = [];
-                        for(var i = 0;i<datacount;i++) {
-                            const d = {
-                                x : '0909' + i,
-                                start :  Math.random() * 5 + 15,
-                                end:  Math.random() * 5 + 15
-                            };
-                            d.max = Math.max(d.start, d.end) + Math.random() * 5;
-                            d.min = Math.min(d.start, d.end) - Math.random() * 5;
-                            chart.data.push(d);
-                        }
+                        chart.data = data.filter((d, i) => {
+                            if(i >= dataIndex && i < dataCount + dataIndex) return true;   
+                            return false;                         
+                        });                        
 						chart.refresh();
-						console.log(chart.data);
 					}
 					
-					refresh();
+					refresh(0, 20);
+
+                    // 根据滑动来绘制数据
+                    let dataTouchPosition = {
+                        x: 0,
+                        touching: false, // 是否在滑动中
+                        scaleTouching : false
+                    };
+                    chart.on('touchstart', (args) => {
+                        if(args.event.touches.length === 2) {
+                            dataTouchPosition.scaleTouching = true;
+                        }
+                        else {
+                            dataTouchPosition.touching = true;
+                        }
+                        dataTouchPosition.x = args.position.x;
+                    });	
+                    chart.on('touchmove', (args) => {
+                        // longtap==2 表示已长按了，不能处理数据
+                        console.log('touchmove', args);
+                        document.getElementById('mylog').innerHTML = 'touches:' + args.event.touches.length;
+
+                        if((args.target && args.target.chartGraph && args.target.chartGraph.yMarkLine && args.target.chartGraph.yMarkLine.visible)
+                        // 多点触控也不处理
+                         || args.event.touches.length > 1) {
+                            dataTouchPosition.touching = false;
+                        }
+                        else if(dataTouchPosition.touching && args.target) {
+                            const ox = dataTouchPosition.x - args.position.x;
+                            // 数据偏移量
+                            const offDataCount = Math.round(ox / args.target.bounds.width * dataCount);
+                            if(Math.abs(offDataCount) > 0) {
+                                let index = dataIndex + offDataCount;
+                                if(index < 0) index = 0
+                                else if(index > data.length - dataCount) index = data.length - dataCount;
+
+                                // 刷新数据
+                                dataIndex = index;
+                                refresh();
+
+                                dataTouchPosition.x = args.position.x;
+                            }
+                        }
+                    });	
+                    chart.on('touchend touchcancel touchleave', (args) => {
+                        dataTouchPosition.touching = false;
+                    });
 				}
+
+                function createData() {
+                    const data = [];
+                    const startDate = new Date('2021/01/01 00:00:00');
+                    for(var i = 0;i<365;i++) {
+                        startDate.setDate(startDate.getDate() + 1);
+                        const d = {
+                            day : startDate.getFullYear() + '-' + ('00'+(startDate.getMonth()+1)).substr(-2) + '-' + ('00'+startDate.getDate()).substr(-2),
+                            start :  Math.random() * 5 + 15,
+                            end:  Math.random() * 5 + 15
+                        };
+                        d.max = Math.max(d.start, d.end) + Math.random() * 5;
+                        d.min = Math.min(d.start, d.end) - Math.random() * 5;
+                        data.push(d);
+                    }
+                    return data;
+                }
 		</script>
 	</head>
 	<body>
 		<div id="mycanvas">
 			</div>	
         <hr />
-        <div id="mylog">
+        <div id="mydatalog" style="word-wrap:break-word">
+			</div>		
+        <hr />
+        <div id="mylog" style="word-wrap:break-word">
 			</div>	
 	</body>
 </html>

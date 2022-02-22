@@ -28,7 +28,7 @@
   },
   "homepage": "https://github.com/jiamao/jmchart#readme",
   "dependencies": {
-    "jmgraph": "^3.1.87"
+    "jmgraph": "^3.1.88"
   },
   "devDependencies": {
     "@babel/core": "^7.10.2",

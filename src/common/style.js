@@ -255,6 +255,6 @@ export default {
 		negativeColor: 'green',
 		// 阳线颜色
 		masculineColor: 'red',
-		lineWidth:1
+		lineWidth: 1
 	}
 }

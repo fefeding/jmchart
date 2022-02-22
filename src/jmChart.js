@@ -163,6 +163,13 @@ export default class jmChart extends jmGraph  {
 					this.touchGraph[name] = args.newValue / this.devicePixelRatio;
 				}
 			});
+			// 把上层canvse事件传递给绘图层对象
+			graph.on('mousedown touchstart mousemove touchmove mouseup touchend touchcancel touchleave', (args) => {
+				const eventName = args.event.eventName || args.event.type;
+				if(eventName) {
+					this.emit(eventName, args);
+				}
+			});
 		}
 
 		if(this.style.markLine)  {
@@ -192,18 +199,46 @@ export default class jmChart extends jmGraph  {
 				area.children.add(this.yMarkLine);
 			}
 
+			let longtap = 0;// 是否有长按, 0 未开始，1已按下，2识别为长按
+			let longtapHandler = 0;
 			graph.on('mousedown touchstart', (args) => {
-				if(this.xMarkLine) {
-					this.xMarkLine.visible = true;
-					this.xMarkLine.move(args);
+				// 如果长按才启用
+				if(this.style.markLine.longtap) {
+					longtap = 1;
+					longtapHandler && clearTimeout(longtapHandler);
+					// 如果一定时间后还没有取消，则表示长按了
+					longtapHandler = setTimeout(()=>{
+						if(longtap === 1 || longtap === 2) {
+							longtap = 2;
+							// 开始出现标线
+							if(this.xMarkLine) {
+								this.xMarkLine.visible = true;
+								this.xMarkLine.move(args);
+							}
+							if(this.yMarkLine) {
+								this.yMarkLine.visible = true;
+								this.yMarkLine.move(args);
+							}
+						}
+					}, 500);
 				}
-				if(this.yMarkLine) {
-					this.yMarkLine.visible = true;
-					this.yMarkLine.move(args);
-				}
+				else {
+					if(this.xMarkLine) {
+						this.xMarkLine.visible = true;
+						this.xMarkLine.move(args);
+					}
+					if(this.yMarkLine) {
+						this.yMarkLine.visible = true;
+						this.yMarkLine.move(args);
+					}
+				}	
+				args.longtap = longtap;			
 			});
 			// 移动标线
 			graph.on('mousemove touchmove', (args) => {
+				if(longtap === 1) longtap = 0; // 如果移动了，则取消长按
+
+				args.longtap = longtap;
 				if(this.xMarkLine && this.xMarkLine.visible) {
 					this.xMarkLine.move(args);
 				}
@@ -213,6 +248,8 @@ export default class jmChart extends jmGraph  {
 			});
 			// 取消移动
 			graph.on('mouseup touchend touchcancel touchleave', (args) => {
+				longtap = 0;
+
 				if(this.xMarkLine && this.xMarkLine.visible) {
 					this.xMarkLine.cancel(args);
 				}
