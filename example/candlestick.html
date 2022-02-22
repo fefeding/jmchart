@@ -154,16 +154,19 @@
                             const ox = dataTouchPosition.touche1X - args.event.touches[0].pageX + args.event.touches[1].pageX - dataTouchPosition.touche2X;
                             // 数据偏移量   左右各一半
                             const offDataCount = Math.round(ox / args.target.bounds.width * dataCount / 2);
-                            let index = Math.max(dataIndex + offDataCount, 0);
-                            dataCount += offDataCount * 2;
-                            // 展示数据个数不能越过数组上限
-                            if(dataCount > data.length) dataCount = data.length;
-                            if(dataCount > data.length - index) dataCount = data.length - index;
+                            
+                            if(Math.abs(offDataCount) > 0) {
+                                let index = Math.max(dataIndex + offDataCount, 0);
+                                dataCount += offDataCount * 2;
+                                // 展示数据个数不能越过数组上限
+                                if(dataCount > data.length) dataCount = data.length;
+                                if(dataCount > data.length - index) dataCount = data.length - index;
 
-                            refresh();// 刷新数据
+                                refresh();// 刷新数据
 
-                            dataTouchPosition.touche1X = args.event.touches[0].pageX;
-                            dataTouchPosition.touche2X = args.event.touches[1].pageX;
+                                dataTouchPosition.touche1X = args.event.touches[0].pageX;
+                                dataTouchPosition.touche2X = args.event.touches[1].pageX;
+                            }
                         }
                         // 在滑动标线，则不处理
                         else if(args.target.chartGraph.yMarkLine && args.target.chartGraph.yMarkLine.visible) {
