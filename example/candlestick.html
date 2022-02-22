@@ -16,7 +16,7 @@
 		<script type="module">
 			import jmChart from '../dist/jmchart.esm.js';
 			(function load() {
-				var w = Math.max((window.innerWidth || window.document.body.clientWidth) * 0.8, 500);
+				var w = window.innerWidth || window.document.body.clientWidth;
 				var h = Math.min((window.innerHeight || window.document.body.clientHeight) * 0.5, 500);			
 				inichart(w,h);
 			})();
@@ -126,28 +126,50 @@
                     let dataTouchPosition = {
                         x: 0,
                         touching: false, // 是否在滑动中
-                        scaleTouching : false
+                        scaleTouching : false,
+                        touche1X: 0,
+                        touche2X: 0
                     };
                     chart.on('touchstart', (args) => {
+                        // 双指滑动， 缩放
                         if(args.event.touches.length === 2) {
                             dataTouchPosition.scaleTouching = true;
+                            dataTouchPosition.touche1X = args.event.touches[0].pageX;
+                            dataTouchPosition.touche2X = args.event.touches[1].pageX;
                         }
                         else {
                             dataTouchPosition.touching = true;
                         }
                         dataTouchPosition.x = args.position.x;
+                        args.event.preventDefault();// 阻止默认行为
                     });	
                     chart.on('touchmove', (args) => {
-                        // longtap==2 表示已长按了，不能处理数据
-                        console.log('touchmove', args);
+                        if(!args.target || !args.target.chartGraph) return;
+                        //console.log('touchmove', args);
                         document.getElementById('mylog').innerHTML = 'touches:' + args.event.touches.length;
+                        args.event.preventDefault();// 阻止默认行为
 
-                        if((args.target && args.target.chartGraph && args.target.chartGraph.yMarkLine && args.target.chartGraph.yMarkLine.visible)
-                        // 多点触控也不处理
-                         || args.event.touches.length > 1) {
+                        // 双指缩放
+                        if(dataTouchPosition.scaleTouching && args.event.touches.length === 2) {
+                            const ox = dataTouchPosition.touche1X - args.event.touches[0].pageX + args.event.touches[1].pageX - dataTouchPosition.touche2X;
+                            // 数据偏移量   左右各一半
+                            const offDataCount = Math.round(ox / args.target.bounds.width * dataCount / 2);
+                            let index = Math.max(dataIndex + offDataCount, 0);
+                            dataCount += offDataCount * 2;
+                            // 展示数据个数不能越过数组上限
+                            if(dataCount > data.length) dataCount = data.length;
+                            if(dataCount > data.length - index) dataCount = data.length - index;
+
+                            refresh();// 刷新数据
+
+                            dataTouchPosition.touche1X = args.event.touches[0].pageX;
+                            dataTouchPosition.touche2X = args.event.touches[1].pageX;
+                        }
+                        // 在滑动标线，则不处理
+                        else if(args.target.chartGraph.yMarkLine && args.target.chartGraph.yMarkLine.visible) {
                             dataTouchPosition.touching = false;
                         }
-                        else if(dataTouchPosition.touching && args.target) {
+                        else if(dataTouchPosition.touching) {
                             const ox = dataTouchPosition.x - args.position.x;
                             // 数据偏移量
                             const offDataCount = Math.round(ox / args.target.bounds.width * dataCount);
