@@ -4338,6 +4338,7 @@ define(['exports'], function (exports) { 'use strict';
 
   	touchStart(evt) {
   		evt = evt || window.event;
+  		evt.eventName = 'touchstart';
   		this.container.raiseEvent('touchstart',evt);
   		let t = evt.target || evt.srcElement;
   		if(t == this.target) {
@@ -4348,6 +4349,7 @@ define(['exports'], function (exports) { 'use strict';
 
   	touchMove(evt) {
   		evt = evt || window.event;
+  		evt.eventName = 'touchmove';
   		this.container.raiseEvent('touchmove',evt);
   		let t = evt.target || evt.srcElement;
   		if(t == this.target) {
@@ -4358,6 +4360,7 @@ define(['exports'], function (exports) { 'use strict';
 
   	touchEnd(evt) {
   		evt = evt || window.event;
+  		evt.eventName = 'touchend';
   		
   		this.container.raiseEvent('touchend',evt);
   		let t = evt.target || evt.srcElement;
@@ -4369,6 +4372,7 @@ define(['exports'], function (exports) { 'use strict';
 
   	touchCancel(evt) {
   		evt = evt || window.event;
+  		evt.eventName = 'touchcancel';
   		
   		this.container.raiseEvent('touchcancel',evt);
   		let t = evt.target || evt.srcElement;
@@ -4409,6 +4413,7 @@ define(['exports'], function (exports) { 'use strict';
 
   		this.eventEvents['mousedown'] = jmUtils.bindEvent(this.target,'mousedown',function(evt) {
   			evt = evt || window.event;
+  			evt.eventName = 'mousedown';
   			container.raiseEvent('mousedown',evt);
   			//if(r === false) {
   				//if(evt.preventDefault) evt.preventDefault();
@@ -4418,6 +4423,7 @@ define(['exports'], function (exports) { 'use strict';
   		
   		this.eventEvents['mousedown'] = jmUtils.bindEvent(this.target,'mousemove',function(evt) {	
   			evt = evt || window.event;		
+  			evt.eventName = 'mousemove';
   			let target = evt.target || evt.srcElement;
   			if(target == canvas) {
   				container.raiseEvent('mousemove',evt);
@@ -4429,19 +4435,23 @@ define(['exports'], function (exports) { 'use strict';
   		});
   		
   		this.eventEvents['mousedown'] = jmUtils.bindEvent(this.target,'mouseover',function(evt) {
-  			evt = evt || window.event;
+  			evt = evt || window.event;	
+  			evt.eventName = 'mouseover';
   			container.raiseEvent('mouseover',evt);
   		});
   		this.eventEvents['mouseleave'] = jmUtils.bindEvent(this.target,'mouseleave',function(evt) {
-  			evt = evt || window.event;
+  			evt = evt || window.event;	
+  			evt.eventName = 'mouseleave';
   			container.raiseEvent('mouseleave',evt);
   		});			
   		this.eventEvents['mouseout'] = jmUtils.bindEvent(this.target,'mouseout',function(evt) {
-  			evt = evt || window.event;
+  			evt = evt || window.event;	
+  			evt.eventName = 'mouseout';
   			container.raiseEvent('mouseout',evt);
   		});
   		doc && (this.eventEvents['mouseup'] = jmUtils.bindEvent(doc,'mouseup',function(evt) {
-  			evt = evt || window.event;
+  			evt = evt || window.event;	
+  			evt.eventName = 'mouseup';
   			//let target = evt.target || evt.srcElement;
   			//if(target == canvas) {						
   				let r = container.raiseEvent('mouseup',evt);
@@ -4454,33 +4464,40 @@ define(['exports'], function (exports) { 'use strict';
   		
   		this.eventEvents['dblclick'] = jmUtils.bindEvent(this.target,'dblclick',function(evt) {
   			evt = evt || window.event;
+  			evt.eventName = 'dblclick';
   			container.raiseEvent('dblclick',evt);
   		});
   		this.eventEvents['click'] = jmUtils.bindEvent(this.target,'click',function(evt) {
   			evt = evt || window.event;
+  			evt.eventName = 'click';
   			container.raiseEvent('click',evt);
   		});
 
   		doc && (this.eventEvents['resize'] = jmUtils.bindEvent(doc,'resize',function(evt) {
   			evt = evt || window.event;
+  			evt.eventName = 'resize';
   			return container.raiseEvent('resize',evt);
   		}));
 
   		// passive: false 为了让浏览器不告警并且preventDefault有效
   		// 另一种处理：touch-action: none; 这样任何触摸事件都不会产生默认行为，但是 touch 事件照样触发。
   		this.eventEvents['touchstart'] = jmUtils.bindEvent(this.target,'touchstart', function(evt) {
+  			evt.eventName = 'touchstart';
   			return instance.touchStart(evt);
   		},{ passive: false });
 
   		this.eventEvents['touchmove'] = jmUtils.bindEvent(this.target,'touchmove', function(evt) {
+  			evt.eventName = 'touchmove';
   			return instance.touchMove(evt);
   		},{ passive: false });
 
   		doc && (this.eventEvents['touchend'] = jmUtils.bindEvent(doc,'touchend', function(evt) {
+  			evt.eventName = 'touchend';
   			return instance.touchEnd(evt);
   		},{ passive: false }));
 
   		doc && (this.eventEvents['touchcancel'] = jmUtils.bindEvent(doc,'touchcancel', function(evt) {
+  			evt.eventName = 'touchcancel';
   			return instance.touchCancel(evt);
   		},{ passive: false }));
   	}
@@ -4535,7 +4552,7 @@ define(['exports'], function (exports) { 'use strict';
   			return true;
   		};
 
-  		doc && (this.eventEvents['touchcancel'] = jmUtils.bindEvent(doc,'keypress',function(evt) {
+  		doc && (this.eventEvents['keypress'] = jmUtils.bindEvent(doc,'keypress',function(evt) {
   			evt = evt || window.event;
   			if(!checkKeyEvent(evt)) return;//如果事件为其它输入框，则不响应
   			let r = container.raiseEvent('keypress',evt);
@@ -4543,7 +4560,7 @@ define(['exports'], function (exports) { 'use strict';
   				evt.preventDefault();
   			return r;
   		}));
-  		doc && (this.eventEvents['touchcancel'] = jmUtils.bindEvent(doc,'keydown',function(evt) {
+  		doc && (this.eventEvents['keydown'] = jmUtils.bindEvent(doc,'keydown',function(evt) {
   			evt = evt || window.event;
   			if(!checkKeyEvent(evt)) return;//如果事件为其它输入框，则不响应
   			let r = container.raiseEvent('keydown',evt);
@@ -4551,7 +4568,7 @@ define(['exports'], function (exports) { 'use strict';
   				evt.preventDefault();
   			return r;
   		}));
-  		doc && (this.eventEvents['touchcancel'] = jmUtils.bindEvent(doc,'keyup',function(evt) {
+  		doc && (this.eventEvents['keyup'] = jmUtils.bindEvent(doc,'keyup',function(evt) {
   			evt = evt || window.event;
   			if(!checkKeyEvent(evt)) return;//如果事件为其它输入框，则不响应
   			let r = container.raiseEvent('keyup',evt);
@@ -7631,36 +7648,37 @@ define(['exports'], function (exports) { 'use strict';
           continue;
         }
 
-        const sp = this.addShape(this.graph.createPath([], p.style)); // max min
-
-        sp.points.push(p.points[2]);
-        sp.points.push(p.points[3]);
+        const sp = this.addShape(this.graph.createPath([], p.style));
         const bl = {
           x: p.x - w,
-          m: true // 移到此处开始画
-
+          y: p.points[0].y
         };
         const br = {
-          x: p.x + w
+          x: p.x + w,
+          y: p.points[0].y
         };
         const tl = {
-          x: p.x - w
+          x: p.x - w,
+          y: p.points[1].y
         };
         const tr = {
-          x: p.x + w
-        }; // 开盘大于收盘，则阴线
+          x: p.x + w,
+          y: p.points[1].y
+        }; // 默认认为是阳线
+
+        let tm = p.points[1];
+        let bm = p.points[0];
+        p.style.stroke = p.style.fill = p.style.masculineColor || 'red'; // 开盘大于收盘，则阴线
 
         if (p.points[0].yValue > p.points[1].yValue) {
           p.style.stroke = p.style.fill = p.style.negativeColor || 'green';
           bl.y = br.y = p.points[1].y;
           tl.y = tr.y = p.points[0].y;
-        } else {
-          p.style.stroke = p.style.fill = p.style.masculineColor || 'red';
-          bl.y = br.y = p.points[0].y;
-          tl.y = tr.y = p.points[1].y;
+          tm = p.points[0];
+          bm = p.points[1];
         }
 
-        sp.points.push(bl, br, tr, tl); // 生成关健值标注
+        sp.points.push(p.points[2], tm, tl, bl, bm, p.points[3], bm, br, tr, tm, p.points[2]); // 生成关健值标注
 
         this.emit('onPointCreated', p);
       }
@@ -8000,6 +8018,14 @@ define(['exports'], function (exports) { 'use strict';
           if (['width', 'height'].includes(name)) {
             this.touchGraph[name] = args.newValue / this.devicePixelRatio;
           }
+        }); // 把上层canvse事件传递给绘图层对象
+
+        graph.on('mousedown touchstart mousemove touchmove mouseup touchend touchcancel touchleave', args => {
+          const eventName = args.event.eventName || args.event.type;
+
+          if (eventName) {
+            this.emit(eventName, args);
+          }
         });
       }
 
@@ -8028,19 +8054,50 @@ define(['exports'], function (exports) { 'use strict';
           area.children.add(this.yMarkLine);
         }
 
+        let longtap = 0; // 是否有长按, 0 未开始，1已按下，2识别为长按
+
+        let longtapHandler = 0;
         graph.on('mousedown touchstart', args => {
-          if (this.xMarkLine) {
-            this.xMarkLine.visible = true;
-            this.xMarkLine.move(args);
+          // 如果长按才启用
+          if (this.style.markLine.longtap) {
+            longtap = 1;
+            longtapHandler && clearTimeout(longtapHandler); // 如果一定时间后还没有取消，则表示长按了
+
+            longtapHandler = setTimeout(() => {
+              if (longtap === 1 || longtap === 2) {
+                longtap = 2; // 开始出现标线
+
+                if (this.xMarkLine) {
+                  this.xMarkLine.visible = true;
+                  this.xMarkLine.move(args);
+                }
+
+                if (this.yMarkLine) {
+                  this.yMarkLine.visible = true;
+                  this.yMarkLine.move(args);
+                }
+              }
+            }, 500);
+          } else {
+            if (this.xMarkLine) {
+              this.xMarkLine.visible = true;
+              this.xMarkLine.move(args);
+            }
+
+            if (this.yMarkLine) {
+              this.yMarkLine.visible = true;
+              this.yMarkLine.move(args);
+            }
           }
 
-          if (this.yMarkLine) {
-            this.yMarkLine.visible = true;
-            this.yMarkLine.move(args);
-          }
+          args.longtap = longtap;
         }); // 移动标线
 
         graph.on('mousemove touchmove', args => {
+          if (longtap === 1) longtap = 0; // 如果移动了，则取消长按
+
+          args.longtap = longtap;
+
           if (this.xMarkLine && this.xMarkLine.visible) {
             this.xMarkLine.move(args);
           }
@@ -8051,6 +8108,8 @@ define(['exports'], function (exports) { 'use strict';
         }); // 取消移动
 
         graph.on('mouseup touchend touchcancel touchleave', args => {
+          longtap = 0;
+
           if (this.xMarkLine && this.xMarkLine.visible) {
             this.xMarkLine.cancel(args);
           }
