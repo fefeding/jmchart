@@ -129,19 +129,16 @@
                         x: 0,
                         touching: false, // 是否在滑动中
                         scaleTouching : false,
-                        touche1X: 0,
-                        touche1Y: 0,
-                        touche2X: 0,
-                        touche2Y: 0
+                        scaleTouchOffset: 0
                     };
                     chart.on('touchstart', (args) => {
                         // 双指滑动， 缩放
                         if(args.event.touches.length === 2) {
                             dataTouchPosition.scaleTouching = true;
-                            dataTouchPosition.touche1X = args.event.touches[0].pageX;
-                            dataTouchPosition.touche2X = args.event.touches[1].pageX;
-                            dataTouchPosition.touche1Y = args.event.touches[0].pageY;
-                            dataTouchPosition.touche2Y = args.event.touches[1].pageY;
+                            const ox = args.event.touches[0].pageX - args.event.touches[1].pageX ;
+                            const oy = args.event.touches[0].pageY - args.event.touches[1].pageY;
+                            // 数据偏移距离
+                            dataTouchPosition.scaleTouchOffset = Math.sqrt(ox * ox + oy * oy);
                         }
                         else {
                             dataTouchPosition.touching = true;
@@ -162,22 +159,22 @@
 
                         // 双指缩放
                         if(dataTouchPosition.scaleTouching && args.event.touches.length === 2) {
-                            const ox = dataTouchPosition.touche1X - args.event.touches[0].pageX + args.event.touches[1].pageX - dataTouchPosition.touche2X;
-                            const oy = dataTouchPosition.touche1Y - args.event.touches[0].pageY + args.event.touches[1].pageY - dataTouchPosition.touche2Y;
-                            // 数据偏移量 
-                            const offDataCount = Math.round(Math.sqrt(ox * ox + oy * oy) / args.target.bounds.width * dataCount);
+                            const ox = args.event.touches[0].pageX - args.event.touches[1].pageX ;
+                            const oy = args.event.touches[0].pageY - args.event.touches[1].pageY;
+                            // 数据偏移距离
+                            const scaleOffset = Math.sqrt(ox * ox + oy * oy);
+                            const dataOffset = Math.round((dataTouchPosition.scaleTouchOffset - scaleOffset) / args.target.bounds.width * dataCount);
 
-                            if(Math.abs(offDataCount) > 0) {
-                                let index = Math.max(dataIndex + offDataCount, 0);
-                                dataCount += offDataCount * 2;
+                            if(Math.abs(dataOffset) > 0) {
+                                let index = Math.max(dataIndex - dataOffset, 0);
+                                dataCount += dataOffset * 2;
                                 // 展示数据个数不能越过数组上限
                                 if(dataCount > data.length) dataCount = data.length;
                                 if(dataCount > data.length - index) dataCount = data.length - index;
 
                                 refresh();// 刷新数据
 
-                                dataTouchPosition.touche1X = args.event.touches[0].pageX;
-                                dataTouchPosition.touche2X = args.event.touches[1].pageX;
+                                dataTouchPosition.scaleTouchOffset = scaleOffset;
 
                                 document.getElementById('mylog').innerHTML = 'scaleTouching:' + offDataCount;
                             }
