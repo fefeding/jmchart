@@ -874,6 +874,23 @@
           }
           return r;
       }
+      // window.requestAnimationFrame() 告诉浏览器——你希望执行一个动画，并且要求浏览器在下次重绘之前调用指定的回调函数更新动画。该方法需要传入一个回调函数作为参数，该回调函数会在浏览器下一次重绘之前执行
+      static requestAnimationFrame(callback) {
+          if(typeof requestAnimationFrame === 'undefined') {
+  			return setTimeout(callback, 20);
+  		}
+  		else {
+  			return requestAnimationFrame(callback);
+  		}
+      }
+      static cancelAnimationFrame(handler) {
+          if(typeof requestAnimationFrame === 'undefined') {
+  			return clearTimeout(handler);
+  		}
+  		else {
+  			return cancelAnimationFrame(handler);
+  		}
+      }	
   }
 
   /**
@@ -3966,7 +3983,7 @@
   		
   		//获取当前控件的绝对位置
   		let bounds = this.parent && this.parent.absoluteBounds?this.parent.absoluteBounds:this.absoluteBounds;		
-  		let size = this.testSize();
+  		this.testSize();
   		let location = this.location;
   		let x = location.left + bounds.left;
   		let y = location.top + bounds.top;
@@ -4415,7 +4432,7 @@
   		this.eventEvents['mousedown'] = jmUtils.bindEvent(this.target,'mousedown',function(evt) {
   			evt = evt || window.event;
   			evt.eventName = 'mousedown';
-  			let r = container.raiseEvent('mousedown',evt);
+  			container.raiseEvent('mousedown',evt);
   			//if(r === false) {
   				//if(evt.preventDefault) evt.preventDefault();
   				//return false;
@@ -4427,7 +4444,7 @@
   			evt.eventName = 'mousemove';
   			let target = evt.target || evt.srcElement;
   			if(target == canvas) {
-  				let r = container.raiseEvent('mousemove',evt);
+  				container.raiseEvent('mousemove',evt);
   				//if(r === false) {
   					if(evt.preventDefault) evt.preventDefault();
   					return false;
@@ -4600,7 +4617,7 @@
    * @param {object} option 参数：{width:宽,height:高}
    * @param {function} callback 初始化后的回调
    */
-  class jmGraph extends jmControl {
+  class jmGraph$1 extends jmControl {
 
   	constructor(canvas, option, callback) {
   		if(typeof option == 'function') {
@@ -4778,7 +4795,7 @@
   	 * @return {jmGraph} jmGraph实例对象
   	 */
   	static create(...args) {
-  		return new jmGraph(...args);
+  		return new jmGraph$1(...args);
   	}
 
   	/**
@@ -5078,26 +5095,19 @@
   		if(this.___isAutoRefreshing) return;
   		const self = this;
   		this.___isAutoRefreshing = true;
-  		let requestAnimationFrameFun = null;
-  		if(typeof requestAnimationFrame === 'undefined') {
-  			requestAnimationFrameFun = (fun) => {
-  				if(this.__requestAnimationFrameFunHandler) clearTimeout(this.__requestAnimationFrameFunHandler);
-  				this.__requestAnimationFrameFunHandler = setTimeout(fun, 20);
-  			};
-  		}
-  		else {
-  			requestAnimationFrameFun = requestAnimationFrame;
-  		}
+  		
   		function update() {
   			if(self.destoryed) {
   				self.___isAutoRefreshing = false;
   				return;// 已销毁
   			}
   			if(self.needUpdate) self.redraw();
-  			requestAnimationFrameFun(update);
+  			self.__requestAnimationFrameFunHandler && jmUtils.cancelAnimationFrame(self.__requestAnimationFrameFunHandler);
+  			self.__requestAnimationFrameFunHandler = jmUtils.requestAnimationFrame(update);
   			if(callback) callback();
   		}
-  		requestAnimationFrameFun(update);
+  		self.__requestAnimationFrameFunHandler && jmUtils.cancelAnimationFrame(self.__requestAnimationFrameFunHandler);
+  		self.__requestAnimationFrameFunHandler = jmUtils.requestAnimationFrame(update);
   		return this;
   	}
 
@@ -5124,7 +5134,7 @@
       "resize": jmResize
   };
 
-  class jmGraph$1 extends jmGraph {
+  class jmGraph extends jmGraph$1 {
       constructor(canvas, option, callback) {
           
           const targetType = new.target;
@@ -5134,9 +5144,9 @@
           option.shapes = Object.assign(shapes, option.shapes||{});
           
           //不是用new实例化的话，返回一个promise
-  		if(!targetType || !(targetType.prototype instanceof jmGraph)) {
+  		if(!targetType || !(targetType.prototype instanceof jmGraph$1)) {
   			return new Promise(function(resolve, reject){				
-  				var g = new jmGraph$1(canvas, option, callback);
+  				var g = new jmGraph(canvas, option, callback);
   				if(resolve) resolve(g);				
   			});
           }
@@ -6082,15 +6092,18 @@
     /*const hover = options.hover || function() {	
     	//应用图的动态样式		
     	//Object.assign(series.style, series.style.hover);
-    		//Object.assign(this.style, this.style.hover || {});
-    		//series.graph.refresh();
+    
+    	//Object.assign(this.style, this.style.hover || {});
+    
+    	//series.graph.refresh();
     };
     panel.bind('mouseover', hover);
     //执行离开
     const leave = options.leave || function() {	
     	//应用图的普通样式		
     	//Object.assign(series.style, series.style.normal);
-    		//Object.assign(this.style, this.style.normal || {});
+    
+    	//Object.assign(this.style, this.style.normal || {});
     	//jmUtils.apply(this.series.style.normal,this.series.style);
     	//series.graph.refresh();
     };
@@ -6328,7 +6341,7 @@
         } // 下一个点
 
 
-        if ( p.x > x) {
+        if (p.x > x) {
           // 没有上一个，只能返回这个了
           if (prePoint && x - prePoint.x < p.x - x) return prePoint;else return p;
         }
@@ -7276,8 +7289,8 @@
           shapePoints = this.createCurePoints(shapePoints, p);
         } // 如果是虚线
         else if (this.style.lineType === 'dotted') {
-            shapePoints = this.createDotLine(shapePoints, p);
-          }
+          shapePoints = this.createDotLine(shapePoints, p);
+        }
 
         shapePoints.push(p);
         this.createItemLabel(p); // 生成关健值标注
@@ -7522,9 +7535,9 @@
           endShapePoints = this.createCurePoints(endShapePoints, p.points[1]);
         } // 如果是虚线
         else if (this.style.lineType === 'dotted') {
-            startShapePoints = this.createDotLine(startShapePoints, p.points[0]);
-            endShapePoints = this.createDotLine(endShapePoints, p.points[1]);
-          }
+          startShapePoints = this.createDotLine(startShapePoints, p.points[0]);
+          endShapePoints = this.createDotLine(endShapePoints, p.points[1]);
+        }
 
         startShapePoints.push(p.points[0]);
         endShapePoints.push(p.points[1]); // 生成标点的回调
@@ -7886,7 +7899,7 @@
    * @param {element} container 图表容器
    */
 
-  class jmChart extends jmGraph$1 {
+  class jmChart extends jmGraph {
     constructor(container, options) {
       options = options || {};
       const enableAnimate = !!options.enableAnimate;
@@ -8009,7 +8022,7 @@
         cn.style.position = 'absolute';
         cn.style.top = 0;
         cn.style.left = 0;
-        this.touchGraph = graph = new jmGraph$1(cn, options);
+        this.touchGraph = graph = new jmGraph(cn, options);
         container.appendChild(cn);
         this.touchGraph.chartGraph = this;
         this.on('propertyChange', (name, args) => {
@@ -8059,13 +8072,21 @@
           // 如果长按才启用
           if (this.style.markLine.longtap) {
             longtap = 1;
-            longtapHandler && clearTimeout(longtapHandler);
-            console.log('longtap delay start'); // 如果一定时间后还没有取消，则表示长按了
+            longtapHandler && graph.utils.cancelAnimationFrame(longtapHandler);
+            let tapStartTime = Date.now();
+            console.log('longtap delay start', tapStartTime);
 
-            longtapHandler = setTimeout(() => {
-              console.log('longtap status', longtap);
+            const reqFun = () => {
+              const elapsed = Date.now() - tapStartTime;
+              console.log('longtap status', longtap, elapsed);
 
               if (longtap === 1 || longtap === 2) {
+                // 如果还未过一定时间，则继续等待
+                if (elapsed < 500) {
+                  longtapHandler = graph.utils.requestAnimationFrame(reqFun);
+                  return;
+                }
+
                 longtap = 2; // 开始出现标线
 
                 if (this.xMarkLine) {
@@ -8080,7 +8101,10 @@
 
                 this.emit('longtapstart', args);
               }
-            }, 500);
+            }; // 如果一定时间后还没有取消，则表示长按了
+
+
+            longtapHandler = graph.utils.requestAnimationFrame(reqFun);
           } else {
             if (this.xMarkLine) {
               this.xMarkLine.visible = true;
@@ -8508,9 +8532,11 @@
     template: `<div ref="jmChartContainer" :style="{width: width, height: height}"></div>`
   };
 
-  exports.default = jmChart;
+  exports['default'] = jmChart;
   exports.jmChart = jmChart;
   exports.vChart = vchart;
+
+  Object.defineProperty(exports, '__esModule', { value: true });
 
   return exports;
 

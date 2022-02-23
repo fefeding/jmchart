@@ -205,12 +205,18 @@ export default class jmChart extends jmGraph  {
 				// 如果长按才启用
 				if(this.style.markLine.longtap) {
 					longtap = 1;
-					longtapHandler && clearTimeout(longtapHandler);
-					console.log('longtap delay start', Date.now());
-					// 如果一定时间后还没有取消，则表示长按了
-					longtapHandler = setTimeout(()=>{
-						console.log('longtap status', longtap, Date.now());
+					longtapHandler &&  graph.utils.cancelAnimationFrame(longtapHandler);
+					let tapStartTime = Date.now();
+					console.log('longtap delay start', tapStartTime);
+					const reqFun = ()=>{
+						const elapsed = Date.now() - tapStartTime;
+						console.log('longtap status', longtap, elapsed);
 						if(longtap === 1 || longtap === 2) {
+							// 如果还未过一定时间，则继续等待
+							if(elapsed < 500) {
+								longtapHandler = graph.utils.requestAnimationFrame(reqFun);
+								return;
+							}
 							longtap = 2;
 							// 开始出现标线
 							if(this.xMarkLine) {
@@ -223,7 +229,9 @@ export default class jmChart extends jmGraph  {
 							}
 							this.emit('longtapstart', args);
 						}
-					}, 500);
+					};
+					// 如果一定时间后还没有取消，则表示长按了
+					longtapHandler = graph.utils.requestAnimationFrame(reqFun);
 				}
 				else {
 					if(this.xMarkLine) {
