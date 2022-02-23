@@ -154,7 +154,7 @@
                     });
                     chart.on('touchmove', (args) => {
                         if(!args.target || !args.target.chartGraph) return;
-                        //console.log('touchmove', args);
+                        console.log('touchmove', args);
 
                         // 双指缩放
                         if(dataTouchPosition.scaleTouching && args.event.touches.length === 2) {
@@ -201,6 +201,7 @@
                     chart.on('touchend touchcancel touchleave', (args) => {
                         dataTouchPosition.touching = false;
                         dataTouchPosition.scaleTouching = false;
+                        console.log('touchend');
                     });
 				}
 
