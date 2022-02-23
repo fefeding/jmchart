@@ -201,6 +201,10 @@ export default class jmChart extends jmGraph  {
 
 			let longtap = 0;// 是否有长按, 0 未开始，1已按下，2识别为长按
 			let longtapHandler = 0;
+			let touchStartPos = {
+				x: 0,
+				y: 0
+			};
 			graph.on('mousedown touchstart', (args) => {
 				// 如果长按才启用
 				if(this.style.markLine.longtap) {
@@ -245,11 +249,16 @@ export default class jmChart extends jmGraph  {
 				}	
 				args.longtap = longtap;	
 				args.event.stopPropagation();
-				args.event.preventDefault();// 阻止默认行为		
+				args.event.preventDefault();// 阻止默认行为	
+				touchStartPos = args.position;
 			});
 			// 移动标线
 			graph.on('mousemove touchmove', (args) => {
-				if(longtap === 1) longtap = 0; // 如果移动了，则取消长按
+				const ox = args.position.x - touchStartPos.x;
+				const oy = args.position.y - touchStartPos.y;
+				const offpos = Math.sqrt(ox * ox + oy * oy);
+				console.log('touchmove', offpos);
+				if(longtap === 1 && offpos > 5) longtap = 0; // 如果移动了，则取消长按
 
 				args.longtap = longtap;
 				if(this.xMarkLine && this.xMarkLine.visible) {
