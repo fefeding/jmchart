@@ -258,7 +258,7 @@ export default class jmChart extends jmGraph  {
 				const oy = args.position.y - touchStartPos.y;
 				const offpos = Math.sqrt(ox * ox + oy * oy);
 				console.log('touchmove', offpos);
-				if(longtap === 1 && offpos > 5) longtap = 0; // 如果移动了，则取消长按
+				if(longtap === 1 && offpos > 15) longtap = 0; // 如果移动了，则取消长按
 
 				args.longtap = longtap;
 				if(this.xMarkLine && this.xMarkLine.visible) {
