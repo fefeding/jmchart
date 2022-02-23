@@ -27,34 +27,19 @@
 			
 
 			function inichart(w, h) {
-
-					const chart = new jmChart('mycanvas', {
+                    const option = {
 						width: w,
 						height: h,
                         xField: 'day',
                         enableAnimate: false,
                         legendPosition: 'top',
                         legendVisible: false, // 不显示图例
-						// 最大和最小X值，  这里一般不用指定，除非硬是需要
-						minXValue : 0,
-						maxXValue : 10,
-                        touchGraph: true, // 是否依赖生成操作图层，当点比较多时，性能低下可以把它设为true
-						//autoRefresh: true,
-						//minYValue: -100,
-						//maxYValue: 15,
-                        // 格式化x标签值
-                        xLabelFormat: (v, item, index) => {
-                            // 只展示第一个和最后一个
-                            //if(index % 5 === 0) {
-                            //    return v;
-                            //}  
-                            //return '';
-                        },
+                        touchGraph: true, // 是否依赖生成操作图层，当点比较多时，性能低下可以把它设为true						
                         style: {
                             layout: 'inside',	// inside 二边不对齐Y轴，内缩一个刻度 | normal
 							// 跟随标线
 							markLine: {
-								x: false, // 显示X标线
+								x: true, // 显示X标线
 								y: true, // 显示Y标线
 								stroke: 'red',
 								fill: '#fff',
@@ -70,10 +55,6 @@
                                     y: false     // 显示Y轴网格
                                 }
                             },
-                            // 隐藏边框
-                            chartArea: {
-                                //stroke: 'transparent'
-                            },
                             margin: {
                                 top: 30,
                                 left: 50,
@@ -81,15 +62,16 @@
                                 bottom: 30
                             }
                         }
-					});	
+					};
+					const chart1 = new jmChart('mycanvas1', option);	
                     // touch改变数据点事件
-					chart.on('touchPointChange', function(args) {
+					chart1.on('touchPointChange', function(args) {
 						console.log(args);
                         document.getElementById('mydatalog').innerHTML = JSON.stringify(args.points[0].data);
 					});		
                     
 
-					const line = chart.createSeries('candlestick', {
+					const kline = chart1.createSeries('candlestick', {
                         // 如果字段名跟下面的一至，可以不指定
 						fields: [
 							'start',  // 开盘
@@ -107,6 +89,53 @@
                         }
 					});
 
+                    const chart2 = new jmChart('mycanvas2', {
+                        ...option,
+						height: 200,					
+                        style: {  
+                            ...option.style,                          
+							// 跟随标线
+							markLine: {
+								x: false, // 显示X标线
+								y: true, // 显示Y标线
+								stroke: 'red',
+								fill: '#fff',
+								lineWidth: 1,
+                                longtap: true // 长按启用
+							}                            
+                        }
+					});
+
+					
+					const bar1 = chart2.createSeries('bar', {
+						field: 'max',
+						style: {
+							label: {
+								show: false
+							},
+                            // 跟随标线
+							markLine: {
+								x: false, // 显示X标线
+								y: true, // 显示Y标线
+								stroke: 'red',
+								fill: '#fff',
+								lineWidth: 1,
+                                longtap: true // 长按启用
+							},
+						}
+					});	
+
+                    // 图1的标线移动  图2跟随
+                    chart1.on('marklinestartmove', (args)=>{
+                        chart2.markLine.startMove(args);
+                    });
+                    chart1.on('marklinemove', (args)=>{
+                        chart2.markLine.move(args);
+                    });
+                    chart1.on('marklineendmove', (args)=>{
+                        chart2.markLine.endMove(args);
+                    });
+
                     
                     const data = createData(); // 生成测试数据
 
@@ -115,11 +144,12 @@
                     let dataIndex = data.length - dataCount; // 展示数据起始索引
 
 					function refresh() {
-                        chart.data = data.filter((d, i) => {
+                        chart2.data = chart1.data = data.filter((d, i) => {
                             if(i >= dataIndex && i < dataCount + dataIndex) return true;   
                             return false;                         
                         });                        
-						chart.refresh();
+						chart1.refresh();
+                        chart2.refresh();
 					}
 					
 					refresh(0, 20);
@@ -131,7 +161,7 @@
                         scaleTouching : false,
                         scaleTouchOffset: 0
                     };
-                    chart.on('touchstart', (args) => {
+                    chart1.on('touchstart', (args) => {
                         // 双指滑动， 缩放
                         if(args.event.touches.length === 2) {
                             dataTouchPosition.scaleTouching = true;
@@ -147,13 +177,13 @@
                     });	
 
                     // 长按了
-                    chart.on('longtapstart', (args) => {
+                    chart1.on('marklinelongtapstart', (args) => {
                         dataTouchPosition.touching = false;// 长按取消数据滑动
                         
-                        document.getElementById('mylog').innerHTML = 'longtapstart:';
-                        console.log('longtapstart', args);
+                        document.getElementById('mylog').innerHTML = 'marklinelongtapstart:';
+                        console.log('marklinelongtapstart', args);
                     });
-                    chart.on('touchmove', (args) => {
+                    chart1.on('touchmove', (args) => {
                         if(!args.target || !args.target.chartGraph) return;
                         console.log('touchmove', args);
 
@@ -201,7 +231,7 @@
                             }
                         }
                     });	
-                    chart.on('touchend touchcancel touchleave', (args) => {
+                    chart1.on('touchend touchcancel touchleave', (args) => {
                         dataTouchPosition.touching = false;
                         dataTouchPosition.scaleTouching = false;
                         console.log('touchend');
@@ -227,13 +257,15 @@
 		</script>
 	</head>
 	<body>
-		<div id="mycanvas">
+		<div id="mycanvas1">
 			</div>	
         <hr />
         <div id="mydatalog" style="word-wrap:break-word">
 			</div>		
         <hr />
         <div id="mylog" style="word-wrap:break-word">
+			</div>	
+        <div id="mycanvas2">
 			</div>	
 	</body>
 </html>

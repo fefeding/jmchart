@@ -14,7 +14,7 @@ import jmPieSeries from './series/pieSeries.js';
 import jmLineSeries from './series/lineSeries.js';
 import jmStackLineSeries from './series/stackLineSeries.js';
 import jmCandlestickSeries from './series/candlestickSeries.js';
-import jmMarkLine from './core/axis/markLine';
+import jmMarkLineManager from './core/markLine/manager';
 
 /**
  * jm图表组件
@@ -140,11 +140,9 @@ export default class jmChart extends jmGraph  {
 			autoRefresh: true
 		}, true);
 
-		let graph = this.touchGraph = this;
-
 		// 生成图层, 当图刷新慢时，需要用一个操作图层来进行滑动等操作重绘
 		// isWXMiniApp 非微信小程序下才能创建
-		if(!graph.isWXMiniApp && container && options.touchGraph) {
+		if(!this.isWXMiniApp && container && options.touchGraph) {
 			let cn = document.createElement('canvas');
 			cn.width = container.offsetWidth||container.clientWidth;
 			cn.height = container.offsetHeight||container.clientHeight;
@@ -152,7 +150,7 @@ export default class jmChart extends jmGraph  {
 			cn.style.top = 0;
 			cn.style.left = 0;
 
-			this.touchGraph = graph = new jmGraph(cn, options);
+			this.touchGraph = new jmGraph(cn, options);
 			
 			container.appendChild(cn);
 
@@ -164,124 +162,15 @@ export default class jmChart extends jmGraph  {
 				}
 			});
 			// 把上层canvse事件传递给绘图层对象
-			graph.on('mousedown touchstart mousemove touchmove mouseup touchend touchcancel touchleave', (args) => {
+			this.touchGraph.on('mousedown touchstart mousemove touchmove mouseup touchend touchcancel touchleave', (args) => {
 				const eventName = args.event.eventName || args.event.type;
 				if(eventName) {
 					this.emit(eventName, args);
 				}
 			});
 		}
-
-		if(this.style.markLine)  {
-
-			graph.on('beginDraw', () => {
-				// 重置标线，会处理小圆圈问题
-				this.xMarkLine && this.xMarkLine.init();
-				this.yMarkLine && this.yMarkLine.init();
-			});
-
-			// 生成标线，可以跟随鼠标或手指滑动
-			if(this.style.markLine && this.style.markLine.x) {
-				this.xMarkLine = graph.createShape(jmMarkLine, {
-					type: 'x',
-					style: this.style.markLine
-				});
-				const area = graph.chartArea || graph;
-				area.children.add(this.xMarkLine);
-			}
-
-			if(this.style.markLine && this.style.markLine.y) {
-				this.yMarkLine = graph.createShape(jmMarkLine, {
-					type: 'y',
-					style: this.style.markLine
-				});
-				const area = graph.chartArea || graph;
-				area.children.add(this.yMarkLine);
-			}
-
-			let longtap = 0;// 是否有长按, 0 未开始，1已按下，2识别为长按
-			let longtapHandler = 0;
-			let touchStartPos = {
-				x: 0,
-				y: 0
-			};
-			graph.on('mousedown touchstart', (args) => {
-				// 如果长按才启用
-				if(this.style.markLine.longtap) {
-					longtap = 1;
-					longtapHandler &&  graph.utils.cancelAnimationFrame(longtapHandler);
-					let tapStartTime = Date.now();
-					console.log('longtap delay start', tapStartTime);
-					const reqFun = ()=>{
-						const elapsed = Date.now() - tapStartTime;
-						console.log('longtap status', longtap, elapsed);
-						if(longtap === 1 || longtap === 2) {
-							// 如果还未过一定时间，则继续等待
-							if(elapsed < 500) {
-								longtapHandler = graph.utils.requestAnimationFrame(reqFun);
-								return;
-							}
-							longtap = 2;
-							// 开始出现标线
-							if(this.xMarkLine) {
-								this.xMarkLine.visible = true;
-								this.xMarkLine.move(args);
-							}
-							if(this.yMarkLine) {
-								this.yMarkLine.visible = true;
-								this.yMarkLine.move(args);
-							}
-							this.emit('longtapstart', args);
-						}
-					};
-					// 如果一定时间后还没有取消，则表示长按了
-					longtapHandler = graph.utils.requestAnimationFrame(reqFun);
-				}
-				else {
-					if(this.xMarkLine) {
-						this.xMarkLine.visible = true;
-						this.xMarkLine.move(args);
-					}
-					if(this.yMarkLine) {
-						this.yMarkLine.visible = true;
-						this.yMarkLine.move(args);
-					}
-				}	
-				args.longtap = longtap;	
-				args.event.stopPropagation();
-				args.event.preventDefault();// 阻止默认行为	
-				touchStartPos = args.position;
-			});
-			// 移动标线
-			graph.on('mousemove touchmove', (args) => {
-				const ox = args.position.x - touchStartPos.x;
-				const oy = args.position.y - touchStartPos.y;
-				const offpos = Math.sqrt(ox * ox + oy * oy);
-				console.log('touchmove', offpos);
-				if(longtap === 1 && offpos > 15) longtap = 0; // 如果移动了，则取消长按
-
-				args.longtap = longtap;
-				if(this.xMarkLine && this.xMarkLine.visible) {
-					this.xMarkLine.move(args);
-				}
-				if(this.yMarkLine && this.yMarkLine.visible) {
-					this.yMarkLine.move(args);
-				}
-				args.event.stopPropagation();
-				args.event.preventDefault();// 阻止默认行为	
-			});
-			// 取消移动
-			graph.on('mouseup touchend touchcancel touchleave', (args) => {
-				longtap = 0;
-
-				if(this.xMarkLine && this.xMarkLine.visible) {
-					this.xMarkLine.cancel(args);
-				}
-				if(this.yMarkLine && this.yMarkLine.visible) {
-					this.yMarkLine.cancel(args);
-				}
-			});
-		}
+		// 初始化标线
+		this.markLine = new jmMarkLineManager(this);
 	}
 	
 	// 重置整个图表
