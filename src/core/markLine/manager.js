@@ -75,13 +75,14 @@ export default class jmMarkLineManager {
 					};
 					// 如果一定时间后还没有取消，则表示长按了
 					longtapHandler = graph.utils.requestAnimationFrame(reqFun);
+
+					//args.event.stopPropagation();
+					args.event.preventDefault();// 阻止默认行为	
 				}
 				else {
 					this.startMove(args);
 				}	
 				args.longtap = longtap;	
-				//args.event.stopPropagation();
-				//args.event.preventDefault();// 阻止默认行为	
 				touchStartPos = args.position;
 			});
 			// 移动标线
