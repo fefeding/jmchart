@@ -130,7 +130,9 @@
                         touching: false, // 是否在滑动中
                         scaleTouching : false,
                         touche1X: 0,
-                        touche2X: 0
+                        touche1Y: 0,
+                        touche2X: 0,
+                        touche2Y: 0
                     };
                     chart.on('touchstart', (args) => {
                         // 双指滑动， 缩放
@@ -138,6 +140,8 @@
                             dataTouchPosition.scaleTouching = true;
                             dataTouchPosition.touche1X = args.event.touches[0].pageX;
                             dataTouchPosition.touche2X = args.event.touches[1].pageX;
+                            dataTouchPosition.touche1Y = args.event.touches[0].pageY;
+                            dataTouchPosition.touche2Y = args.event.touches[1].pageY;
                         }
                         else {
                             dataTouchPosition.touching = true;
@@ -159,8 +163,9 @@
                         // 双指缩放
                         if(dataTouchPosition.scaleTouching && args.event.touches.length === 2) {
                             const ox = dataTouchPosition.touche1X - args.event.touches[0].pageX + args.event.touches[1].pageX - dataTouchPosition.touche2X;
-                            // 数据偏移量   左右各一半
-                            const offDataCount = Math.round(ox / args.target.bounds.width * dataCount / 2);
+                            const oy = dataTouchPosition.touche1Y - args.event.touches[0].pageY + args.event.touches[1].pageY - dataTouchPosition.touche2Y;
+                            // 数据偏移量 
+                            const offDataCount = Math.round(Math.sqrt(ox * ox + oy * oy) / args.target.bounds.width * dataCount);
 
                             if(Math.abs(offDataCount) > 0) {
                                 let index = Math.max(dataIndex + offDataCount, 0);
