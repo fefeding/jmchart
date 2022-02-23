@@ -9,6 +9,8 @@ html5图表控件
 
 饼图[http://jiamao.github.io/jmchart/example/pie.html]
 
+K线[http://jiamao.github.io/jmchart/example/candlestick.html]
+
 stackBar[http://jiamao.github.io/jmchart/example/stackBar.html]
 
 stackLine[http://jiamao.github.io/jmchart/example/stackLine.html]
