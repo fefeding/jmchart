@@ -8057,10 +8057,10 @@ class jmChart extends jmGraph$1 {
         if (this.style.markLine.longtap) {
           longtap = 1;
           longtapHandler && clearTimeout(longtapHandler);
-          console.log('longtap delay start'); // 如果一定时间后还没有取消，则表示长按了
+          console.log('longtap delay start', Date.now()); // 如果一定时间后还没有取消，则表示长按了
 
           longtapHandler = setTimeout(() => {
-            console.log('longtap status', longtap);
+            console.log('longtap status', longtap, Date.now());
 
             if (longtap === 1 || longtap === 2) {
               longtap = 2; // 开始出现标线
