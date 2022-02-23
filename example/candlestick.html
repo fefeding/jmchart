@@ -127,13 +127,30 @@
 
                     // 图1的标线移动  图2跟随
                     chart1.on('marklinestartmove', (args)=>{
-                        chart2.markLine.startMove(args);
+                        args.cancel = true;// 终止事件继续执行，以免二个chart死循环
+                        chart2.markLine.startMove(args, 'y'); //只联动y
                     });
                     chart1.on('marklinemove', (args)=>{
+                        args.cancel = true;// 终止事件继续执行，以免二个chart死循环
                         chart2.markLine.move(args);
                     });
                     chart1.on('marklineendmove', (args)=>{
+                        args.cancel = true;// 终止事件继续执行，以免二个chart死循环
                         chart2.markLine.endMove(args);
+                    });
+
+                    // 图2的标线移动  图1跟随
+                    chart2.on('marklinestartmove', (args)=>{
+                        args.cancel = true;// 终止事件继续执行，以免二个chart死循环
+                        chart1.markLine.startMove(args, 'y');//只联动y
+                    });
+                    chart2.on('marklinemove', (args)=>{
+                        args.cancel = true;// 终止事件继续执行，以免二个chart死循环
+                        chart1.markLine.move(args);
+                    });
+                    chart2.on('marklineendmove', (args)=>{
+                        args.cancel = true;// 终止事件继续执行，以免二个chart死循环
+                        chart1.markLine.endMove(args);
                     });
 
                     

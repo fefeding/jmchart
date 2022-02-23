@@ -105,17 +105,17 @@ export default class jmMarkLineManager {
     }
 
     // 开始移动标线
-    startMove(args) {
-        if(this.xMarkLine) {
+    startMove(args, markLineType = 'xy') {
+        if(this.xMarkLine && markLineType.includes('x')) {
             this.xMarkLine.visible = true;
             this.xMarkLine.move(args);
         }
-        if(this.yMarkLine) {
+        if(this.yMarkLine && markLineType.includes('y')) {
             this.yMarkLine.visible = true;
             this.yMarkLine.move(args);
         }
 
-        this.chart.emit('marklinestartmove', args);
+        if(!args.cancel) this.chart.emit('marklinestartmove', args);
     }
 
     // 移动标线
@@ -133,7 +133,7 @@ export default class jmMarkLineManager {
             args.event.stopPropagation();
 			args.event.preventDefault();// 阻止默认行为	
 
-            this.chart.emit('marklinemove', args);
+            if(!args.cancel) this.chart.emit('marklinemove', args);
         }        
     }
     // 终止动移
@@ -144,7 +144,7 @@ export default class jmMarkLineManager {
         if(this.yMarkLine && this.yMarkLine.visible) {
             this.yMarkLine.cancel(args);
         }
-        this.chart.emit('marklineendmove', args);
+        if(!args.cancel) this.chart.emit('marklineendmove', args);
     }
 }
 	
