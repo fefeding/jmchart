@@ -206,8 +206,10 @@ export default class jmChart extends jmGraph  {
 				if(this.style.markLine.longtap) {
 					longtap = 1;
 					longtapHandler && clearTimeout(longtapHandler);
+					console.log('longtap delay start');
 					// 如果一定时间后还没有取消，则表示长按了
 					longtapHandler = setTimeout(()=>{
+						console.log('longtap status', longtap);
 						if(longtap === 1 || longtap === 2) {
 							longtap = 2;
 							// 开始出现标线

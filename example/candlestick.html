@@ -2,9 +2,10 @@
 <html>
 	<head>
 		<meta content="text/html; charset=UTF-8" http-equiv="content-type" />
-<meta name="viewport" content="width=device-width,initial-scale=1">
+        <meta name="viewport" content="width=device-width,initial-scale=1">
 		<!--<script type="text/javascript" src="../src/jmchart.debug.js" id="jmgraph" ></script>-->
-
+        <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
+        
 		<style>
 		html,body {
 			margin:0;
@@ -17,7 +18,10 @@
 			import jmChart from '../dist/jmchart.esm.js';
 			(function load() {
 				var w = window.innerWidth || window.document.body.clientWidth;
-				var h = Math.min((window.innerHeight || window.document.body.clientHeight) * 0.5, 500);			
+				var h = Math.min((window.innerHeight || window.document.body.clientHeight) * 0.5, 500);	
+
+                var vConsole = new window.VConsole();
+
 				inichart(w,h);
 			})();
 			
@@ -43,10 +47,10 @@
                         // 格式化x标签值
                         xLabelFormat: (v, item, index) => {
                             // 只展示第一个和最后一个
-                            if(index % 5 === 0) {
-                                return v;
-                            }  
-                            return '';
+                            //if(index % 5 === 0) {
+                            //    return v;
+                            //}  
+                            //return '';
                         },
                         style: {
                             layout: 'inside',	// inside 二边不对齐Y轴，内缩一个刻度 | normal
@@ -148,6 +152,7 @@
                     chart.on('longtapstart', (args) => {
                         dataTouchPosition.touching = false;
                         document.getElementById('mylog').innerHTML = 'longtapstart:';
+                        console.log('longtapstart', args);
                     });
                     chart.on('touchmove', (args) => {
                         if(!args.target || !args.target.chartGraph) return;
