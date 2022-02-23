@@ -167,16 +167,17 @@
 
                             if(Math.abs(dataOffset) > 0) {
                                 let index = Math.max(dataIndex - dataOffset, 0);
+                                if(index >= 0) dataIndex = index;
                                 dataCount += dataOffset * 2;
                                 // 展示数据个数不能越过数组上限
                                 if(dataCount > data.length) dataCount = data.length;
-                                if(dataCount > data.length - index) dataCount = data.length - index;
+                                if(dataCount > data.length - dataIndex) dataCount = data.length - dataIndex;
 
                                 refresh();// 刷新数据
 
                                 dataTouchPosition.scaleTouchOffset = scaleOffset;
 
-                                document.getElementById('mylog').innerHTML = 'scaleTouching:' + offDataCount;
+                                document.getElementById('mylog').innerHTML = 'scaleTouching:' + dataOffset + ' index:' + dataIndex + ' dataCount:' + dataCount;
                             }
                         }
                         // 在滑动标线，则不处理
