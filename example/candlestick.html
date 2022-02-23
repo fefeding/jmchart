@@ -145,20 +145,18 @@
                             dataTouchPosition.touching = true;
                         }
                         dataTouchPosition.x = args.position.x;
-                        args.event.preventDefault();// 阻止默认行为
                     });	
 
                     // 长按了
                     chart.on('longtapstart', (args) => {
-                        dataTouchPosition.touching = false;
+                        dataTouchPosition.touching = false;// 长按取消数据滑动
+                        
                         document.getElementById('mylog').innerHTML = 'longtapstart:';
                         console.log('longtapstart', args);
                     });
                     chart.on('touchmove', (args) => {
                         if(!args.target || !args.target.chartGraph) return;
                         //console.log('touchmove', args);
-                        
-                        args.event.preventDefault();// 阻止默认行为
 
                         // 双指缩放
                         if(dataTouchPosition.scaleTouching && args.event.touches.length === 2) {

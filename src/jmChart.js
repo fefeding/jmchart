@@ -236,6 +236,7 @@ export default class jmChart extends jmGraph  {
 					}
 				}	
 				args.longtap = longtap;	
+				args.event.stopPropagation();
 				args.event.preventDefault();// 阻止默认行为		
 			});
 			// 移动标线
@@ -249,6 +250,8 @@ export default class jmChart extends jmGraph  {
 				if(this.yMarkLine && this.yMarkLine.visible) {
 					this.yMarkLine.move(args);
 				}
+				args.event.stopPropagation();
+				args.event.preventDefault();// 阻止默认行为	
 			});
 			// 取消移动
 			graph.on('mouseup touchend touchcancel touchleave', (args) => {
