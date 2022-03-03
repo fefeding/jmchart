@@ -1,0 +1,294 @@
+
+<!doctype html>
+<html>
+	<head>
+		<meta content="text/html; charset=UTF-8" http-equiv="content-type" />
+        <meta name="viewport" content="width=device-width,initial-scale=1">
+		<!--<script type="text/javascript" src="../src/jmchart.debug.js" id="jmgraph" ></script>-->
+        <script src="js/vconsole.js"></script>
+        
+		<style>
+		html,body {
+			margin:0;
+			padding:0;
+			width:100%;
+			height:100%;
+		}
+		</style>
+		<script type="module">
+			import jmChart from '../dist/jmchart.esm.js';
+			(function load() {
+				var w = window.innerWidth || window.document.body.clientWidth;
+				var h = Math.min((window.innerHeight || window.document.body.clientHeight) * 0.5, 500);	
+
+                var vConsole = new window.VConsole();
+
+				inichart(w,h);
+			})();
+			
+
+			function inichart(w, h) {
+                    const option = {
+						width: w,
+						height: h,
+                        xField: 'day',
+                        enableAnimate: false,
+                        legendPosition: 'top',
+                        legendVisible: false, // 不显示图例
+                        touchGraph: true, // 是否依赖生成操作图层，当点比较多时，性能低下可以把它设为true						
+                        style: {
+                            layout: 'inside',	// inside 二边不对齐Y轴，内缩一个刻度 | normal
+							// 跟随标线
+							markLine: {
+								x: true, // 显示X标线
+								y: true, // 显示Y标线
+								stroke: 'red',
+								fill: '#fff',
+								lineWidth: 1,
+                                longtap: true // 长按启用
+							},
+                            // x轴 Y轴隐藏
+                            axis: {
+								stroke: 'transparent',
+								align: 'center', // label居中对齐
+                                grid: {
+                                    x: false,  // 不显示X轴网格
+                                    y: false     // 显示Y轴网格
+                                }
+                            },
+                            margin: {
+                                top: 30,
+                                left: 50,
+                                right: 10,
+                                bottom: 30
+                            }
+                        }
+					};
+					const chart1 = new jmChart('mycanvas1', option);	
+                    // touch改变数据点事件
+					chart1.on('touchPointChange', function(args) {
+						console.log(args);
+                        document.getElementById('mydatalog').innerHTML = JSON.stringify(args.points[0].data);
+					});		
+                    
+
+					const kline = chart1.createSeries('candlestick', {
+                        // 如果字段名跟下面的一至，可以不指定
+						fields: [
+							'start',  // 开盘
+                            'end',      // 收盘
+                            'max',     // 最大值
+                            'min'      // 最小值
+						],
+                        style: {
+                            // 阴线颜色
+                            negativeColor: 'green',
+                            // 阳线颜色
+                            masculineColor: 'red',
+                            lineWidth: 2,
+                            //barWidth: 15
+                        }
+					});
+
+                    const chart2 = new jmChart('mycanvas2', {
+                        ...option,
+						height: 200,					
+                        style: {  
+                            ...option.style,                          
+							// 跟随标线
+							markLine: {
+								x: false, // 显示X标线
+								y: true, // 显示Y标线
+								stroke: 'red',
+								fill: '#fff',
+								lineWidth: 1,
+                                longtap: true // 长按启用
+							}                            
+                        }
+					});
+
+					
+					const bar1 = chart2.createSeries('bar', {
+						field: 'max',
+						style: {
+							label: {
+								show: false
+							},
+                            // 跟随标线
+							markLine: {
+								x: false, // 显示X标线
+								y: true, // 显示Y标线
+								stroke: 'red',
+								fill: '#fff',
+								lineWidth: 1,
+                                longtap: true // 长按启用
+							},
+						}
+					});	
+
+                    // 图1的标线移动  图2跟随
+                    chart1.on('marklinestartmove', (args)=>{
+                        args.cancel = true;// 终止事件继续执行，以免二个chart死循环
+                        chart2.markLine.startMove(args, 'y'); //只联动y
+                    });
+                    chart1.on('marklinemove', (args)=>{
+                        args.cancel = true;// 终止事件继续执行，以免二个chart死循环
+                        chart2.markLine.move(args);
+                    });
+                    chart1.on('marklineendmove', (args)=>{
+                        args.cancel = true;// 终止事件继续执行，以免二个chart死循环
+                        chart2.markLine.endMove(args);
+                    });
+
+                    // 图2的标线移动  图1跟随
+                    chart2.on('marklinestartmove', (args)=>{
+                        args.cancel = true;// 终止事件继续执行，以免二个chart死循环
+                        chart1.markLine.startMove(args, 'y');//只联动y
+                    });
+                    chart2.on('marklinemove', (args)=>{
+                        args.cancel = true;// 终止事件继续执行，以免二个chart死循环
+                        chart1.markLine.move(args);
+                    });
+                    chart2.on('marklineendmove', (args)=>{
+                        args.cancel = true;// 终止事件继续执行，以免二个chart死循环
+                        chart1.markLine.endMove(args);
+                    });
+
+                    
+                    const data = createData(); // 生成测试数据
+
+                    
+                    let dataCount = 20; // 展示数据个数
+                    let dataIndex = data.length - dataCount; // 展示数据起始索引
+
+					function refresh() {
+                        chart2.data = chart1.data = data.filter((d, i) => {
+                            if(i >= dataIndex && i < dataCount + dataIndex) return true;   
+                            return false;                         
+                        });                        
+						chart1.refresh();
+                        chart2.refresh();
+					}
+					
+					refresh(0, 20);
+
+                    // 根据滑动来绘制数据
+                    let dataTouchPosition = {
+                        x: 0,
+                        touching: false, // 是否在滑动中
+                        scaleTouching : false,
+                        scaleTouchOffset: 0
+                    };
+                    chart1.on('touchstart', (args) => {
+                        // 双指滑动， 缩放
+                        if(args.event.touches.length === 2) {
+                            dataTouchPosition.scaleTouching = true;
+                            const ox = args.event.touches[0].pageX - args.event.touches[1].pageX ;
+                            const oy = args.event.touches[0].pageY - args.event.touches[1].pageY;
+                            // 数据偏移距离
+                            dataTouchPosition.scaleTouchOffset = Math.sqrt(ox * ox + oy * oy);
+                        }
+                        else {
+                            dataTouchPosition.touching = true;
+                        }
+                        dataTouchPosition.x = args.position.x;
+                    });	
+
+                    // 长按了
+                    chart1.on('marklinelongtapstart', (args) => {
+                        dataTouchPosition.touching = false;// 长按取消数据滑动
+                        
+                        document.getElementById('mylog').innerHTML = 'marklinelongtapstart:';
+                        console.log('marklinelongtapstart', args);
+                    });
+                    chart1.on('touchmove', (args) => {
+                        if(!args.target || !args.target.chartGraph) return;
+                        console.log('touchmove', args);
+
+                        // 双指缩放
+                        if(dataTouchPosition.scaleTouching && args.event.touches.length === 2) {
+                            const ox = args.event.touches[0].pageX - args.event.touches[1].pageX ;
+                            const oy = args.event.touches[0].pageY - args.event.touches[1].pageY;
+                            // 数据偏移距离
+                            const scaleOffset = Math.sqrt(ox * ox + oy * oy);
+                            const dataOffset = Math.round((dataTouchPosition.scaleTouchOffset - scaleOffset) / args.target.bounds.width * dataCount);
+
+                            if(Math.abs(dataOffset) > 0) {
+                                let index = Math.max(dataIndex - dataOffset, 0);
+                                if(index >= 0) dataIndex = index;
+                                dataCount += dataOffset * 2;
+                                // 展示数据个数不能越过数组上限
+                                if(dataCount > data.length) dataCount = data.length;
+                                if(dataCount > data.length - dataIndex) dataCount = data.length - dataIndex;
+
+                                refresh();// 刷新数据
+
+                                dataTouchPosition.scaleTouchOffset = scaleOffset;
+
+                                document.getElementById('mylog').innerHTML = 'scaleTouching:' + dataOffset + ' index:' + dataIndex + ' dataCount:' + dataCount;
+                            }
+                        }
+                        // 在滑动标线，则不处理
+                        //else if(args.target.chartGraph.yMarkLine && args.target.chartGraph.yMarkLine.visible) {
+                        //    dataTouchPosition.touching = false;
+                        //}
+                        else if(dataTouchPosition.touching) {
+                            const ox = dataTouchPosition.x - args.position.x;
+                            // 数据偏移量
+                            const offDataCount = Math.round(ox / args.target.bounds.width * dataCount);
+                            if(Math.abs(offDataCount) > 0) {
+                                let index = dataIndex + offDataCount;
+                                if(index < 0) index = 0
+                                else if(index > data.length - dataCount) index = data.length - dataCount;
+
+                                // 刷新数据
+                                dataIndex = index;
+                                refresh();
+
+                                dataTouchPosition.x = args.position.x;
+                            }
+                        }
+                    });	
+                    chart1.on('touchend touchcancel touchleave', (args) => {
+                        dataTouchPosition.touching = false;
+                        dataTouchPosition.scaleTouching = false;
+                        console.log('touchend');
+                    });
+				}
+
+                function createData() {
+                    const data = [];
+                    const startDate = new Date('2021/01/01 00:00:00');
+                    for(var i = 0;i<365;i++) {
+                        startDate.setDate(startDate.getDate() + 1);
+                        const d = {
+                            day : startDate.getFullYear() + '-' + ('00'+(startDate.getMonth()+1)).substr(-2) + '-' + ('00'+startDate.getDate()).substr(-2),
+                            start :  Math.random() * 5 + 15,
+                            end:  Math.random() * 5 + 15
+                        };
+                        d.max = Math.max(d.start, d.end) + Math.random() * 5;
+                        d.min = Math.min(d.start, d.end) - Math.random() * 5;
+                        data.push(d);
+                    }
+                    return data;
+                }
+		</script>
+	</head>
+	<body>
+		<div id="mycanvas1">
+			</div>	
+        <hr />
+        <div id="mydatalog" style="word-wrap:break-word">
+			</div>		
+        <hr />
+        <div id="mylog" style="word-wrap:break-word">
+			</div>	
+        <div id="mycanvas2">
+            </div>
+        <div>
+            <center>
+                粤ICP备18032333号-1
+            </center>
+        </div>	
+	</body>
+</html>
