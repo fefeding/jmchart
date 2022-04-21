@@ -27,4 +27,4 @@ vue[http://jiamao.github.io/jmchart/example/vue.html]
 npm install jmchart
 ```
 
-> 如果你想引用不同的类型的模块，请见`dist`目录。
+> 如果你想引用不同的类型的模块，请见`dist`目录。1
