@@ -1,4 +1,4 @@
-define(['module', 'exports'], function (module, exports) { 'use strict';
+define(['exports'], function (exports) { 'use strict';
 
   function _defineProperty(obj, key, value) {
     if (key in obj) {
@@ -3982,7 +3982,7 @@ define(['module', 'exports'], function (module, exports) { 'use strict';
   		
   		//获取当前控件的绝对位置
   		let bounds = this.parent && this.parent.absoluteBounds?this.parent.absoluteBounds:this.absoluteBounds;		
-  		let size = this.testSize();
+  		this.testSize();
   		let location = this.location;
   		let x = location.left + bounds.left;
   		let y = location.top + bounds.top;
@@ -4431,7 +4431,7 @@ define(['module', 'exports'], function (module, exports) { 'use strict';
   		this.eventEvents['mousedown'] = jmUtils.bindEvent(this.target,'mousedown',function(evt) {
   			evt = evt || window.event;
   			evt.eventName = 'mousedown';
-  			let r = container.raiseEvent('mousedown',evt);
+  			container.raiseEvent('mousedown',evt);
   			//if(r === false) {
   				//if(evt.preventDefault) evt.preventDefault();
   				//return false;
@@ -4443,7 +4443,7 @@ define(['module', 'exports'], function (module, exports) { 'use strict';
   			evt.eventName = 'mousemove';
   			let target = evt.target || evt.srcElement;
   			if(target == canvas) {
-  				let r = container.raiseEvent('mousemove',evt);
+  				container.raiseEvent('mousemove',evt);
   				//if(r === false) {
   					if(evt.preventDefault) evt.preventDefault();
   					return false;
@@ -4616,7 +4616,7 @@ define(['module', 'exports'], function (module, exports) { 'use strict';
    * @param {object} option 参数：{width:宽,height:高}
    * @param {function} callback 初始化后的回调
    */
-  class jmGraph extends jmControl {
+  class jmGraph$1 extends jmControl {
 
   	constructor(canvas, option, callback) {
   		if(typeof option == 'function') {
@@ -4794,7 +4794,7 @@ define(['module', 'exports'], function (module, exports) { 'use strict';
   	 * @return {jmGraph} jmGraph实例对象
   	 */
   	static create(...args) {
-  		return new jmGraph(...args);
+  		return new jmGraph$1(...args);
   	}
 
   	/**
@@ -5133,7 +5133,7 @@ define(['module', 'exports'], function (module, exports) { 'use strict';
       "resize": jmResize
   };
 
-  class jmGraph$1 extends jmGraph {
+  class jmGraph extends jmGraph$1 {
       constructor(canvas, option, callback) {
           
           const targetType = new.target;
@@ -5143,9 +5143,9 @@ define(['module', 'exports'], function (module, exports) { 'use strict';
           option.shapes = Object.assign(shapes, option.shapes||{});
           
           //不是用new实例化的话，返回一个promise
-  		if(!targetType || !(targetType.prototype instanceof jmGraph)) {
+  		if(!targetType || !(targetType.prototype instanceof jmGraph$1)) {
   			return new Promise(function(resolve, reject){				
-  				var g = new jmGraph$1(canvas, option, callback);
+  				var g = new jmGraph(canvas, option, callback);
   				if(resolve) resolve(g);				
   			});
           }
@@ -5488,9 +5488,9 @@ define(['module', 'exports'], function (module, exports) { 'use strict';
 
         if (typeof options.minXValue !== 'undefined') this.minValue = options.minXValue; // 最小值，如果指定了，则轴的最小值为它或更小的值
       } else {
-        if (typeof options.maxYValue !== 'undefined') this.maxValue = options.maxYValue; // 最大的值，如果指定了，则如果有数值比它大才会修改上限，否则以它为上限
+        if (typeof options.maxYValue !== 'undefined' && (options.maxYValue > this.maxValue || typeof this.maxValue === 'undefined')) this.maxValue = options.maxYValue; // 最大的值，如果指定了，则如果有数值比它大才会修改上限，否则以它为上限
 
-        if (typeof options.minYValue !== 'undefined') this.minValue = options.minYValue; // 最小值，如果指定了，则轴的最小值为它或更小的值
+        if (typeof options.minYValue !== 'undefined' && (options.minYValue < this.minValue || typeof this.minValue === 'undefined')) this.minValue = options.minYValue; // 最小值，如果指定了，则轴的最小值为它或更小的值
       }
     }
     /**
@@ -6091,15 +6091,18 @@ define(['module', 'exports'], function (module, exports) { 'use strict';
     /*const hover = options.hover || function() {	
     	//应用图的动态样式		
     	//Object.assign(series.style, series.style.hover);
-    		//Object.assign(this.style, this.style.hover || {});
-    		//series.graph.refresh();
+    
+    	//Object.assign(this.style, this.style.hover || {});
+    
+    	//series.graph.refresh();
     };
     panel.bind('mouseover', hover);
     //执行离开
     const leave = options.leave || function() {	
     	//应用图的普通样式		
     	//Object.assign(series.style, series.style.normal);
-    		//Object.assign(this.style, this.style.normal || {});
+    
+    	//Object.assign(this.style, this.style.normal || {});
     	//jmUtils.apply(this.series.style.normal,this.series.style);
     	//series.graph.refresh();
     };
@@ -6337,7 +6340,7 @@ define(['module', 'exports'], function (module, exports) { 'use strict';
         } // 下一个点
 
 
-        if ( p.x > x) {
+        if (p.x > x) {
           // 没有上一个，只能返回这个了
           if (prePoint && x - prePoint.x < p.x - x) return prePoint;else return p;
         }
@@ -7285,8 +7288,8 @@ define(['module', 'exports'], function (module, exports) { 'use strict';
           shapePoints = this.createCurePoints(shapePoints, p);
         } // 如果是虚线
         else if (this.style.lineType === 'dotted') {
-            shapePoints = this.createDotLine(shapePoints, p);
-          }
+          shapePoints = this.createDotLine(shapePoints, p);
+        }
 
         shapePoints.push(p);
         this.createItemLabel(p); // 生成关健值标注
@@ -7531,9 +7534,9 @@ define(['module', 'exports'], function (module, exports) { 'use strict';
           endShapePoints = this.createCurePoints(endShapePoints, p.points[1]);
         } // 如果是虚线
         else if (this.style.lineType === 'dotted') {
-            startShapePoints = this.createDotLine(startShapePoints, p.points[0]);
-            endShapePoints = this.createDotLine(endShapePoints, p.points[1]);
-          }
+          startShapePoints = this.createDotLine(startShapePoints, p.points[0]);
+          endShapePoints = this.createDotLine(endShapePoints, p.points[1]);
+        }
 
         startShapePoints.push(p.points[0]);
         endShapePoints.push(p.points[1]); // 生成标点的回调
@@ -8052,7 +8055,7 @@ define(['module', 'exports'], function (module, exports) { 'use strict';
    * @param {element} container 图表容器
    */
 
-  class jmChart extends jmGraph$1 {
+  class jmChart extends jmGraph {
     constructor(container, options) {
       options = options || {};
       const enableAnimate = !!options.enableAnimate;
@@ -8174,7 +8177,7 @@ define(['module', 'exports'], function (module, exports) { 'use strict';
         cn.style.position = 'absolute';
         cn.style.top = 0;
         cn.style.left = 0;
-        this.touchGraph = new jmGraph$1(cn, options);
+        this.touchGraph = new jmGraph(cn, options);
         container.appendChild(cn);
         this.touchGraph.chartGraph = this;
         this.on('propertyChange', (name, args) => {
@@ -8575,7 +8578,7 @@ define(['module', 'exports'], function (module, exports) { 'use strict';
     template: `<div ref="jmChartContainer" :style="{width: width, height: height}"></div>`
   };
 
-  exports.default = jmChart;
+  exports['default'] = jmChart;
   exports.jmChart = jmChart;
   exports.vChart = vchart;
 

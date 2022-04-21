@@ -49,8 +49,8 @@ export default class jmAxis extends jmArrowLine {
 			if(typeof options.minXValue !== 'undefined') this.minValue = options.minXValue;// 最小值，如果指定了，则轴的最小值为它或更小的值
 		}
 		else {
-			if(typeof options.maxYValue !== 'undefined') this.maxValue = options.maxYValue; // 最大的值，如果指定了，则如果有数值比它大才会修改上限，否则以它为上限
-			if(typeof options.minYValue !== 'undefined') this.minValue = options.minYValue;// 最小值，如果指定了，则轴的最小值为它或更小的值
+			if(typeof options.maxYValue !== 'undefined' && (options.maxYValue > this.maxValue || typeof this.maxValue === 'undefined')) this.maxValue = options.maxYValue; // 最大的值，如果指定了，则如果有数值比它大才会修改上限，否则以它为上限
+			if(typeof options.minYValue !== 'undefined'&& (options.minYValue < this.minValue || typeof this.minValue === 'undefined')) this.minValue = options.minYValue;// 最小值，如果指定了，则轴的最小值为它或更小的值
 		}
 	}
 
