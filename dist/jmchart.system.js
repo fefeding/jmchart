@@ -7798,8 +7798,8 @@ System.register([], function (exports) {
                 serie.lastMarkPoint = point; // 记下最后一次改变的点
                 // 同时改变下X轴标线的位置，它的Y坐标跟随最后一个命中的线点
 
-                if (graph && graph.xMarkLine) {
-                  graph.xMarkLine.start.y = graph.xMarkLine.end.y = isTocuhGraph ? point.y + graph.chartArea.position.y : point.y;
+                if (graph && graph.markLine && graph.markLine.xMarkLine) {
+                  graph.markLine.xMarkLine.start.y = graph.markLine.xMarkLine.end.y = isTocuhGraph ? point.y + graph.chartArea.position.y : point.y;
                 }
               }
             } catch (e) {
