@@ -6038,7 +6038,7 @@ System.register([], function (exports) {
           };
           super(options);
 
-          _defineProperty(this, "legendPosition", 'right');
+          _defineProperty(this, "legendPosition", '');
         }
         /**
          * 图例放置位置
@@ -6111,7 +6111,7 @@ System.register([], function (exports) {
         };
         panel.bind('mouseleave', leave);*/
 
-        const legendPosition = this.legendPosition || this.style.legendPosition;
+        const legendPosition = this.legendPosition || this.style.legendPosition || 'right';
 
         if (legendPosition == 'top' || legendPosition == 'bottom') {
           //顶部和底部图例横排，每次右移位一个单位图例

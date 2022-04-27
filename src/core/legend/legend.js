@@ -24,7 +24,7 @@ export default class jmLegend extends jmRect {
 	/**
 	 * 图例放置位置
 	 */
-	legendPosition = 'right';
+	legendPosition = '';
 }
 
 /**
@@ -94,7 +94,7 @@ jmLegend.prototype.append = function(series, shape, options = {}) {
 	};
 	panel.bind('mouseleave', leave);*/
 
-	const legendPosition = this.legendPosition || this.style.legendPosition;
+	const legendPosition = this.legendPosition || this.style.legendPosition || 'right';
 	if(legendPosition == 'top' || legendPosition == 'bottom') {
 		//顶部和底部图例横排，每次右移位一个单位图例
 		panel.position.x = this.width + 15 * this.graph.devicePixelRatio;
