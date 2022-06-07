@@ -1,6 +1,4 @@
-import {
-	jmControl
-} from 'jmgraph';
+import utils from '../common/utils.js';
 import jmSeries from './series.js';
 
 /**
@@ -15,8 +13,8 @@ import jmSeries from './series.js';
 
 //构造函数
 export default class jmPieSeries extends jmSeries {
-	constructor(options) {
-		super(options);
+	constructor(chart, options) {
+		super(chart, options);
 
 		this.xAxis.visible = false;
 		this.yAxis.visible = false;
@@ -138,7 +136,7 @@ export default class jmPieSeries extends jmSeries {
 					yValue: yv,
 					yLabel: yv,
 					step: Math.abs(yv / this.totalValue),// 每个数值点比
-					style: this.graph.utils.clone(this.style),
+					style: utils.clone(this.style),
 					anticlockwise
 				};
 				//p.style.color = this.graph.getColor(index);
@@ -320,7 +318,7 @@ jmPieSeries.prototype.createLegend = function() {
 		if(!p) continue;
 
 		//生成图例前的图标
-		const style = this.graph.utils.clone(p.style);
+		const style = utils.clone(p.style);
 		style.fill = style.fill;	
 		//delete style.stroke;
 		const shape = this.graph.createShape('rect',{

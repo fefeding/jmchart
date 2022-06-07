@@ -1,10 +1,15 @@
 const resolve = require('rollup-plugin-node-resolve');
 const babel = require('rollup-plugin-babel');
+const commonjs = require('rollup-plugin-commonjs');
+const json = require('rollup-plugin-json');
+const {terser} = require('rollup-plugin-terser');
+const cleanup = require('rollup-plugin-cleanup');
 const sourcemaps = require('rollup-plugin-sourcemaps');
 
 module.exports = {
     input: './index.js',
     output: {
+      name: "jmchart",
       file: 'dist/jmchart.esm.js',
       /**
        * amd – 异步模块定义，用于像RequireJS这样的模块加载器
@@ -18,10 +23,14 @@ module.exports = {
     },
     plugins: [
       //sourcemaps(),
+      json(),
       resolve(),
+      commonjs(),
       babel({
         "plugins": ["@babel/plugin-proposal-class-properties"],
-        exclude: 'node_modules/**' // 只编译我们的源代码
-      })
+        //exclude: 'node_modules/**' // 只编译我们的源代码
+      }),
+      terser(),
+      cleanup()
     ]
   };

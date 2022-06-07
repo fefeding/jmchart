@@ -1,6 +1,5 @@
-import  {
-	jmArrowLine
-} from 'jmgraph';
+
+import utils from '../../common/utils.js';
 
 /**
  * 轴
@@ -13,9 +12,9 @@ import  {
  * @param {object} [style] 样式
  */
 
-export default class jmAxis extends jmArrowLine {
-	constructor(options) {		
-		super(options);
+export default class jmAxis {
+	constructor(chart, options) {		
+		this.chart = chart;
 
 		//初始化不显示箭头
 		this.arrowVisible = !!options.arrowVisible;
@@ -42,7 +41,7 @@ export default class jmAxis extends jmArrowLine {
 	init(options) {
 		options = options || {};
 		// 深度组件默认样式
-		if(options.style) this.graph.utils.clone(options.style, this.style, true);
+		if(options.style) utils.clone(options.style, this.style, true);
 
 		if(this.type == 'x') {
 			if(typeof options.maxXValue !== 'undefined') this.maxValue = options.maxXValue; // 最大的值，如果指定了，则如果有数值比它大才会修改上限，否则以它为上限

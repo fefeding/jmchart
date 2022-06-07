@@ -1,9 +1,6 @@
+import * as spritejs from "spritejs";
+import utils from './common/utils.js';
 
-import {
-	jmGraph,
-	jmUtils,
-	jmList
-} from 'jmgraph';
 import defaultStyle from './common/style.js';
 import jmAxis from './core/axis/axis.js';
 import jmLegend from './core/legend/legend.js';
@@ -16,15 +13,16 @@ import jmStackLineSeries from './series/stackLineSeries.js';
 import jmCandlestickSeries from './series/candlestickSeries.js';
 import jmMarkLineManager from './core/markLine/manager';
 
+const {Scene, Sprite} = spritejs;
+
 /**
  * jm图表组件
- * option参数:graph=jmgraph
  *
  * @class jmChart
  * @module jmChart
  * @param {element} container 图表容器
  */
-export default class jmChart extends jmGraph  {
+export default class jmChart  {
 
 	constructor(container, options) {
 		options = options||{};
@@ -37,19 +35,32 @@ export default class jmChart extends jmGraph  {
 		}
 
 		 // 深度复制默认样式，以免被改
-		options.style = jmUtils.clone(defaultStyle, options.style, true);
+		options.style = utils.clone(defaultStyle, options.style, true);
 
-		super(container, options);
+		const opt = {
+			container
+		};
+		if(options.width) opt.width = options.width;
+		if(options.height) opt.height = options.height;
+		this.scene = new Scene(opt);
 
 		this.enableAnimate = enableAnimate;
 		this.data = options.data || [];
 		// x轴绑定的字段名
 		this.xField = options.xField || '';	
+		// 基础绘图层，不响应事件
+		this.bgLayer = scene.layer({
+			handleEvent: false
+		});
+		// 可操控图层，响应事件
+		this.fgLayer = scene.layer({
+			handleEvent: true
+		});
 
 		this.init(options);	
 
 		// 创建操作图层
-		this.createTouchGraph(this.container, options);
+		this.createTouchGraph(this.scene, options);
 	}
 
 	/**
@@ -108,14 +119,13 @@ export default class jmChart extends jmGraph  {
 		 * @property legend
 		 * @type jmLegend
 		 */
-		this.legend = this.legend || this.createShape(jmLegend, {
-			style: this.style.legend
+		this.legend = this.legend || new jmLegend(this, {
+			style: this.style.legend,
+			visible: options.legendVisible !== false
 		});
-		this.children.add(this.legend);
-		// 不显示图例
-		if(options.legendVisible === false) {
-			this.legend.visible = false;
-		}
+
+		// 初始化标线
+		this.markLine = new jmMarkLineManager(this);
 
 		/**
 		 * 图表提示控件
@@ -128,63 +138,12 @@ export default class jmChart extends jmGraph  {
 
 		this.createXAxis();// 生成X轴
 	}
-
-	// 创建一个操作层，以免每次刷新
-	createTouchGraph(container, options) {
-		if(container && container.tagName === 'CANVAS') {
-			container = container.parentElement;
-		}
-		container && (container.style.position = 'relative');
-
-		options = this.utils.clone(options, {
-			autoRefresh: true
-		}, true);
-
-		// 生成图层, 当图刷新慢时，需要用一个操作图层来进行滑动等操作重绘
-		// isWXMiniApp 非微信小程序下才能创建
-		if(!this.isWXMiniApp && container && options.touchGraph) {
-			let cn = document.createElement('canvas');
-			cn.width = container.offsetWidth||container.clientWidth;
-			cn.height = container.offsetHeight||container.clientHeight;
-			cn.style.position = 'absolute';
-			cn.style.top = 0;
-			cn.style.left = 0;
-
-			this.touchGraph = new jmGraph(cn, options);
-			
-			container.appendChild(cn);
-
-			this.touchGraph.chartGraph = this;
-
-			this.on('propertyChange', (name, args) => {
-				if(['width', 'height'].includes(name)) {
-					this.touchGraph[name] = args.newValue / this.devicePixelRatio;
-				}
-			});
-			// 把上层canvse事件传递给绘图层对象
-			this.touchGraph.on('mousedown touchstart mousemove touchmove mouseup touchend touchcancel touchleave', (args) => {
-				const eventName = args.event.eventName || args.event.type;
-				if(eventName) {
-					this.emit(eventName, args);
-				}
-			});
-		}
-		// 初始化标线
-		this.markLine = new jmMarkLineManager(this);
-	}
 	
 	// 重置整个图表
 	reset() {
 		// 清空当前图形，重新生成
 		let serie;
 		while(serie = this.series.shift()) {
-			
-			// 重置所有图形
-			let shape;
-			while(shape = serie.shapes.shift()) {
-				shape && shape.remove();
-			}
-			
 			serie.remove();
 		}
 
@@ -244,20 +203,20 @@ export default class jmChart extends jmGraph  {
 		//计算柱形图个数
 		this.barSeriesCount = 0;
 		//初始化图序列，并初始化轴值,生成图例项
-		this.series.each(function(i, serie) {
+		this.series.each((i, serie) => {
 			//设定边框颜色和数据项图示颜 色
-			if(!serie.style.color) serie.style.color = serie.graph.getColor(i);
+			if(!serie.style.color) serie.style.color = this.getColor(i);
 			//如果排版指定非内缩的方式，但出现了柱图，还是会采用内缩一个刻度的方式
-			if(serie.graph.style.layout != 'inside') {
+			if(this.style.layout != 'inside') {
 				if(serie instanceof jmBarSeries) {			
-					serie.graph.style.layout = 'inside';
+					this.style.layout = 'inside';
 				}
 			}
 			
 			//对柱图计算,并标记为第几个柱图，用为排列
 			if(serie instanceof jmBarSeries) {
-				serie.barIndex = serie.graph.barSeriesCount;
-				serie.graph.barSeriesCount ++;
+				serie.barIndex = this.barSeriesCount;
+				this.barSeriesCount ++;
 			}
 			serie.reset();
 		});	
@@ -290,13 +249,15 @@ export default class jmChart extends jmGraph  {
 	 * @method resetAreaPosition
 	 */
 	resetAreaPosition() {
-		this.chartArea.position.x = (this.style.margin.left || 0) * this.graph.devicePixelRatio;
-		this.chartArea.position.y = (this.style.margin.top || 0) * this.graph.devicePixelRatio;
-		const w = this.width - (this.style.margin.right * this.graph.devicePixelRatio) - this.chartArea.position.x;
-		const h = this.height - (this.style.margin.bottom * this.graph.devicePixelRatio) - this.chartArea.position.y;
+		this.chartArea.position.x = this.style.margin.left || 0;
+		this.chartArea.position.y = this.style.margin.top || 0;
+		const w = this.width - this.style.margin.right - this.chartArea.x;
+		const h = this.height - this.style.margin.bottom - this.chartArea.y;
 
-		this.chartArea.width = w;
-		this.chartArea.height = h;
+		this.chartArea.attr({
+			width: w,
+			height: h
+		});
 	}
 
 	/**
@@ -311,11 +272,10 @@ export default class jmChart extends jmGraph  {
 	 */
 	createAxis(options) {
 		// 深度组件默认样式
-		options.style = options.style? this.utils.clone(this.style.axis, options.style, true) : this.style.axis;
+		options.style = options.style? utils.clone(this.style.axis, options.style, true) : this.style.axis;
 
-		const axis = this.createShape(jmAxis, options);
+		const axis = new jmAxis(this, options);
 		if(typeof options.visible !== 'undefined') axis.visible = options.visible;
-		this.children.add(axis);
 		return axis;
 	}
 
@@ -403,14 +363,13 @@ export default class jmChart extends jmGraph  {
 		//默认样式为类型对应的样式
 		const style = this.style[type] || this.style['line'];
 		// 深度组件默认样式
-		options.style = this.utils.clone(style, options.style, true);
+		options.style = utils.clone(style, options.style, true);
 
 		if(typeof type == 'string') type = this.serieTypes[type];
 		
-		const serie = this.createShape(type, options);
+		const serie = new type(this, options);
 		if(serie) {
 			this.series.add(serie);
-			this.chartArea.children.add(serie);
 		}
 		return serie;
 	}

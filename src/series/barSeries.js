@@ -13,8 +13,8 @@ import jmSeries from './series.js';
 
 //构造函数
 export default class jmBarSeries extends jmSeries {
-	constructor(options) {
-		super(options);
+	constructor(chart, options) {
+		super(chart, options);
 	}
 	/**
 	 * 绘制当前图形

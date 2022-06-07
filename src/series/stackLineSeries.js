@@ -1,4 +1,4 @@
-
+import utils from '../common/utils.js';
 import jmLineSeries from './lineSeries.js';
 
 /**
@@ -13,9 +13,9 @@ import jmLineSeries from './lineSeries.js';
 
 //构造函数
 export default class jmStackLineSeries extends jmLineSeries {
-	constructor(options) {
+	constructor(chart, options) {
 		options.style = options.style || options.graph.style.stackLine;
-		super(options);
+		super(chart, options);
 	}
 
 	/**
@@ -99,7 +99,7 @@ export default class jmStackLineSeries extends jmLineSeries {
 		this.points = startShapePoints.concat(endShapePoints);	
 		// 仓建区域效果  这里的endShapePoints要倒过来画，才能形成一个封闭区域
 		const areaPoints = startShapePoints.concat(endShapePoints.reverse());
-		const areaEnd = areaPoints[areaPoints.length - 1] = this.graph.utils.clone(areaPoints[areaPoints.length - 1]);
+		const areaEnd = areaPoints[areaPoints.length - 1] = utils.clone(areaPoints[areaPoints.length - 1]);
 		areaEnd.m = false;
 		this.createArea(areaPoints, false);
 	}
@@ -112,7 +112,7 @@ export default class jmStackLineSeries extends jmLineSeries {
 	createLegend() {
 		
 		//生成图例前的图标
-		var style = this.graph.utils.clone(this.style);
+		var style = utils.clone(this.style);
 		style.stroke = style.color;
 		var shape = this.graph.createShape('path',{style:style});
 		

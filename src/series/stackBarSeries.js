@@ -1,3 +1,4 @@
+import utils from '../common/utils.js';
 import jmBarSeries from './barSeries.js';
 
 
@@ -13,8 +14,8 @@ import jmBarSeries from './barSeries.js';
 
 //构造函数
 export default class jmStackBarSeries extends jmBarSeries {
-	constructor(options) {
-		super(options);
+	constructor(chart, options) {
+		super(chart, options);
 	}
 	/**
 	 * 绘制当前图形
@@ -42,7 +43,7 @@ export default class jmStackBarSeries extends jmBarSeries {
 			let topStartY = this.baseY;
 			let bottomStartY = this.baseY;
 			for(let index=0; index < point.points.length; index ++) {
-				const style = this.graph.utils.clone(this.style);
+				const style = utils.clone(this.style);
 				if(style.color && typeof style.color === 'function') {
 					style.fill = style.color.call(this, this, index);
 				}

@@ -13,9 +13,9 @@ import jmSeries from './series.js';
 
 //构造函数
 export default class jmCandlestickSeries extends jmSeries {
-	constructor(options) {
+	constructor(chart, options) {
 		options.style = options.style || options.graph.style.line;
-		super(options);
+		super(chart, options);
 
 		//this.on('beginDraw', this[PreDrawKey]);
 	}

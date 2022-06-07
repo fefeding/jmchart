@@ -1,6 +1,4 @@
-import {
-	jmRect
-} from 'jmgraph';
+import utils from '../../common/utils.js';
 
 /**
  * 图例的容器
@@ -10,15 +8,16 @@ import {
  * @param {jmChart} chart 当前图表
  */
 
-export default class jmLegend extends jmRect {
+export default class jmLegend {
 
-	constructor(options) {
+	constructor(chart, options) {
+		this.chart = chart;
+
 		//当前图例位置偏移量
 		options.position = options.position || {
 			x: 0,
 			y: 0
 		};
-		super(options);
 	}
 
 	/**
@@ -39,7 +38,7 @@ jmLegend.prototype.append = function(series, shape, options = {}) {
 	if(this.visible === false) return;	
 
 	const panel = this.graph.createShape('rect',{
-		style: this.graph.utils.clone(this.style.item),
+		style: utils.clone(this.style.item),
 		position: {
 			x: 0,
 			y: 0

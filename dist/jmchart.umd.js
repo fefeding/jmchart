@@ -1,5 +1,8 @@
-var jmchart = (function (exports) {
-  'use strict';
+(function (global, factory) {
+  typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
+  typeof define === 'function' && define.amd ? define(['exports'], factory) :
+  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.jmchart = {}));
+}(this, (function (exports) { 'use strict';
 
   function _defineProperty(obj, key, value) {
     if (key in obj) {
@@ -42164,6 +42167,4 @@ var jmchart = (function (exports) {
 
   Object.defineProperty(exports, '__esModule', { value: true });
 
-  return exports;
-
-}({}));
+})));

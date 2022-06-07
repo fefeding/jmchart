@@ -1,4 +1,4 @@
-
+import utils from '../common/utils.js';
 import jmSeries from './series.js';
 
 /**
@@ -13,9 +13,9 @@ import jmSeries from './series.js';
 
 //构造函数
 export default class jmLineSeries extends jmSeries {
-	constructor(options) {
+	constructor(chart, options) {
 		options.style = options.style || options.graph.style.line;
-		super(options);
+		super(chart, options);
 
 		//this.on('beginDraw', this[PreDrawKey]);
 	}
@@ -166,7 +166,7 @@ export default class jmLineSeries extends jmSeries {
 	createLegend() {
 		
 		//生成图例前的图标
-		var style = this.graph.utils.clone(this.style);
+		var style = utils.clone(this.style);
 		style.stroke = style.color;
 		var shape = this.graph.createShape('path',{style:style});
 		
@@ -201,7 +201,7 @@ export default class jmLineSeries extends jmSeries {
 		const start = points[0];
 		const end = points[points.length - 1];
 
-		const style = this.graph.utils.clone(this.style.area, {}, true);
+		const style = utils.clone(this.style.area, {}, true);
 		// 连框颜色如果没指定，就透明
 		style.stroke = style.stroke || 'transparent';
 
@@ -216,7 +216,7 @@ export default class jmLineSeries extends jmSeries {
 			style.fill = style.fill.call(this, style);
 		}
 		const area = this.graph.createShape('path', {
-			points: this.graph.utils.clone(points, true),
+			points: utils.clone(points, true),
 			style,
 			width: this.graph.chartArea.width,
 			height: this.graph.chartArea.height

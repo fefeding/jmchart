@@ -1,5 +1,4 @@
 
-import { jmPath, jmList, jmControl } from 'jmgraph';
 import utils from '../common/utils.js';
 
 /**
@@ -13,9 +12,9 @@ import utils from '../common/utils.js';
  */
 
 //构造线图
-export default class jmSeries extends jmPath {	
-	constructor(options) {
-		super(options);
+export default class jmSeries {	
+	constructor(chart, options) {
+		this.chart = chart;
 
 		this.option = options;
 
@@ -24,10 +23,10 @@ export default class jmSeries extends jmPath {
 		this.legendLabel = options.legendLabel || '';
 		this.___animateCounter = 0; // 动画计数		
 
-		this.xAxis = this.graph.createXAxis(); // 生成X轴
+		this.xAxis = this.chart.createXAxis(); // 生成X轴
 		
 		// 生成当前Y轴
-		this.yAxis = this.yAxis || this.graph.createYAxis({
+		this.yAxis = this.yAxis || this.chart.createYAxis({
 			index: this.index,
 			format: options.yLabelFormat || this.graph.option.yLabelFormat
 		});
@@ -106,7 +105,7 @@ export default class jmSeries extends jmPath {
 		let dataChanged = false;
 		if(this.enableAnimate) {
 			// 拷贝一份上次的点集合，用于判断数据是否改变
-			this.lastPoints = this.graph.utils.clone(this.dataPoints, null, true, (obj) => {
+			this.lastPoints = utils.clone(this.dataPoints, null, true, (obj) => {
 				if(obj instanceof jmControl) return obj;
 			});
 
@@ -250,7 +249,7 @@ export default class jmSeries extends jmPath {
 				xValue: xv,
 				xLabel: xv,
 				points: [],
-				style: this.graph.utils.clone(this.style),
+				style: utils.clone(this.style),
 			};
 			
 			// 这里的点应相对于chartArea
@@ -309,7 +308,7 @@ export default class jmSeries extends jmPath {
 	 */
 	createLegend() {
 		//生成图例前的图标
-		const style = this.graph.utils.clone(this.style);
+		const style = utils.clone(this.style);
 		style.fill = this.getColor();	
 		//delete style.stroke;
 		const shape = this.graph.createShape('rect',{
@@ -331,7 +330,7 @@ export default class jmSeries extends jmPath {
 			return text;
 		}
 		
-		const style = this.graph.utils.clone(this.graph.style.itemLabel, {
+		const style = utils.clone(this.graph.style.itemLabel, {
 			zIndex: 21,
 			...this.style.label
 		});

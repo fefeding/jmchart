@@ -31,6 +31,6 @@ build('iife');
 
 build('amd');
 
-//build('umd');
+build('umd');
 
 build('system');

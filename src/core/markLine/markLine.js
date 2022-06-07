@@ -1,4 +1,4 @@
-import { jmList, jmLine } from 'jmgraph';
+
 
 /**
  * 轴
