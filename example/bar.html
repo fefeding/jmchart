@@ -42,16 +42,22 @@
 						xField: 'x',
 						baseY: 0, // Y轴基线的值 不填就会用最 小值
 						// 最大和最小X值，  这里一般不用指定，除非硬是需要
-						minXValue : 0,
-						maxXValue : 10,
-						minYValue: -200,
-						maxYValue: 300,
+						//minXValue : 0,
+						//maxXValue : 10,
+						//minYValue: -200,
+						//maxYValue: 300,
 						autoRefresh: true,
 						style: {
 							axis: {
 								x: true,
 								y: true
-							}
+							},
+							markLine: {
+								longtap: true
+							},
+							margin: {
+								bottom: 2
+							},
 						}
 					});
 					chart.legend.legendPosition = 'top';
@@ -73,7 +79,7 @@
 							//barWidth: 80,// 优先级最高
 							label: {
 								show: true,
-								offset: 5, // 离柱偏移量
+								offset: 10, // 离柱偏移量
 								shadow: {
 									x: 0,
 									y: 0,

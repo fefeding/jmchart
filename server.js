@@ -1,4 +1,6 @@
 const express = require('express');
+
+/*
 const rollup = require('rollup');
 const rollupOptions = require('./rollup.config.js');
 
@@ -23,6 +25,7 @@ esmWatcher.on('event', event => {
     startServer();
   }
 });
+*/
 
 // 启动server
 

@@ -340,7 +340,7 @@ define(['exports'], function (exports) { 'use strict';
           let isTouch = false;
           let touches = evt.changedTouches || evt.targetTouches || evt.touches;
           let target = evt.target || evt.srcElement;
-          if(touches) {
+          if(touches && touches.length) {
               evt = touches[0];//兼容touch事件
               if(!evt.target) evt.target = target;
               isTouch = true;
@@ -4625,7 +4625,7 @@ define(['exports'], function (exports) { 'use strict';
   		}
   	
   		option = option || {};
-  		
+  		option.mode = option.mode || '2d'; // webgl | 2d
   		option.interactive = true;
   		
   		super(option, 'jmGraph');
@@ -4665,8 +4665,7 @@ define(['exports'], function (exports) { 'use strict';
   			}	
   			else {
   				this.container = canvas.parentElement;
-  			}
-
+  			}			
   			this.context = canvas.getContext('2d');
   		}
   		this.canvas = canvas;
@@ -7967,8 +7966,7 @@ define(['exports'], function (exports) { 'use strict';
 
 
             longtapHandler = graph.utils.requestAnimationFrame(reqFun); //args.event.stopPropagation();
-
-            args.event.preventDefault(); // 阻止默认行为	
+            //args.event.preventDefault();// 阻止默认行为	
           } else {
             this.startMove(args);
           }

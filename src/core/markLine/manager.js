@@ -77,7 +77,7 @@ export default class jmMarkLineManager {
 					longtapHandler = graph.utils.requestAnimationFrame(reqFun);
 
 					//args.event.stopPropagation();
-					args.event.preventDefault();// 阻止默认行为	
+					//args.event.preventDefault();// 阻止默认行为	
 				}
 				else {
 					this.startMove(args);
@@ -130,8 +130,9 @@ export default class jmMarkLineManager {
             moved = true;
         }
         if(moved) {
-            args.event.stopPropagation();
+			args.event.stopPropagation();
 			args.event.preventDefault();// 阻止默认行为	
+			
 
             if(!args.cancel) this.chart.emit('marklinemove', args);
         }        
