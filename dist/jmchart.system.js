@@ -8025,9 +8025,11 @@ System.register([], function (exports) {
           }
 
           if (moved) {
-            args.event.stopPropagation();
-            args.event.preventDefault(); // 阻止默认行为	
+            if (args.longtap === 2 && args.event) {
+              args.event.preventDefault(); // 阻止默认行为	
+            }
 
+            args.event.stopPropagation();
             if (!args.cancel) this.chart.emit('marklinemove', args);
           }
         } // 终止动移
