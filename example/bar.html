@@ -71,7 +71,7 @@
 
 					chart.on('marklinestartmove', (args)=>{
 						if(args.event) {
-							//args.event.preventDefault(); // 阻止默认行为
+							args.event.preventDefault(); // 阻止默认行为
 							//args.event.stopPropagation();
 						}
 					});
