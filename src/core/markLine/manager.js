@@ -88,13 +88,13 @@ export default class jmMarkLineManager {
 			// 移动标线
 			graph.on('mousemove touchmove', (args) => {
 				args.offsetInfo = {
-					offsetX: 0,
-					offsetY: 0,
+					x: 0,
+					y: 0,
 					offset: 0
 				};
-				args.offsetInfo.offsetX = args.position.x - touchStartPos.x;
-				args.offsetInfo.offsetY = args.position.y - touchStartPos.y;
-				args.offsetInfo.offset = Math.sqrt(args.offsetInfo.offsetX * args.offsetInfo.offsetX + args.offsetInfo.offsetY * args.offsetInfo.offsetY);
+				args.offsetInfo.x = args.position.x - touchStartPos.x;
+				args.offsetInfo.y = args.position.y - touchStartPos.y;
+				args.offsetInfo.offset = Math.sqrt(args.offsetInfo.x * args.offsetInfo.x + args.offsetInfo.y * args.offsetInfo.y);
 
 				// 记录当次滑动的位置
 				touchStartPos = args.position;

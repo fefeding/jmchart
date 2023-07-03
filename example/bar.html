@@ -69,21 +69,25 @@
 						//console.log(args);
 					});
 
+					var lineTouchIng = 0;// 1=启用标线状态，2=非标线，则可以触发系统行为
 					chart.on('marklinestartmove', (args)=>{
-						if(args.event) {
-							//args.event.preventDefault(); // 阻止默认行为
-							//args.event.stopPropagation();
-						}
+						lineTouchIng = 0;
 					});
+
+					
 					chart.on('marklinemove', (args)=>{
 						if(args.event && args.offsetInfo) {
 							args.event.stopPropagation();
-							
-							if(args.offsetInfo.y === 0) {
+							// 标线状态一直禁用系统能力
+							if((lineTouchIng === 0 && Math.abs(args.offsetInfo.y) <= 10) || lineTouchIng === 1) {
+								lineTouchIng = 1;
 								args.event.preventDefault(); // 阻止默认行为
 							}
-						}
-						console.log('marklinemove', args);
+							else {
+								if(lineTouchIng === 0) lineTouchIng = 2;
+								console.log('marklinemove', args);
+							}
+						}						
 					});
 					
 					
@@ -104,7 +108,7 @@
 									color: 'transparent'
 								},
 								fill: function(point) {
-									console.log(point);
+									//console.log(point);
 									if(point.yValue < 0) return 'green';
 									else return 'red';
 								}
