@@ -53,7 +53,10 @@
 								y: true
 							},
 							markLine: {
-								longtap: false //  长按才出现标线
+								longtap: false, //  长按才出现标线
+								lock: {
+									y: 10
+								}
 							},
 							margin: {
 								bottom: 2
@@ -69,25 +72,13 @@
 						//console.log(args);
 					});
 
-					var lineTouchIng = 0;// 1=启用标线状态，2=非标线，则可以触发系统行为
 					chart.on('marklinestartmove', (args)=>{
-						lineTouchIng = 0;
+						
 					});
 
 					
 					chart.on('marklinemove', (args)=>{
-						if(args.event && args.offsetInfo) {
-							args.event.stopPropagation();
-							// 标线状态一直禁用系统能力
-							if((lineTouchIng === 0 && Math.abs(args.offsetInfo.y) <= 10) || lineTouchIng === 1) {
-								lineTouchIng = 1;
-								args.event.preventDefault(); // 阻止默认行为
-							}
-							else {
-								if(lineTouchIng === 0) lineTouchIng = 2;
-								console.log('marklinemove', args);
-							}
-						}						
+							
 					});
 					
 					

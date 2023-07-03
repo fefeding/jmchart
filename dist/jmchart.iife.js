@@ -7937,13 +7937,16 @@
 
         let longtap = 0; // 是否有长按, 0 未开始，1已按下，2识别为长按
 
+        let lineTouching = 0; // 1=启用标线状态，2=非标线，则可以触发系统行为
+
         let longtapHandler = 0;
         let touchStartPos = {
           x: 0,
           y: 0
         };
         graph.on('mousedown touchstart', args => {
-          // 如果长按才启用
+          lineTouching = 0; // 如果长按才启用
+
           if (chart.style.markLine.longtap) {
             longtap = 1;
             longtapHandler && graph.utils.cancelAnimationFrame(longtapHandler);
@@ -7990,14 +7993,27 @@
 
           if (longtap === 1) {
             if (args.offsetInfo.offset > 15) longtap = 0; // 如果移动了，则取消长按
+            else lineTouching = 1;
           }
 
+          args.event.stopPropagation(); // 如果指定了锁定图表标线操作值，则触发后当次滑动不再响应系统默认行为
+
+          if (chart.style.markLine.lock) {
+            // 标线状态一直禁用系统能力
+            if (lineTouching === 0 && (chart.style.markLine.lock.y && Math.abs(args.offsetInfo.y) < chart.style.markLine.lock.y || chart.style.markLine.lock.x && Math.abs(args.offsetInfo.x) < chart.style.markLine.lock.x) || lineTouching === 1) {
+              lineTouching = 1;
+              args.event.preventDefault(); // 阻止默认行为
+            }
+          }
+
+          if (lineTouching === 0) lineTouching = 2;
           args.longtap = longtap;
           this.move(args);
         }); // 取消移动
 
         graph.on('mouseup touchend touchcancel touchleave', args => {
           longtap = 0;
+          lineTouching = 0;
           this.endMove(args);
         });
       }
