@@ -66,20 +66,24 @@
 
 					// touch改变数据点事件
 					chart.on('touchPointChange', function(args) {
-						console.log(args);
+						//console.log(args);
 					});
 
 					chart.on('marklinestartmove', (args)=>{
 						if(args.event) {
-							args.event.preventDefault(); // 阻止默认行为
+							//args.event.preventDefault(); // 阻止默认行为
 							//args.event.stopPropagation();
 						}
 					});
 					chart.on('marklinemove', (args)=>{
-						if(args.event) {
-							//args.event.preventDefault(); // 阻止默认行为
+						if(args.event && args.offsetInfo) {
 							args.event.stopPropagation();
+							
+							if(args.offsetInfo.y === 0) {
+								args.event.preventDefault(); // 阻止默认行为
+							}
 						}
+						console.log('marklinemove', args);
 					});
 					
 					

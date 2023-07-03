@@ -7977,10 +7977,20 @@
         }); // 移动标线
 
         graph.on('mousemove touchmove', args => {
-          const ox = args.position.x - touchStartPos.x;
-          const oy = args.position.y - touchStartPos.y;
-          const offpos = Math.sqrt(ox * ox + oy * oy);
-          if (longtap === 1 && offpos > 15) longtap = 0; // 如果移动了，则取消长按
+          args.offsetInfo = {
+            offsetX: 0,
+            offsetY: 0,
+            offset: 0
+          };
+          args.offsetInfo.offsetX = args.position.x - touchStartPos.x;
+          args.offsetInfo.offsetY = args.position.y - touchStartPos.y;
+          args.offsetInfo.offset = Math.sqrt(args.offsetInfo.offsetX * args.offsetInfo.offsetX + args.offsetInfo.offsetY * args.offsetInfo.offsetY); // 记录当次滑动的位置
+
+          touchStartPos = args.position; // 如果是长按启用，但手指又滑动了。则取消标线
+
+          if (longtap === 1) {
+            if (args.offsetInfo.offset > 15) longtap = 0; // 如果移动了，则取消长按
+          }
 
           args.longtap = longtap;
           this.move(args);
