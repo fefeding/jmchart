@@ -8531,6 +8531,19 @@ var vchart = {
 
       this.chartInstance.bind('touchPointChange', args => {
         this.$emit('touch-point-change', args);
+      }); // 图表标线事件
+
+      this.chartInstance.bind('marklinelongtapstart', args => {
+        this.$emit('markline-longtap-start', args);
+      });
+      this.chartInstance.bind('marklinestartmove', args => {
+        this.$emit('markline-start-move', args);
+      });
+      this.chartInstance.bind('marklinemove', args => {
+        this.$emit('markline-move', args);
+      });
+      this.chartInstance.bind('marklineendmove', args => {
+        this.$emit('markline-end-move', args);
       }); // touch事件
 
       this.chartInstance.touchGraph.bind('touchstart mousedown', args => {
