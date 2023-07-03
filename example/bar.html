@@ -68,6 +68,13 @@
 					chart.on('touchPointChange', function(args) {
 						console.log(args);
 					});
+
+					chart.on('marklinestartmove', (args)=>{
+						if(args.event) {
+							args.event.preventDefault(); // 阻止默认行为
+							args.event.stopPropagation();
+						}
+					});
 					
 					
 					var bar1 = chart.createSeries('bar', {
