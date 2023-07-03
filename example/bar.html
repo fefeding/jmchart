@@ -53,7 +53,7 @@
 								y: true
 							},
 							markLine: {
-								longtap: true //  长按才出现标线
+								longtap: false //  长按才出现标线
 							},
 							margin: {
 								bottom: 2
@@ -70,6 +70,12 @@
 					});
 
 					chart.on('marklinestartmove', (args)=>{
+						if(args.event) {
+							args.event.preventDefault(); // 阻止默认行为
+							args.event.stopPropagation();
+						}
+					});
+					chart.on('marklinemove', (args)=>{
 						if(args.event) {
 							args.event.preventDefault(); // 阻止默认行为
 							args.event.stopPropagation();
