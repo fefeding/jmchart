@@ -72,6 +72,12 @@
 						console.log(args);
 					});
 
+					// 滑动标线，阻止默认事件
+					chart.on('marklinemove', (args)=>{
+						args.event.preventDefault();// 阻止默认行为		
+						args.event.stopPropagation();	
+					});
+
 					var line1 = chart.createSeries('line', {
 						field: 'y1',
 						//index: 2, // 指定Y轴索引，如是档指定就会共用左边的Y轴，
