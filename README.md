@@ -34,3 +34,6 @@ npm install jmchart
 ```
 
 > 如果你想引用不同的类型的模块，请见`dist`目录。1
+>
+[npm-badge]: https://img.shields.io/npm/v/jmchart.svg
+[npm-badge-url]: https://www.npmjs.com/package/jmchart
