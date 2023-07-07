@@ -1,4 +1,4 @@
-jmchart 轻量级图表组件（支持微信小程序）
+jmchart 轻量级图表组件（支持微信小程序），依赖 jmgraph[https://github.com/jiamao/jmgraph]
 =======
 
 html5图表控件
