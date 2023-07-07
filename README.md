@@ -1,3 +1,6 @@
+[![Latest NPM release][npm-badge]][npm-badge-url]
+[![Build Status](https://travis-ci.org/jiamao/jmchart.svg?branch=master)](https://travis-ci.org/jiamao/jmchart)
+
 jmchart 轻量级图表组件（支持微信小程序），依赖 [jmgraph](https://github.com/jiamao/jmgraph)
 =======
 
