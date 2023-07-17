@@ -8002,6 +8002,7 @@ System.register([], function (exports) {
 
               if (chart.style.markLine.lock) {
                 // 标线状态一直禁用系统能力
+                // 如果指定了锁定值，只需要一项符合要求就进行锁定
                 if (lineTouching === 0 && (chart.style.markLine.lock.y && Math.abs(args.offsetInfo.y) < chart.style.markLine.lock.y || chart.style.markLine.lock.x && Math.abs(args.offsetInfo.x) < chart.style.markLine.lock.x) || lineTouching === 1) {
                   lineTouching = 1;
                   args.event.preventDefault(); // 阻止默认行为
