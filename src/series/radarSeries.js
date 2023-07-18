@@ -4,9 +4,9 @@ import {
 import jmSeries from './series.js';
 
 /**
- * 饼图
+ * 雷达图
  *
- * @class jmPieSeries
+ * @class jmRadarSeries
  * @module jmChart
  * @param {jmChart} chart 当前图表
  * @param {array} mappings 图形字段映射
@@ -14,17 +14,41 @@ import jmSeries from './series.js';
  */
 
 //构造函数
-export default class jmPieSeries extends jmSeries {
+export default class jmRadarSeries extends jmSeries {
 	constructor(options) {
 		super(options);
-
-		this.xAxis.visible = false;
-		this.yAxis.visible = false;
+        this.xAxis.visible = false;
 	}
+
+    // 重新生成轴，雷达图只需要Y轴即可
+    createAxises() {
+        // 清空除了一个默认外的所有Y轴
+        for(let index in this.graph.yAxises) {
+            const axis = this.graph.yAxises[index];
+            if(!axis || axis === this.yAxis) continue;
+            axis.remove();
+            delete this.graph.yAxises[index];
+        }
+
+        for(let index=0; index < this.field.length; index++) {
+            if(index === 0) {
+                this.yAxis.init({
+                    field: this.field[index]
+                });
+            }
+            else {
+                this.graph.createYAxis({
+                    index: index + 1,
+                    format: this.option.yLabelFormat || this.graph.option.yLabelFormat,
+                    field: this.field[index]
+                });
+            }
+        }
+    }
 
 	// 重新初始化图形
 	init() {
-	
+        this.createAxises();// 重置所有轴
 		//总和
 		this.totalValue = 0;
 		//计算最大值和最小值
@@ -92,14 +116,6 @@ export default class jmPieSeries extends jmSeries {
 		}
 	}
 
-	// 当前总起画角度
-	get startAngle() {
-		return this.option.startAngle || 0;
-	}
-	set startAngle(v) {
-		this.option.startAngle = v;
-	}
-
 	/**
 	 * 生成序列图描点
 	 *
@@ -141,7 +157,6 @@ export default class jmPieSeries extends jmSeries {
 					style: this.graph.utils.clone(this.style),
 					anticlockwise
 				};
-				points.push(p);
 				//p.style.color = this.graph.getColor(index);
 				if(p.style.color && typeof p.style.color === 'function') {
 					p.style.fill = p.style.color.call(this, p);
@@ -234,10 +249,12 @@ export default class jmPieSeries extends jmSeries {
 					}
 
 					this.createLabel(p);// 生成标签
-					// 生成标点的回调
-					this.emit('onPointCreated', p);		
 				}
-				index++;
+				points.push(p);
+				index++;	
+				
+				// 生成标点的回调
+				this.emit('onPointCreated', p);			
 			}			
 		}
 		
@@ -309,7 +326,7 @@ export default class jmPieSeries extends jmSeries {
  *
  * @method createLegend	 
  */
-jmPieSeries.prototype.createLegend = function() {
+ jmRadarSeries.prototype.createLegend = function() {
 	
 	const points = this.createPoints();
 	if(!points || !points.length) return;

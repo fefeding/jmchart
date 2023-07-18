@@ -174,6 +174,8 @@ export default class jmAxis extends jmArrowLine {
 	 * @method createLabel
 	 */
 	createLabel() {		
+		if(this.visible === false) return;
+		
 		//移除原有的标签 
 		this.children.each(function(i, c) {
 			c.remove();

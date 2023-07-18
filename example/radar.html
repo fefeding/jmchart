@@ -1,0 +1,150 @@
+<!doctype html>
+<html>
+	<head>
+		<meta content="text/html; charset=UTF-8" http-equiv="content-type" />
+<meta name="viewport" content="width=device-width,initial-scale=1">
+		<!--<script type="text/javascript" src="../src/jmchart.debug.js" id="jmgraph" ></script>-->
+
+		<style>
+		html,body {
+			margin:0;
+			padding:0;
+			width:100%;
+			height:100%;
+		}
+		#mycanvas canvas, #mycanvas div{
+			background-color:#fff;
+			margin:0 auto;		
+		}
+		/*div.jm-tooltip {
+			background-color: rgba(255,255,255,0.8);
+			padding:4px;
+			border:1px solid #000;
+			box-shadow: 0 0 3px #000;
+			border-radius: 6px;
+		}*/
+		</style>
+		<script type="module">
+			
+			import { jmChart } from '../dist/jmchart.esm.js';
+
+			(function load() {
+				var w = Math.max((window.innerWidth || window.document.body.clientWidth) * 0.8, 600);
+				var h = Math.max((window.innerHeight || window.document.body.clientHeight) * 0.4, 400);			
+				inichart(w, h);
+			})();
+			
+
+			function inichart(w, h) {
+					var chart1 = new jmChart('mycanvas1', {
+						width: w,
+						height: h,
+						enableAnimate: true,
+						autoRefresh: true,
+                        style: {
+							markLine: false, // 不展示标线
+                            chartArea: {
+                                stroke: 'transparent'
+                            },
+							margin: {
+								left: 200,
+								top: 100,
+								right: 200,
+								bottom: 100
+							}
+                        }
+                    });
+					
+					var radar = chart1.createSeries('radar', {
+						fields: ['y1' , 'y2', 'y3'],
+						anticlockwise: false, //是否逆时针
+						legendFormat: function(options) {
+							return options.data.x;
+						},
+						minRadius: function(p, r, i) {
+							if(p.data.selected) {
+								return r + 10;
+							}
+							return r;
+						},
+						style: {
+							isHollow: true, // 是否空心
+							arcWidth: 30, // 圆弧宽
+							marginAngle: 0.02,// 间隔角度
+							// 指定颜色获取方式，不指定就会使用默认的
+							color: function(point) {	
+								if(!point || !point.data) return;							
+								const color = point.data.color || this.graph.getColor(point.x);
+								if(!point.data.selected) {
+								// 如果没有被选中，则给个透明度
+									const colorRGBA = this.graph.utils.hexToRGBA(color);
+                                    return `rgba(${colorRGBA.r},${colorRGBA.g},${colorRGBA.b}, 0.5)`;
+                                }
+								return color;
+							},
+							label: {
+								show: true, // 默认就是true
+								stroke: '#ccc',
+								fill: 'blue',
+								textAlign: 'center',
+								textBaseline: 'middle',
+								border: {
+									top: true,
+									left: true,
+									right: true,
+									bottom: true,
+									style: {
+										fill: '#000'
+									}
+								}
+							}
+						}
+					});
+					
+                    
+					const datacount = 4;
+					let data1 = [						
+					];	
+
+					function refreshData() {
+
+						const data1Tmp = [];
+						for(let i=0; i<datacount; i++) {                           
+                           
+							data1.push({
+                                x: 'test' + i,
+                                y1: i,
+                                y2: 10 * i + Math.random() * 50,
+                                y3: 10 * i + Math.random() * 100,
+                                y4: 10 * i + Math.random() * 120
+                            });
+						}
+
+						chart1.data = data1;
+						chart1.refresh(); 
+
+						
+					}
+
+					
+					refreshData();
+
+					chart1.utils.bindEvent(document.getElementById('btnRedraw'),'click', refreshData);
+					
+					// // 自动刷新代码
+					// function update() {
+					// 	if(chart1.needUpdate) chart1.redraw();
+					// 	requestAnimationFrame(update);
+					// }
+					// requestAnimationFrame(update);
+				}
+		</script>
+	</head>
+	<body>
+		<div id="mycanvas1">
+			</div>
+		<div id="mycanvas2">
+			</div>	
+			<button id="btnRedraw">重绘</button>		
+	</body>
+</html>

@@ -34,7 +34,7 @@ export default class jmSeries extends jmPath {
 		
 		// 初始化一些参数， 因为这里有多个Y轴的可能，所以每次都需要重调一次init
 		this.yAxis.init({
-			field: this.field,
+			field: Array.isArray(this.field)? this.field[0]: this.field,
 			minYValue: options.minYValue,
 			maxYValue: options.maxYValue
 		});
@@ -316,6 +316,7 @@ export default class jmSeries extends jmPath {
 			style
 		});
 		this.graph.legend.append(this, shape);
+		return shape;
 	}
 
 	// 生成柱图的标注

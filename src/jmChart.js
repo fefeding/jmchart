@@ -10,7 +10,7 @@ import jmLegend from './core/legend/legend.js';
 import jmBarSeries from './series/barSeries.js';
 import jmStackBarSeries from './series/stackBarSeries.js';
 import jmPieSeries from './series/pieSeries.js';
-
+import jmRadarSeries from './series/radarSeries.js';
 import jmLineSeries from './series/lineSeries.js';
 import jmStackLineSeries from './series/stackLineSeries.js';
 import jmCandlestickSeries from './series/candlestickSeries.js';
@@ -333,7 +333,7 @@ export default class jmChart extends jmGraph  {
 				type: 'x',
 				visible: this.style.axis.x === false? false: true,
 				format: this.option.xLabelFormat,
-				...this.option.yAxisOption
+				...this.option.xAxisOption
 			}, options || {});
 			
 			if(typeof this.option.minXValue !== 'undefined') {
@@ -366,7 +366,7 @@ export default class jmChart extends jmGraph  {
 			visible: this.style.axis.y === false? false: true,
 			format: this.option.yLabelFormat,
 			zeroBase: this.baseY === 0,
-			...this.option.xAxisOption,
+			...this.option.yAxisOption,
 		}, options || {});
 		if(typeof this.option.minYValue !== 'undefined') {
 			options.minYValue = typeof options.minYValue === 'undefined'?this.option.minYValue:Math.min(this.option.minYValue, options.minYValue);
@@ -395,6 +395,7 @@ export default class jmChart extends jmGraph  {
 				'bar' : jmBarSeries,
 				'stackBar' : jmStackBarSeries,
 				'pie' : jmPieSeries,
+				'radar' : jmRadarSeries,
 				'stackLine' : jmStackLineSeries,
 				'candlestick': jmCandlestickSeries
 			};		

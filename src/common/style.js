@@ -240,6 +240,35 @@ export default {
 			color: '#ccc'
 		}
 	},
+	radar: {
+		normal: {
+			zIndex: 11,
+			cursor: 'default',
+			opacity: 0.8
+		},
+		hover: {
+			//zIndex: 100,
+			opacity: 1,
+			cursor: 'pointer'
+		},
+		margin: {
+			left: 10,
+			top: 10,
+			right: 10,
+			bottom: 10
+		},
+		lineWidth: 1,
+		zIndex: 11,
+		cursor: 'default',
+		close : true,
+		opacity: 0.8,
+		shadow: {
+			x: 1,
+			y: 1,
+			blur: 2,
+			color: '#ccc'
+		}
+	},
 	candlestick: {
 		normal: {
 			lineWidth: 1,
