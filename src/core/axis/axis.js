@@ -317,11 +317,12 @@ export default class jmAxis extends jmArrowLine {
 		const marginLeft = this.style.yLabel.margin.left * this.graph.devicePixelRatio || 0;
 		const marginRight = this.style.yLabel.margin.right * this.graph.devicePixelRatio || 0;
 		let p = 0;
+		
 		for(let i=0; i<count+1; i++) {
 			p = min + pervalue * i;
 			if(p > max || i === count) p = max;
 			const h = (p - min) * step; // 当前点的偏移高度
-			const label = this.graph.graph.createShape('label', {
+			const label = this.graph.createShape('label', {
 				style: this.style.yLabel
 			});
 			

@@ -132,6 +132,43 @@
 						onClick: function(point, e) {							
 							refreshData(point.data.name);
 						},
+						// 图初始化回调
+						onInit: function(center, radius) {
+							const label1 = this.graph.createShape('label', {
+								style: {
+									stroke: '#effaaa',
+									fill: 'red',
+									textAlign: 'right',
+									textBaseline: 'middle',
+									fontFamily: "Arial",
+									fontSize: 24,
+									shadow: '0,0,10,#fff'
+								},
+								text: '2个',
+								center: {
+									x: center.x,
+									y: center.y - 10
+								}
+							});
+							this.addShape(label1);
+							const label2 = this.graph.createShape('label', {
+								style: {
+									stroke: '#effaaa',
+									fill: '#000',
+									textAlign: 'right',
+									textBaseline: 'middle',
+									font: "normal bold 20px Arial",
+									//fontSize: 40,
+									shadow: '0,0,10,#fff'
+								},
+								text: '资产分布',
+								center: {
+									x: center.x,
+									y: center.y + 15
+								}
+							});
+							this.addShape(label2);
+						},
 						/*onOver: function(point, e) {
 							point.data.overColor = '#D8E404';
 							this.needUpdate = true;

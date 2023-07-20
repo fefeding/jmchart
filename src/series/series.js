@@ -121,6 +121,10 @@ export default class jmSeries extends jmPath {
 		else {
 			this.dataPoints = this.createPoints(...args);
 		}
+		// 执行初始化函数回调
+		if(this.option && this.option.onInit) {
+			this.option.onInit.apply(this, args);
+		}
 		return {
 			dataChanged,
 			points: this.dataPoints

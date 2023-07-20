@@ -13,7 +13,7 @@
 			height:100%;
 		}
 		#mycanvas canvas, #mycanvas div{
-			background-color:#fff;
+			background-color:#ddd;
 			margin:0 auto;		
 		}
 		/*div.jm-tooltip {
@@ -57,10 +57,17 @@
 						},
 						style: {
 							margin: {
-								left: 50
+								left: 80
 							},
 							legend: {
 								legendPosition: 'top'
+							},
+							axis: {
+								yLabel: {
+									margin: {
+										left: 30
+									}
+								}
 							}
 						}
 					});
@@ -91,6 +98,7 @@
 							label: {
 								show: true
 							},
+							color: 'blue',
                             area: {
                                 // 自定义填充颜色处理
                                 fill: function(style) {

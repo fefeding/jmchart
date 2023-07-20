@@ -5748,7 +5748,7 @@ class jmAxis extends jmArrowLine {
       if (p > max || i === count) p = max;
       const h = (p - min) * step; // 当前点的偏移高度
 
-      const label = this.graph.graph.createShape('label', {
+      const label = this.graph.createShape('label', {
         style: this.style.yLabel
       });
       label.text = format.call(this, p, label); // 格式化label
@@ -6337,6 +6337,11 @@ class jmSeries extends jmPath {
       if (dataChanged) this.___animateCounter = 0; // 数据改变。动画重新开始
     } else {
       this.dataPoints = this.createPoints(...args);
+    } // 执行初始化函数回调
+
+
+    if (this.option && this.option.onInit) {
+      this.option.onInit.apply(this, args);
     }
 
     return {
@@ -7265,7 +7270,8 @@ class jmRadarSeries extends jmSeries {
 
 
   createAxises() {
-    // 清空除了一个默认外的所有Y轴
+    this.axises = [this.yAxis]; // 清空除了一个默认外的所有Y轴
+
     for (let index in this.graph.yAxises) {
       const axis = this.graph.yAxises[index];
       if (!axis || axis === this.yAxis) continue;
@@ -7274,16 +7280,19 @@ class jmRadarSeries extends jmSeries {
     }
 
     for (let index = 0; index < this.field.length; index++) {
+      if (!this.field[index]) continue;
+
       if (index === 0) {
         this.yAxis.init({
           field: this.field[index]
         });
       } else {
-        this.graph.createYAxis({
+        const axis = this.graph.createYAxis({
           index: index + 1,
           format: this.option.yLabelFormat || this.graph.option.yLabelFormat,
           field: this.field[index]
         });
+        this.axises.push(axis);
       }
     }
   } // 重新初始化图形
@@ -7353,15 +7362,6 @@ class jmRadarSeries extends jmSeries {
         });
       }
     }
-  } // 当前总起画角度
-
-
-  get startAngle() {
-    return this.option.startAngle || 0;
-  }
-
-  set startAngle(v) {
-    this.option.startAngle = v;
   }
   /**
    * 生成序列图描点

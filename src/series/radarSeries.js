@@ -22,6 +22,9 @@ export default class jmRadarSeries extends jmSeries {
 
     // 重新生成轴，雷达图只需要Y轴即可
     createAxises() {
+        this.axises = [
+            this.yAxis
+        ];
         // 清空除了一个默认外的所有Y轴
         for(let index in this.graph.yAxises) {
             const axis = this.graph.yAxises[index];
@@ -31,17 +34,20 @@ export default class jmRadarSeries extends jmSeries {
         }
 
         for(let index=0; index < this.field.length; index++) {
+            if(!this.field[index]) continue;
+            
             if(index === 0) {
                 this.yAxis.init({
                     field: this.field[index]
                 });
             }
             else {
-                this.graph.createYAxis({
+                const axis = this.graph.createYAxis({
                     index: index + 1,
                     format: this.option.yLabelFormat || this.graph.option.yLabelFormat,
                     field: this.field[index]
                 });
+                this.axises.push(axis);
             }
         }
     }
