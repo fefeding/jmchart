@@ -43,7 +43,7 @@ export default class jmPieSeries extends jmSeries {
 			y: this.graph.chartArea.height / 2
 		};
 		
-		const radius = Math.min(center.x - this.style.margin.left - 
+		const radius = Math.min(center.x - this.style.margin.left * this.graph.devicePixelRatio - 
 			this.style.margin.right * this.graph.devicePixelRatio,
 			center.y - this.style.margin.top * this.graph.devicePixelRatio - this.style.margin.bottom * this.graph.devicePixelRatio);
 		

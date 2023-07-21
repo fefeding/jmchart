@@ -21,10 +21,17 @@ export default class jmRadarSeries extends jmSeries {
 	}
 
     // 重新生成轴，雷达图只需要Y轴即可
-    createAxises() {
+    createAxises(center, radius) {
         this.axises = [
             this.yAxis
         ];
+
+        const vCount = this.field.length;
+        if(!vCount) return;
+        
+        //每个维度点的角度
+        const rotateStep = Math.PI * 2 / vCount;
+
         // 清空除了一个默认外的所有Y轴
         for(let index in this.graph.yAxises) {
             const axis = this.graph.yAxises[index];
@@ -33,54 +40,65 @@ export default class jmRadarSeries extends jmSeries {
             delete this.graph.yAxises[index];
         }
 
-        for(let index=0; index < this.field.length; index++) {
+        for(let index=0; index < vCount; index++) {
             if(!this.field[index]) continue;
-            
-            if(index === 0) {
-                this.yAxis.init({
-                    field: this.field[index]
-                });
-            }
-            else {
-                const axis = this.graph.createYAxis({
+            let axis = this.yAxis;
+            // 除了默认的y轴外，其它都重新生成
+            if(index > 0) {             
+                axis = this.graph.createYAxis({
                     index: index + 1,
-                    format: this.option.yLabelFormat || this.graph.option.yLabelFormat,
-                    field: this.field[index]
+                    format: this.option.yLabelFormat || this.graph.option.yLabelFormat
                 });
                 this.axises.push(axis);
             }
+            const rotate = Math.PI/2 + rotateStep * index; //从向上90度开始
+            axis.init({
+                field: this.field[index],
+                radarOption: {
+                    center,
+                    radius,
+                    rotate: rotate,
+                    cos: Math.cos(rotate),
+                    sin: Math.sin(rotate)
+                }                
+            });
+              
         }
+        return this.axises;
     }
 
-	// 重新初始化图形
-	init() {
-        this.createAxises();// 重置所有轴
-		//总和
-		this.totalValue = 0;
-		//计算最大值和最小值
-		if(this.data) {		
-			for(const i in this.data) {
-				const s = this.data[i];							
-				const vy = s[this.field];	
-				if(vy) {
-					this.totalValue += Math.abs(vy);
-				}	
-			}		
-		}
-
-		const center = { 
+    // 计算最大值和最小值，一般图形直接采用最大最小值即可，有些需要多值叠加
+	initAxisValue() {
+        this.center = { 
 			x: this.graph.chartArea.width / 2, 
 			y: this.graph.chartArea.height / 2
 		};
 		
-		const radius = Math.min(center.x - this.style.margin.left - 
+		this.radius = Math.min(this.center.x - this.style.margin.left * this.graph.devicePixelRatio - 
 			this.style.margin.right * this.graph.devicePixelRatio,
-			center.y - this.style.margin.top * this.graph.devicePixelRatio - this.style.margin.bottom * this.graph.devicePixelRatio);
+			this.center.y - this.style.margin.top * this.graph.devicePixelRatio - this.style.margin.bottom * this.graph.devicePixelRatio);
+		
+        const axises = this.createAxises(this.center, this.radius);// 重置所有轴
+		// 计算最大最小值
+		// 当前需要先更新axis的边界值，轴好画图
+		for(let i=0; i< this.data.length;i++) {				
+            axises.forEach((axis)=> {
+                const v = this.data[i][axis.field]; 
+                axis.max(v);
+                axis.min(v);
+            });
+		}
+	}
+
+	// 重新初始化图形
+	init() {       
+        
+
 		
 
 		//生成描点位
 		// super.init会把参数透传给 createPoints
-		const { points, dataChanged }  = this.initDataPoint(center, radius);	
+		const { points, dataChanged }  = this.initDataPoint(this.center, this.radius);	
 
 		// 是否正在动画中
 		const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0 );

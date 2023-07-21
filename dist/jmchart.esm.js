@@ -5508,6 +5508,8 @@ class jmAxis extends jmArrowLine {
     options = options || {}; // 深度组件默认样式
 
     if (options.style) this.graph.utils.clone(options.style, this.style, true);
+    this.field = options.field || this.field || '';
+    this.radarOption = options.radarOption;
 
     if (this.type == 'x') {
       if (typeof options.maxXValue !== 'undefined') this.maxValue = options.maxXValue; // 最大的值，如果指定了，则如果有数值比它大才会修改上限，否则以它为上限
@@ -5570,21 +5572,30 @@ class jmAxis extends jmArrowLine {
 
       case 'y':
         {
-          const index = this.index || 1;
-          let xoffset = bounds.left; //初始化显示标签个数
+          //初始化显示标签个数
+          this.labelCount = this.style.yLabel.count || 5;
+          const index = this.index || 1; // 如果是雷达图，则画发散的线
 
-          this.labelCount = this.style.yLabel.count || 5; //多Y轴时，第二个为右边第一轴，其它的依此递推
+          if (this.radarOption) {
+            this.end.x = this.radarOption.center.x + this.radarOption.cos * this.radarOption.radius;
+            this.end.y = this.radarOption.center.y - this.radarOption.sin * this.radarOption.radius;
+            this.start.x = this.radarOption.center.x;
+            this.start.y = this.radarOption.center.y;
+          } else {
+            let xoffset = bounds.left; //多Y轴时，第二个为右边第一轴，其它的依此递推
 
-          if (index == 2) {
-            xoffset = bounds.right;
-          } else if (index > 2) {
-            xoffset = this.graph.yAxises[index - 1].start.x + this.graph.yAxises[index - 1].width + 10;
+            if (index == 2) {
+              xoffset = bounds.right;
+            } else if (index > 2) {
+              xoffset = this.graph.yAxises[index - 1].start.x + this.graph.yAxises[index - 1].width + 10;
+            }
+
+            this.start.x = xoffset;
+            this.start.y = bounds.bottom;
+            this.end.x = this.start.x;
+            this.end.y = bounds.top;
           }
 
-          this.start.x = xoffset;
-          this.start.y = bounds.bottom;
-          this.end.x = this.start.x;
-          this.end.y = bounds.top;
           break;
         }
     }
@@ -5781,7 +5792,7 @@ class jmAxis extends jmArrowLine {
           y: offy + this.end.y
         }); // 指定要显示网格
 
-        if (this.style.grid && this.style.grid.x) {
+        if (!this.radarOption && this.style.grid && this.style.grid.x) {
           // 它的坐标是相对于轴的，所以Y轴会用负的区域高度
           const line = this.graph.createShape('line', {
             start: {
@@ -6949,7 +6960,7 @@ class jmPieSeries extends jmSeries {
       x: this.graph.chartArea.width / 2,
       y: this.graph.chartArea.height / 2
     };
-    const radius = Math.min(center.x - this.style.margin.left - this.style.margin.right * this.graph.devicePixelRatio, center.y - this.style.margin.top * this.graph.devicePixelRatio - this.style.margin.bottom * this.graph.devicePixelRatio); //生成描点位
+    const radius = Math.min(center.x - this.style.margin.left * this.graph.devicePixelRatio - this.style.margin.right * this.graph.devicePixelRatio, center.y - this.style.margin.top * this.graph.devicePixelRatio - this.style.margin.bottom * this.graph.devicePixelRatio); //生成描点位
     // super.init会把参数透传给 createPoints
 
     const {
@@ -7269,8 +7280,12 @@ class jmRadarSeries extends jmSeries {
   } // 重新生成轴，雷达图只需要Y轴即可
 
 
-  createAxises() {
-    this.axises = [this.yAxis]; // 清空除了一个默认外的所有Y轴
+  createAxises(center, radius) {
+    this.axises = [this.yAxis];
+    const vCount = this.field.length;
+    if (!vCount) return; //每个维度点的角度
+
+    const rotateStep = Math.PI * 2 / vCount; // 清空除了一个默认外的所有Y轴
 
     for (let index in this.graph.yAxises) {
       const axis = this.graph.yAxises[index];
@@ -7279,53 +7294,63 @@ class jmRadarSeries extends jmSeries {
       delete this.graph.yAxises[index];
     }
 
-    for (let index = 0; index < this.field.length; index++) {
+    for (let index = 0; index < vCount; index++) {
       if (!this.field[index]) continue;
+      let axis = this.yAxis; // 除了默认的y轴外，其它都重新生成
 
-      if (index === 0) {
-        this.yAxis.init({
-          field: this.field[index]
-        });
-      } else {
-        const axis = this.graph.createYAxis({
+      if (index > 0) {
+        axis = this.graph.createYAxis({
           index: index + 1,
-          format: this.option.yLabelFormat || this.graph.option.yLabelFormat,
-          field: this.field[index]
+          format: this.option.yLabelFormat || this.graph.option.yLabelFormat
         });
         this.axises.push(axis);
       }
+
+      const rotate = Math.PI / 2 + rotateStep * index; //从向上90度开始
+
+      axis.init({
+        field: this.field[index],
+        radarOption: {
+          center,
+          radius,
+          rotate: rotate,
+          cos: Math.cos(rotate),
+          sin: Math.sin(rotate)
+        }
+      });
+    }
+
+    return this.axises;
+  } // 计算最大值和最小值，一般图形直接采用最大最小值即可，有些需要多值叠加
+
+
+  initAxisValue() {
+    this.center = {
+      x: this.graph.chartArea.width / 2,
+      y: this.graph.chartArea.height / 2
+    };
+    this.radius = Math.min(this.center.x - this.style.margin.left * this.graph.devicePixelRatio - this.style.margin.right * this.graph.devicePixelRatio, this.center.y - this.style.margin.top * this.graph.devicePixelRatio - this.style.margin.bottom * this.graph.devicePixelRatio);
+    const axises = this.createAxises(this.center, this.radius); // 重置所有轴
+    // 计算最大最小值
+    // 当前需要先更新axis的边界值，轴好画图
+
+    for (let i = 0; i < this.data.length; i++) {
+      axises.forEach(axis => {
+        const v = this.data[i][axis.field];
+        axis.max(v);
+        axis.min(v);
+      });
     }
   } // 重新初始化图形
 
 
   init() {
-    this.createAxises(); // 重置所有轴
-    //总和
-
-    this.totalValue = 0; //计算最大值和最小值
-
-    if (this.data) {
-      for (const i in this.data) {
-        const s = this.data[i];
-        const vy = s[this.field];
-
-        if (vy) {
-          this.totalValue += Math.abs(vy);
-        }
-      }
-    }
-
-    const center = {
-      x: this.graph.chartArea.width / 2,
-      y: this.graph.chartArea.height / 2
-    };
-    const radius = Math.min(center.x - this.style.margin.left - this.style.margin.right * this.graph.devicePixelRatio, center.y - this.style.margin.top * this.graph.devicePixelRatio - this.style.margin.bottom * this.graph.devicePixelRatio); //生成描点位
+    //生成描点位
     // super.init会把参数透传给 createPoints
-
     const {
       points,
       dataChanged
-    } = this.initDataPoint(center, radius); // 是否正在动画中
+    } = this.initDataPoint(this.center, this.radius); // 是否正在动画中
 
     const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0); // 在动画中，则一直刷新
 

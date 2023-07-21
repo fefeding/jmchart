@@ -44,6 +44,9 @@ export default class jmAxis extends jmArrowLine {
 		// 深度组件默认样式
 		if(options.style) this.graph.utils.clone(options.style, this.style, true);
 
+		this.field = options.field || this.field || '';
+		this.radarOption = options.radarOption;
+
 		if(this.type == 'x') {
 			if(typeof options.maxXValue !== 'undefined') this.maxValue = options.maxXValue; // 最大的值，如果指定了，则如果有数值比它大才会修改上限，否则以它为上限
 			if(typeof options.minXValue !== 'undefined') this.minValue = options.minXValue;// 最小值，如果指定了，则轴的最小值为它或更小的值
@@ -137,25 +140,34 @@ export default class jmAxis extends jmArrowLine {
 				}
 				break;
 			}
-			case 'y' : {				
-				const index = this.index || 1;					
-				let xoffset = bounds.left;
-
+			case 'y' : {		
 				//初始化显示标签个数
 				this.labelCount = this.style.yLabel.count || 5;
-				
-				//多Y轴时，第二个为右边第一轴，其它的依此递推
-				if(index == 2) {
-					xoffset = bounds.right;
-				}
-				else if(index > 2) {
-					xoffset = this.graph.yAxises[index-1].start.x + this.graph.yAxises[index-1].width + 10;
-				}					
-				
-				this.start.x = xoffset;
-				this.start.y = bounds.bottom;
-				this.end.x = this.start.x;
-				this.end.y = bounds.top;				
+
+				const index = this.index || 1;	
+				// 如果是雷达图，则画发散的线
+				if(this.radarOption) {
+					this.end.x = this.radarOption.center.x + this.radarOption.cos * this.radarOption.radius;
+					this.end.y = this.radarOption.center.y - this.radarOption.sin * this.radarOption.radius; 
+					this.start.x = this.radarOption.center.x;
+					this.start.y = this.radarOption.center.y;
+				}	
+				else {		
+					let xoffset = bounds.left;
+					
+					//多Y轴时，第二个为右边第一轴，其它的依此递推
+					if(index == 2) {
+						xoffset = bounds.right;
+					}
+					else if(index > 2) {
+						xoffset = this.graph.yAxises[index-1].start.x + this.graph.yAxises[index-1].width + 10;
+					}					
+					
+					this.start.x = xoffset;
+					this.start.y = bounds.bottom;
+					this.end.x = this.start.x;
+					this.end.y = bounds.top;	
+				}			
 				break;
 			}
 		}
@@ -360,7 +372,7 @@ export default class jmAxis extends jmArrowLine {
 				});
 
 				// 指定要显示网格
-				if(this.style.grid && this.style.grid.x) {
+				if(!this.radarOption && this.style.grid && this.style.grid.x) {
 					// 它的坐标是相对于轴的，所以Y轴会用负的区域高度
 					const line = this.graph.createShape('line', {
 						start: {
