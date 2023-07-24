@@ -6056,8 +6056,9 @@
 
     clear() {
       this._min = null;
-      this._max = null;
-      this.gridLines && this.gridLines.map(line => {
+      this._max = null; // 清空栅格线
+
+      this.gridLines && this.gridLines.forEach(line => {
         line.remove();
       });
       this.gridLines = [];

@@ -631,7 +631,9 @@ export default class jmAxis extends jmArrowLine {
 	clear() {
 		this._min = null;
 		this._max = null;
-		this.gridLines && this.gridLines.map((line)=>{
+
+		// 清空栅格线
+		this.gridLines && this.gridLines.forEach((line)=>{
 			line.remove();
 		});
 		this.gridLines = [];
