@@ -5499,6 +5499,8 @@ class jmAxis extends jmArrowLine {
 
     this.field = options.field || '';
     this.index = options.index || 0;
+    this.gridLines = []; // 线条数组
+
     this.init(options);
   } // 初始化一些参数
   // 这个函数可能会重入。
@@ -5538,6 +5540,24 @@ class jmAxis extends jmArrowLine {
 
   set data(d) {
     this.graph.data = d;
+  } // 生成绘制点，
+  // 重写原函数
+
+
+  initPoints() {
+    // 如果是雷达图
+    if (this.radarOption && this.type === 'x') {
+      this.points = [];
+
+      for (const axis of this.radarOption.yAxises) {
+        this.points.push(axis.end);
+      }
+
+      this.points.push(this.points[0]);
+      return this.points;
+    } else {
+      return super.initPoints();
+    }
   }
   /**
    * 计算当前轴的位置
@@ -5547,13 +5567,43 @@ class jmAxis extends jmArrowLine {
 
 
   reset() {
-    const bounds = this.graph.chartArea.getBounds(); // 获取画图区域
-
     switch (this.type) {
       case 'x':
         {
           //初始化显示标签个数
-          this.labelCount = this.style.xLabel.count || 5;
+          this.labelCount = this.style.xLabel.count || 5; // 如果是雷达图，则画栅格线
+
+          if (this.radarOption) {
+            if (this.style.grid && this.style.grid.x) {
+              for (let i = 1; i < this.labelCount + 1; i++) {
+                const points = [];
+                const curRadius = this.radarOption.radius / this.labelCount * i;
+
+                for (const axis of this.radarOption.yAxises) {
+                  const point = {};
+                  point.x = axis.radarOption.center.x + axis.radarOption.cos * curRadius;
+                  point.y = axis.radarOption.center.y - axis.radarOption.sin * curRadius;
+                  points.push(point);
+                } // 画栅格线
+
+
+                for (let j = 0; j < points.length; j++) {
+                  const start = points[j];
+                  const end = points[j + 1] || points[0];
+                  const gridLine = this.graph.createShape('line', {
+                    start,
+                    end,
+                    style: this.style.grid
+                  });
+                  this.parent.children.add(gridLine);
+                  this.gridLines.push(gridLine);
+                }
+              }
+            }
+
+            break;
+          }
+
           this.start.x = bounds.left;
           this.start.y = bounds.bottom;
           this.end.x = bounds.right;
@@ -5617,7 +5667,9 @@ class jmAxis extends jmArrowLine {
 
 
   createLabel() {
-    if (this.visible === false) return; //移除原有的标签 
+    if (this.visible === false) return; // 雷达图不生成label
+
+    if (this.radarOption) return; //移除原有的标签 
 
     this.children.each(function (i, c) {
       c.remove();
@@ -6002,6 +6054,10 @@ class jmAxis extends jmArrowLine {
   clear() {
     this._min = null;
     this._max = null;
+    this.gridLines && this.gridLines.map(line => {
+      line.remove();
+    });
+    this.gridLines = [];
   }
   /**
    * 计算当前轴的单位偏移量
@@ -7276,16 +7332,15 @@ jmPieSeries.prototype.createLegend = function () {
 class jmRadarSeries extends jmSeries {
   constructor(options) {
     super(options);
-    this.xAxis.visible = false;
   } // 重新生成轴，雷达图只需要Y轴即可
 
 
   createAxises(center, radius) {
     this.axises = [this.yAxis];
-    const vCount = this.field.length;
-    if (!vCount) return; //每个维度点的角度
+    const yCount = this.field.length;
+    if (!yCount) return; //每个维度点的角度
 
-    const rotateStep = Math.PI * 2 / vCount; // 清空除了一个默认外的所有Y轴
+    const rotateStep = Math.PI * 2 / yCount; // 清空除了一个默认外的所有Y轴
 
     for (let index in this.graph.yAxises) {
       const axis = this.graph.yAxises[index];
@@ -7294,7 +7349,7 @@ class jmRadarSeries extends jmSeries {
       delete this.graph.yAxises[index];
     }
 
-    for (let index = 0; index < vCount; index++) {
+    for (let index = 0; index < yCount; index++) {
       if (!this.field[index]) continue;
       let axis = this.yAxis; // 除了默认的y轴外，其它都重新生成
 
@@ -7313,13 +7368,23 @@ class jmRadarSeries extends jmSeries {
         radarOption: {
           center,
           radius,
+          yCount,
           rotate: rotate,
           cos: Math.cos(rotate),
           sin: Math.sin(rotate)
         }
       });
-    }
+    } // x轴初始化
 
+
+    this.xAxis.init({
+      radarOption: {
+        center,
+        radius,
+        yCount,
+        yAxises: this.axises
+      }
+    });
     return this.axises;
   } // 计算最大值和最小值，一般图形直接采用最大最小值即可，有些需要多值叠加
 

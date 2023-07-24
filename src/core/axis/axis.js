@@ -33,6 +33,7 @@ export default class jmAxis extends jmArrowLine {
 
 		this.field = options.field || '';
 		this.index = options.index || 0;
+		this.gridLines = [];// 线条数组
 
 		this.init(options);
 	}
@@ -111,6 +112,23 @@ export default class jmAxis extends jmArrowLine {
 		this.graph.data = d;
 	}
 
+	// 生成绘制点，
+	// 重写原函数
+	initPoints() {
+		// 如果是雷达图
+		if(this.radarOption && this.type === 'x') {
+			this.points = [];
+			for(const axis of this.radarOption.yAxises) {
+				this.points.push(axis.end);
+			}
+			this.points.push(this.points[0]);
+			return this.points;
+		}
+		else {
+			return super.initPoints();
+		}	
+	}
+
 
 	/**
 	 * 计算当前轴的位置
@@ -118,12 +136,39 @@ export default class jmAxis extends jmArrowLine {
 	 * @method reset
 	 */
 	reset() {	
-		
-		const bounds = this.graph.chartArea.getBounds();// 获取画图区域
 		switch(this.type) {
-			case 'x' : {	
+			case 'x' : {
 				//初始化显示标签个数
-				this.labelCount = this.style.xLabel.count || 5;
+				this.labelCount = this.style.xLabel.count || 5;	
+				// 如果是雷达图，则画栅格线
+				if(this.radarOption) {
+					if(this.style.grid && this.style.grid.x) {
+						for(let i=1; i< this.labelCount+1; i++) {
+							const points = [];
+							const curRadius = this.radarOption.radius / this.labelCount * i;
+							for(const axis of this.radarOption.yAxises) {
+								const point = {};
+								point.x = axis.radarOption.center.x + axis.radarOption.cos * curRadius;
+								point.y = axis.radarOption.center.y - axis.radarOption.sin * curRadius;
+								points.push(point);
+							}
+							// 画栅格线
+							for(let j=0; j<points.length; j++) {
+								const start = points[j];
+								const end = points[j+1] || points[0];
+								const gridLine = this.graph.createShape('line', {
+									start,
+									end,
+									style: this.style.grid
+								});	
+								this.parent.children.add(gridLine);	
+								this.gridLines.push(gridLine);
+							}											
+						}	
+					}				
+					break;
+				}
+				
 				this.start.x = bounds.left;
 				this.start.y = bounds.bottom;
 				this.end.x = bounds.right;
@@ -187,6 +232,8 @@ export default class jmAxis extends jmArrowLine {
 	 */
 	createLabel() {		
 		if(this.visible === false) return;
+		// 雷达图不生成label
+		if(this.radarOption) return;
 		
 		//移除原有的标签 
 		this.children.each(function(i, c) {
@@ -584,6 +631,10 @@ export default class jmAxis extends jmArrowLine {
 	clear() {
 		this._min = null;
 		this._max = null;
+		this.gridLines && this.gridLines.map((line)=>{
+			line.remove();
+		});
+		this.gridLines = [];
 	}
 
 	/**

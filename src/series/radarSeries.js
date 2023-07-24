@@ -17,20 +17,20 @@ import jmSeries from './series.js';
 export default class jmRadarSeries extends jmSeries {
 	constructor(options) {
 		super(options);
-        this.xAxis.visible = false;
 	}
 
     // 重新生成轴，雷达图只需要Y轴即可
     createAxises(center, radius) {
+        
         this.axises = [
             this.yAxis
         ];
 
-        const vCount = this.field.length;
-        if(!vCount) return;
+        const yCount = this.field.length;
+        if(!yCount) return;        
         
         //每个维度点的角度
-        const rotateStep = Math.PI * 2 / vCount;
+        const rotateStep = Math.PI * 2 / yCount;
 
         // 清空除了一个默认外的所有Y轴
         for(let index in this.graph.yAxises) {
@@ -40,7 +40,7 @@ export default class jmRadarSeries extends jmSeries {
             delete this.graph.yAxises[index];
         }
 
-        for(let index=0; index < vCount; index++) {
+        for(let index=0; index < yCount; index++) {
             if(!this.field[index]) continue;
             let axis = this.yAxis;
             // 除了默认的y轴外，其它都重新生成
@@ -57,6 +57,7 @@ export default class jmRadarSeries extends jmSeries {
                 radarOption: {
                     center,
                     radius,
+                    yCount,
                     rotate: rotate,
                     cos: Math.cos(rotate),
                     sin: Math.sin(rotate)
@@ -64,6 +65,17 @@ export default class jmRadarSeries extends jmSeries {
             });
               
         }
+
+        // x轴初始化
+        this.xAxis.init({
+            radarOption: {
+                center,
+                radius,
+                yCount,
+                yAxises: this.axises
+            }                
+        });
+
         return this.axises;
     }
 
