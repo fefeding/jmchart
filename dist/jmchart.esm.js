@@ -5567,6 +5567,8 @@ class jmAxis extends jmArrowLine {
 
 
   reset() {
+    const bounds = this.graph.chartArea.getBounds(); // 获取画图区域
+
     switch (this.type) {
       case 'x':
         {
@@ -5581,8 +5583,8 @@ class jmAxis extends jmArrowLine {
 
                 for (const axis of this.radarOption.yAxises) {
                   const point = {};
-                  point.x = axis.radarOption.center.x + axis.radarOption.cos * curRadius;
-                  point.y = axis.radarOption.center.y - axis.radarOption.sin * curRadius;
+                  point.x = axis.radarOption.center.x + axis.radarOption.cos * curRadius + bounds.left;
+                  point.y = axis.radarOption.center.y - axis.radarOption.sin * curRadius + bounds.top;
                   points.push(point);
                 } // 画栅格线
 
@@ -5627,10 +5629,10 @@ class jmAxis extends jmArrowLine {
           const index = this.index || 1; // 如果是雷达图，则画发散的线
 
           if (this.radarOption) {
-            this.end.x = this.radarOption.center.x + this.radarOption.cos * this.radarOption.radius;
-            this.end.y = this.radarOption.center.y - this.radarOption.sin * this.radarOption.radius;
-            this.start.x = this.radarOption.center.x;
-            this.start.y = this.radarOption.center.y;
+            this.end.x = this.radarOption.center.x + this.radarOption.cos * this.radarOption.radius + bounds.left;
+            this.end.y = this.radarOption.center.y - this.radarOption.sin * this.radarOption.radius + bounds.top;
+            this.start.x = this.radarOption.center.x + bounds.left;
+            this.start.y = this.radarOption.center.y + bounds.top;
           } else {
             let xoffset = bounds.left; //多Y轴时，第二个为右边第一轴，其它的依此递推
 
@@ -5794,13 +5796,7 @@ class jmAxis extends jmArrowLine {
 
     let count = this.labelCount;
     const mm = max - min;
-    /*if(mm <= 10) {
-    	count = mm;
-    }*/
-    // mm 放大10000倍，这里结果也需要除于10000
-
-    let pervalue = mm / count || 1; //if(pervalue > 1 || pervalue < -1) pervalue = Math.floor(pervalue);		
-
+    let pervalue = mm / count || 1;
     const format = this.option.format || this.format;
     const marginLeft = this.style.yLabel.margin.left * this.graph.devicePixelRatio || 0;
     const marginRight = this.style.yLabel.margin.right * this.graph.devicePixelRatio || 0;
@@ -6070,7 +6066,7 @@ class jmAxis extends jmArrowLine {
 
   step() {
     if (this.type == 'x') {
-      const w = this.width; //如果排版为内联，则单位占宽减少一个单位,
+      const w = this.radarOption ? this.radarOption.radius : this.width; //如果排版为内联，则单位占宽减少一个单位,
       //也就是起始位从一个单位开始
 
       if (this.graph.style.layout == 'inside') {
@@ -6086,7 +6082,7 @@ class jmAxis extends jmArrowLine {
 
       return w / tmp;
     } else if (this.type == 'y') {
-      const h = this.height;
+      const h = this.radarOption ? this.radarOption.radius : this.height;
 
       switch (this.dataType) {
         case 'string':
@@ -6875,15 +6871,18 @@ class jmStackBarSeries extends jmBarSeries {
 
       for (let index = 0; index < point.points.length; index++) {
         const style = this.graph.utils.clone(this.style);
+        const p = point.points[index];
 
         if (style.color && typeof style.color === 'function') {
-          style.fill = style.color.call(this, this, index);
+          style.fill = style.color.call(this, {
+            index,
+            point: p
+          });
         } else {
           style.fill = this.graph.getColor(index);
         }
 
         const sp = this.addShape(this.graph.createPath(null, style));
-        const p = point.points[index];
         let startY = topStartY;
         if (p.yValue < this.baseYValue) startY = bottomStartY; //首先确定p1和p4,因为他们是底脚。会固定
 
@@ -7418,39 +7417,12 @@ class jmRadarSeries extends jmSeries {
       dataChanged
     } = this.initDataPoint(this.center, this.radius); // 是否正在动画中
 
-    const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0); // 在动画中，则一直刷新
+    this.enableAnimate && (dataChanged || this.___animateCounter > 0); // 在动画中，则一直刷新
 
-    if (isRunningAni) {
-      const aniCount = this.style.aniCount || 20;
-      let aniIsEnd = true; // 当次是否结束动画
-
-      const len = points.length;
-
-      for (let i = 0; i < len; i++) {
-        const p = points[i];
-        const step = (p.y - p.shape.startAngle) / aniCount;
-        p.shape.endAngle = p.shape.startAngle + this.___animateCounter * step;
-
-        if (p.shape.endAngle >= p.y) {
-          p.shape.endAngle = p.y;
-        } else {
-          aniIsEnd = false;
-        } // p.shape.points = arc.initPoints();
-        // p.shape.points.push(center);			
-        //绑定提示框
-        //this.bindTooltip(p.shape, p);
-
-      } // 所有动画都完成，则清空计数器
-
-
-      if (aniIsEnd) {
-        this.___animateCounter = 0;
-      } else {
-        this.___animateCounter++; // next tick 再次刷新
-
-        setTimeout(() => {
-          this.needUpdate = true; //需要刷新
-        });
+    {
+      for (const p of points) {
+        p.x = this.center.x + p.axis.radarOption.cos * p.radius;
+        p.y = this.center.y - p.axis.radarOption.sin * p.radius;
       }
     }
   }
@@ -7462,142 +7434,73 @@ class jmRadarSeries extends jmSeries {
 
 
   createPoints(center, radius) {
-    if (!this.data) return [];
+    if (!this.data || !this.axises) return [];
+    center = center || this.center;
     const points = [];
-    let index = 0;
-    let startAni = this.startAngle; // 总起始角度
-
-    if (typeof startAni === 'function') {
-      startAni = startAni.call(this, this.data);
-    }
-
-    let cm = Math.PI * 2; //规定应该逆时针还是顺时针绘图 false  顺时针，true 逆时针
-
-    const anticlockwise = this.option.anticlockwise || false; // 每项之间的间隔角度  顺时钟为正，否则为负
-
-    const marginAngle = Number(this.style.marginAngle) || 0;
 
     for (var i = 0; i < this.data.length; i++) {
       const s = this.data[i];
-      const yv = s[this.field]; //如果Y值不存在。则此点无效，不画图
+      const style = this.graph.utils.clone(this.style);
 
-      if (yv == null || typeof yv == 'undefined') {
-        continue;
-      } else {
-        const p = {
+      if (style.color && typeof style.color === 'function') {
+        style.stroke = style.color.call(this, {
           data: s,
-          x: i,
+          index: i
+        });
+      } else {
+        style.stroke = this.graph.getColor(i);
+      }
+
+      const shapePoints = [];
+
+      for (const axis of this.axises) {
+        const yv = s[axis.field];
+        const p = {
+          x: center.x,
+          y: center.y,
+          data: s,
           yValue: yv,
           yLabel: yv,
-          step: Math.abs(yv / this.totalValue),
-          // 每个数值点比
-          style: this.graph.utils.clone(this.style),
-          anticlockwise
-        }; //p.style.color = this.graph.getColor(index);
+          style,
+          axis
+        };
+        shapePoints.push(p); //如果Y值不存在。则此点无效，不画图
 
-        if (p.style.color && typeof p.style.color === 'function') {
-          p.style.fill = p.style.color.call(this, p);
-        } else {
-          p.style.fill = this.graph.getColor(index);
+        if (yv == null || typeof yv == 'undefined') {
+          continue;
         }
 
-        const start = startAni; // 上一个扇形的结束角度为当前的起始角度
-        // 计算当前结束角度, 同时也是下一个的起始角度
-
-        p.y = startAni + p.step * cm;
-        startAni = p.y;
-        p.startAngle = start + marginAngle;
-        p.endAngle = p.y;
-
-        if (center && radius) {
-          const arcWidth = this.style.arcWidth || radius * 0.2;
-          p.radius = radius; // 如果有指定动态半径，则调用
-
-          if (typeof this.option.radius === 'function') {
-            p.radius = this.option.radius.call(this, p, radius, i);
-          }
-
-          p.maxRadius = p.radius; // 如果有指定动态半径，则调用
-
-          if (typeof this.option.maxRadius === 'function') {
-            p.maxRadius = this.option.maxRadius.call(this, p, p.maxRadius, i);
-          }
-
-          p.minRadius = p.radius - arcWidth; // 如果有指定动态半径，则调用
-
-          if (typeof this.option.minRadius === 'function') {
-            p.minRadius = this.option.minRadius.call(this, p, p.minRadius, i);
-          }
-
-          p.center = center; // 如果有指定动态半径，则调用
-
-          if (typeof this.option.center === 'function') {
-            p.center = this.option.center.call(this, p, p.center, i);
-          }
-
-          p.shape = this.graph.createShape(this.style.isHollow ? 'harc' : 'arc', {
-            style: p.style,
-            startAngle: p.startAngle,
-            endAngle: p.endAngle,
-            anticlockwise: anticlockwise,
-            isFan: true,
-            // 表示画扇形
-            center: p.center,
-            radius: p.radius,
-            maxRadius: p.maxRadius,
-            minRadius: p.minRadius
-          });
-          /**
-           * 因为jmgraph是按图形形状来计算所占区域和大小的， 这里我们把扇形占区域改为整个图圆。这样计算大小和渐变时才好闭合。
-           */
-
-          p.shape.getLocation = function () {
-            const local = this.location = {
-              left: 0,
-              top: 0,
-              width: 0,
-              height: 0,
-              center: this.center,
-              radius: p.radius
-            };
-            local.left = this.center.x - p.radius;
-            local.top = this.center.y - p.radius;
-            local.width = local.height = p.radius * 2;
-            return local;
-          };
-
-          p.shape.getBounds = function () {
-            return this.getLocation();
-          };
-
-          this.addShape(p.shape); // 如果有点击事件
-
-          if (this.option.onClick) {
-            p.shape.on('click', e => {
-              this.option.onClick.call(this, p, e);
-            });
-          }
-
-          if (this.option.onOver) {
-            p.shape.on('mouseover touchover', e => {
-              this.option.onOver.call(this, p, e);
-            });
-          }
-
-          if (this.option.onLeave) {
-            p.shape.on('mouseleave touchleave', e => {
-              this.option.onLeave.call(this, p, e);
-            });
-          }
-
-          this.createLabel(p); // 生成标签
-        }
-
-        points.push(p);
-        index++; // 生成标点的回调
+        p.radius = (yv - axis.min()) * axis.step(); // 生成标点的回调
 
         this.emit('onPointCreated', p);
+        this.createLabel(p); // 生成标签
       }
+
+      const shape = this.graph.createShape('path', {
+        style,
+        points: shapePoints
+      });
+      this.addShape(shape); // 如果有点击事件
+
+      if (this.option.onClick) {
+        shape.on('click', e => {
+          this.option.onClick.call(this, p, e);
+        });
+      }
+
+      if (this.option.onOver) {
+        shape.on('mouseover touchover', e => {
+          this.option.onOver.call(this, p, e);
+        });
+      }
+
+      if (this.option.onLeave) {
+        shape.on('mouseleave touchleave', e => {
+          this.option.onLeave.call(this, p, e);
+        });
+      }
+
+      points.push(...shapePoints);
     }
 
     return points;
@@ -7664,7 +7567,7 @@ class jmRadarSeries extends jmSeries {
  */
 
 jmRadarSeries.prototype.createLegend = function () {
-  const points = this.createPoints();
+  const points = this.dataPoints;
   if (!points || !points.length) return;
 
   for (let k in points) {

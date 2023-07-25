@@ -136,6 +136,7 @@ export default class jmAxis extends jmArrowLine {
 	 * @method reset
 	 */
 	reset() {	
+		const bounds = this.graph.chartArea.getBounds();// 获取画图区域
 		switch(this.type) {
 			case 'x' : {
 				//初始化显示标签个数
@@ -148,8 +149,8 @@ export default class jmAxis extends jmArrowLine {
 							const curRadius = this.radarOption.radius / this.labelCount * i;
 							for(const axis of this.radarOption.yAxises) {
 								const point = {};
-								point.x = axis.radarOption.center.x + axis.radarOption.cos * curRadius;
-								point.y = axis.radarOption.center.y - axis.radarOption.sin * curRadius;
+								point.x = axis.radarOption.center.x + axis.radarOption.cos * curRadius + bounds.left;
+								point.y = axis.radarOption.center.y - axis.radarOption.sin * curRadius + bounds.top;
 								points.push(point);
 							}
 							// 画栅格线
@@ -192,10 +193,10 @@ export default class jmAxis extends jmArrowLine {
 				const index = this.index || 1;	
 				// 如果是雷达图，则画发散的线
 				if(this.radarOption) {
-					this.end.x = this.radarOption.center.x + this.radarOption.cos * this.radarOption.radius;
-					this.end.y = this.radarOption.center.y - this.radarOption.sin * this.radarOption.radius; 
-					this.start.x = this.radarOption.center.x;
-					this.start.y = this.radarOption.center.y;
+					this.end.x = this.radarOption.center.x + this.radarOption.cos * this.radarOption.radius + bounds.left;;
+					this.end.y = this.radarOption.center.y - this.radarOption.sin * this.radarOption.radius + bounds.top; 
+					this.start.x = this.radarOption.center.x + bounds.left;
+					this.start.y = this.radarOption.center.y + bounds.top;
 				}	
 				else {		
 					let xoffset = bounds.left;
@@ -364,13 +365,8 @@ export default class jmAxis extends jmArrowLine {
 		this.scalePoints = [];// 刻度点集合
 
 		let count = this.labelCount;
-		const mm = max - min;
-		/*if(mm <= 10) {
-			count = mm;
-		}*/
-		// mm 放大10000倍，这里结果也需要除于10000
-		let pervalue = (mm / count) || 1;
-		//if(pervalue > 1 || pervalue < -1) pervalue = Math.floor(pervalue);		
+		const mm = max - min;		
+		let pervalue = (mm / count) || 1;	
 			
 		const format = this.option.format || this.format;
 		const marginLeft = this.style.yLabel.margin.left * this.graph.devicePixelRatio || 0;
@@ -647,7 +643,7 @@ export default class jmAxis extends jmArrowLine {
 	 */
 	step() {
 		if(this.type == 'x') {
-			const w = this.width;
+			const w = this.radarOption? this.radarOption.radius : this.width;
 
 			//如果排版为内联，则单位占宽减少一个单位,
 			//也就是起始位从一个单位开始
@@ -665,7 +661,7 @@ export default class jmAxis extends jmArrowLine {
 				
 		}		
 		else if(this.type == 'y') {
-			const h = this.height;
+			const h = this.radarOption? this.radarOption.radius : this.height;
 			switch(this.dataType) {					
 				case 'string': {
 					return h / this.max();

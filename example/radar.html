@@ -74,27 +74,13 @@
 						fields: ['y1' , 'y2', 'y3'],
 						anticlockwise: false, //是否逆时针
 						legendFormat: function(options) {
-							return options.data.x;
-						},
-						minRadius: function(p, r, i) {
-							if(p.data.selected) {
-								return r + 10;
-							}
-							return r;
+							return '';
 						},
 						style: {
-							isHollow: true, // 是否空心
-							arcWidth: 30, // 圆弧宽
-							marginAngle: 0.02,// 间隔角度
 							// 指定颜色获取方式，不指定就会使用默认的
-							color: function(point) {	
-								if(!point || !point.data) return;							
-								const color = point.data.color || this.graph.getColor(point.x);
-								if(!point.data.selected) {
-								// 如果没有被选中，则给个透明度
-									const colorRGBA = this.graph.utils.hexToRGBA(color);
-                                    return `rgba(${colorRGBA.r},${colorRGBA.g},${colorRGBA.b}, 0.5)`;
-                                }
+							color: function(option) {	
+								if(!option || !option.data) return;							
+								const color = option.data.color || this.graph.getColor(option.index);								
 								return color;
 							},
 							label: {
@@ -118,26 +104,25 @@
 					
                     
 					const datacount = 4;
-					let data1 = [						
+					let data = [						
 					];	
 
 					function refreshData() {
 
-						const data1Tmp = [];
+						data = [];
 						for(let i=0; i<datacount; i++) {                           
                            
-							data1.push({
+							data.push({
                                 x: 'test' + i,
-                                y1: i,
+                                y1: 10 * i + Math.random() * 10,
                                 y2: 10 * i + Math.random() * 50,
                                 y3: 10 * i + Math.random() * 100,
                                 y4: 10 * i + Math.random() * 120
                             });
 						}
 
-						chart1.data = data1;
+						chart1.data = data;
 						chart1.refresh(); 
-
 						
 					}
 
