@@ -7650,7 +7650,7 @@
           Object.assign(this.targetShape.style, this.targetShape.style.normal);
           Object.assign(this.style, this.style.normal);
         },
-        data: this.data[k]
+        data: p.data
       });
     }
   };

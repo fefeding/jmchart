@@ -62,10 +62,10 @@
 								zIndex: 0
 							},
 							margin: {
-								left: 200,
-								top: 100,
-								right: 200,
-								bottom: 100
+								left: 10,
+								top: 10,
+								right: 80,
+								bottom: 10
 							}
                         }
                     });
@@ -73,7 +73,7 @@
 					var radar = chart1.createSeries('radar', {
 						fields: ['y1' , 'y2', 'y3', 'y4', 'y5', 'y6'],
 						legendFormat: function(options) {
-							return '';
+							return options.data.x;
 						},
 						onOver: function(e) {
 							console.log(this.option.data)
