@@ -219,17 +219,17 @@ export default class jmPieSeries extends jmSeries {
 					// 如果有点击事件
 					if(this.option.onClick) {
 						p.shape.on('click', (e) => {
-							this.option.onClick.call(this, p, e);
+							return this.option.onClick.call(this, p, e);
 						});
 					}
 					if(this.option.onOver) {
 						p.shape.on('mouseover touchover', (e) => {
-							this.option.onOver.call(this, p, e);
+							return this.option.onOver.call(this, p, e);
 						});
 					}
 					if(this.option.onLeave) {
 						p.shape.on('mouseleave touchleave', (e) => {
-							this.option.onLeave.call(this, p, e);
+							return this.option.onLeave.call(this, p, e);
 						});
 					}
 
@@ -244,7 +244,7 @@ export default class jmPieSeries extends jmSeries {
 		return points;
 	}
 
-	// 生成柱图的标注
+	// 生成图的标注
 	createLabel(point) {
 		if(this.style.label && this.style.label.show === false) return;
 
@@ -268,7 +268,7 @@ export default class jmPieSeries extends jmSeries {
 				const parentRect = this.parent.getBounds();
 				//const rect = this.getBounds.call(this.parent);
 
-				// 圆弧的中间位，离圆心最近和最完的二个点
+				// 圆弧的中间位，离圆心最近和最远的二个点
 				let centerMaxPoint = this.parent.points[Math.floor(this.parent.points.length / 2)];
 				let centerMinPoint = this.parent.center;
 				// 如果是空心圆，则要计算 1/4 和 3/4位的点。顺时针和逆时针二个点大小不一样，这里只取，大小计算时处理

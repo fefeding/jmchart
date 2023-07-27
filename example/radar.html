@@ -71,10 +71,14 @@
                     });
 					
 					var radar = chart1.createSeries('radar', {
-						fields: ['y1' , 'y2', 'y3'],
-						anticlockwise: false, //是否逆时针
+						fields: ['y1' , 'y2', 'y3', 'y4', 'y5', 'y6'],
 						legendFormat: function(options) {
 							return '';
+						},
+						onOver: function(e) {
+							console.log(this.option.data)
+							e.cancel = true;
+							return false;
 						},
 						style: {
 							// 指定颜色获取方式，不指定就会使用默认的
@@ -82,6 +86,11 @@
 								if(!option || !option.data) return;							
 								const color = option.data.color || this.graph.getColor(option.index);								
 								return color;
+							},
+							fill: function(style) {
+								if(!style) return '';
+								const color = this.graph.utils.hexToRGBA(style.stroke);
+                				return `rgba(${color.r},${color.g},${color.b}, 0.2)`;
 							},
 							label: {
 								show: true, // 默认就是true
@@ -117,7 +126,9 @@
                                 y1: 10 * i + Math.random() * 10,
                                 y2: 10 * i + Math.random() * 50,
                                 y3: 10 * i + Math.random() * 100,
-                                y4: 10 * i + Math.random() * 120
+                                y4: 10 * i + Math.random() * 120,
+                                y5: 10 * i + Math.random() * 120,
+                                y6: 10 * i + Math.random() * 120
                             });
 						}
 

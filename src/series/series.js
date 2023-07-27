@@ -187,11 +187,11 @@ export default class jmSeries extends jmPath {
 		while(shape = this.shapes.shift()) {
 			shape && shape.remove();
 		}
+
+		this.initAxisValue();// 处理最大值最小值
 		
 		//生成图例  这里要放到shape清理后面
 		this.createLegend();
-
-		this.initAxisValue();// 处理最大值最小值
 
 		return this.chartInfo = {
 			xAxis: this.xAxis,

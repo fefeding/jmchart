@@ -5377,7 +5377,6 @@
       zIndex: 17,
       cursor: 'default',
       close: true,
-      opacity: 0.8,
       shadow: {
         x: 1,
         y: 1,
@@ -5406,7 +5405,6 @@
       zIndex: 11,
       cursor: 'default',
       close: true,
-      opacity: 0.8,
       shadow: {
         x: 1,
         y: 1,
@@ -5435,7 +5433,6 @@
       zIndex: 11,
       cursor: 'default',
       close: true,
-      opacity: 0.8,
       shadow: {
         x: 1,
         y: 1,
@@ -6477,12 +6474,12 @@
 
       while (shape = this.shapes.shift()) {
         shape && shape.remove();
-      } //生成图例  这里要放到shape清理后面
+      }
 
+      this.initAxisValue(); // 处理最大值最小值
+      //生成图例  这里要放到shape清理后面
 
       this.createLegend();
-      this.initAxisValue(); // 处理最大值最小值
-
       return this.chartInfo = {
         xAxis: this.xAxis,
         yAxis: this.yAxis
@@ -7193,19 +7190,19 @@
 
             if (this.option.onClick) {
               p.shape.on('click', e => {
-                this.option.onClick.call(this, p, e);
+                return this.option.onClick.call(this, p, e);
               });
             }
 
             if (this.option.onOver) {
               p.shape.on('mouseover touchover', e => {
-                this.option.onOver.call(this, p, e);
+                return this.option.onOver.call(this, p, e);
               });
             }
 
             if (this.option.onLeave) {
               p.shape.on('mouseleave touchleave', e => {
-                this.option.onLeave.call(this, p, e);
+                return this.option.onLeave.call(this, p, e);
               });
             }
 
@@ -7220,7 +7217,7 @@
       }
 
       return points;
-    } // 生成柱图的标注
+    } // 生成图的标注
 
 
     createLabel(point) {
@@ -7244,7 +7241,7 @@
           }; // 动态计算位置
 
           const parentRect = this.parent.getBounds(); //const rect = this.getBounds.call(this.parent);
-          // 圆弧的中间位，离圆心最近和最完的二个点
+          // 圆弧的中间位，离圆心最近和最远的二个点
 
           let centerMaxPoint = this.parent.points[Math.floor(this.parent.points.length / 2)];
           let centerMinPoint = this.parent.center; // 如果是空心圆，则要计算 1/4 和 3/4位的点。顺时针和逆时针二个点大小不一样，这里只取，大小计算时处理
@@ -7418,15 +7415,78 @@
       const {
         points,
         dataChanged
-      } = this.initDataPoint(this.center, this.radius); // 是否正在动画中
+      } = this.initDataPoint(this.center, this.radius);
+      this.createLegend(points); // 是否正在动画中
 
-      this.enableAnimate && (dataChanged || this.___animateCounter > 0); // 在动画中，则一直刷新
+      const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0);
+      const aniCount = this.style.aniCount || 20;
+      let aniIsEnd = true; // 当次是否结束动画
 
-      {
-        for (const p of points) {
-          p.x = this.center.x + p.axis.radarOption.cos * p.radius;
-          p.y = this.center.y - p.axis.radarOption.sin * p.radius;
+      const len = points.length;
+      const shapeMap = {};
+      const self = this;
+
+      for (let i = 0; i < len; i++) {
+        const p = points[i];
+        let shape = shapeMap[p.index];
+
+        if (!shape) {
+          shape = shapeMap[p.index] = this.graph.createShape('path', { ...p,
+            style: p.style,
+            points: []
+          });
+          this.addShape(shape); // 如果有点击事件
+
+          if (this.option.onClick) {
+            shape.on('click', function (e) {
+              return self.option.onClick.call(this, e);
+            });
+          }
+
+          if (this.option.onOver) {
+            shape.on('mouseover touchover', function (e) {
+              return self.option.onOver.call(this, e);
+            });
+          }
+
+          if (this.option.onLeave) {
+            shape.on('mouseleave touchleave', function (e) {
+              return self.option.onLeave.call(this, e);
+            });
+          }
         }
+
+        shape.zIndex += p.radius / this.radius; // 用每个轴占比做为排序号，这样占面积最大的排最底层
+        // 在动画中，则一直刷新
+
+        if (isRunningAni) {
+          let step = p.radius / aniCount * this.___animateCounter;
+
+          if (step >= p.radius) {
+            step = p.radius;
+          } else {
+            aniIsEnd = false;
+          }
+
+          shape.points.push({
+            x: this.center.x + p.axis.radarOption.cos * step,
+            y: this.center.y - p.axis.radarOption.sin * step,
+            radius: p.radius
+          });
+        } else {
+          shape.points.push(p);
+        }
+      } // 所有动画都完成，则清空计数器
+
+
+      if (aniIsEnd) {
+        this.___animateCounter = 0;
+      } else {
+        this.___animateCounter++; // next tick 再次刷新
+
+        this.graph.utils.requestAnimationFrame(() => {
+          this.needUpdate = true; //需要刷新
+        });
       }
     }
     /**
@@ -7454,6 +7514,13 @@
           style.stroke = this.graph.getColor(i);
         }
 
+        if (typeof style.fill === 'function') {
+          style.fill = style.fill.call(this, style);
+        } else {
+          const color = this.graph.utils.hexToRGBA(style.stroke);
+          style.fill = `rgba(${color.r},${color.g},${color.b}, 0.2)`;
+        }
+
         const shapePoints = [];
 
         for (const axis of this.axises) {
@@ -7461,6 +7528,8 @@
           const p = {
             x: center.x,
             y: center.y,
+            index: i,
+            radius: 0,
             data: s,
             yValue: yv,
             yLabel: yv,
@@ -7473,34 +7542,11 @@
             continue;
           }
 
-          p.radius = (yv - axis.min()) * axis.step(); // 生成标点的回调
+          p.radius = Math.abs(yv - axis.min()) * axis.step();
+          p.x = center.x + axis.radarOption.cos * p.radius;
+          p.y = center.y - axis.radarOption.sin * p.radius; // 生成标点的回调
 
-          this.emit('onPointCreated', p);
-          this.createLabel(p); // 生成标签
-        }
-
-        const shape = this.graph.createShape('path', {
-          style,
-          points: shapePoints
-        });
-        this.addShape(shape); // 如果有点击事件
-
-        if (this.option.onClick) {
-          shape.on('click', e => {
-            this.option.onClick.call(this, p, e);
-          });
-        }
-
-        if (this.option.onOver) {
-          shape.on('mouseover touchover', e => {
-            this.option.onOver.call(this, p, e);
-          });
-        }
-
-        if (this.option.onLeave) {
-          shape.on('mouseleave touchleave', e => {
-            this.option.onLeave.call(this, p, e);
-          });
+          this.emit('onPointCreated', p); //this.createLabel(p);// 生成标签
         }
 
         points.push(...shapePoints);
@@ -7569,18 +7615,19 @@
    * @method createLegend	 
    */
 
-  jmRadarSeries.prototype.createLegend = function () {
-    const points = this.dataPoints;
+  jmRadarSeries.prototype.createLegend = function (points) {
     if (!points || !points.length) return;
+    const legendMap = {};
 
     for (let k in points) {
       const p = points[k];
-      if (!p) continue; //生成图例前的图标
+      if (!p) continue;
+      if (legendMap[p.index]) continue; //生成图例前的图标
 
       const style = this.graph.utils.clone(p.style);
       style.fill = style.fill; //delete style.stroke;
 
-      const shape = this.graph.createShape('rect', {
+      const shape = legendMap[p.index] = this.graph.createShape('rect', {
         style: style,
         position: {
           x: 0,

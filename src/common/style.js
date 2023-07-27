@@ -203,7 +203,6 @@ export default {
 		zIndex: 17,
 		cursor: 'default',
 		close : true,
-		opacity: 0.8,
 		shadow: {
 			x: 1,
 			y: 1,
@@ -232,7 +231,6 @@ export default {
 		zIndex: 11,
 		cursor: 'default',
 		close : true,
-		opacity: 0.8,
 		shadow: {
 			x: 1,
 			y: 1,
@@ -261,7 +259,6 @@ export default {
 		zIndex: 11,
 		cursor: 'default',
 		close : true,
-		opacity: 0.8,
 		shadow: {
 			x: 1,
 			y: 1,
