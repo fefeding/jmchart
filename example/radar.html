@@ -12,7 +12,11 @@
 			width:100%;
 			height:100%;
 		}
+		#mycanvas {
+			margin-top: 50px;
+		}
 		#mycanvas canvas, #mycanvas div{
+			
 			background-color:#fff;
 			margin:0 auto;		
 		}
@@ -36,7 +40,7 @@
 			
 
 			function inichart(w, h) {
-					var chart1 = new jmChart('mycanvas1', {
+					var chart1 = new jmChart('mycanvas', {
 						width: w,
 						height: h,
 						enableAnimate: true,
@@ -151,10 +155,8 @@
 		</script>
 	</head>
 	<body>
-		<div id="mycanvas1">
+		<div id="mycanvas">
 			</div>
-		<div id="mycanvas2">
-			</div>	
 			<button id="btnRedraw">重绘</button>		
 	</body>
 </html>
