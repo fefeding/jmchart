@@ -103,6 +103,11 @@ export default class jmAxis extends jmArrowLine {
 	scalePoints = [];
 
 	/**
+	 * 轴上的标签，只读
+	 */
+	labels = [];
+
+	/**
 	 * 关联访问的是chart的数据源
 	 */
 	get data() {
@@ -233,20 +238,17 @@ export default class jmAxis extends jmArrowLine {
 	 */
 	createLabel() {		
 		if(this.visible === false) return;
-		// 雷达图不生成label
-		if(this.radarOption) return;
-		
-		//移除原有的标签 
-		this.children.each(function(i, c) {
-			c.remove();
-		}, true);
-		
-		this.labels = [];
+
+		// 雷达图的标签单独处理
+		if(this.radarOption) {
+			return this.createRadarLabel();
+		}
+
 		//如果是？X轴则执行X轴标签生成
 		if(this.type == 'x') {
 			this.createXLabel();
 		}
-		else if(this.type == 'y') {
+		else if(this.type == 'y') {			
 			this.createYLabel();
 		}			
 	}
@@ -482,6 +484,38 @@ export default class jmAxis extends jmArrowLine {
 	}
 
 	/**
+	 * 生成雷达图的Y轴标签
+	 */
+	createRadarLabel() {
+		const format = this.option.format;
+		const bounds = this.graph.chartArea.getBounds();// 获取画图区域
+		const self = this;
+		const label = this.graph.createShape('label', {
+			style: this.style.yLabel,
+			position: function() {
+				// 因为axis是相对于chart的，而center是相对于chartArea的，所以要计算axis位置相对于chartArea来比较
+				const pos = {
+					x: self.end.x - bounds.left,
+					y: self.end.y - bounds.top
+				};
+				const size = this.testSize();
+				if(pos.x < self.radarOption.center.x) {
+					pos.x -= size.width;
+				}
+				
+				if(pos.y < self.radarOption.center.y) {
+					pos.y -= size.height;
+				}
+				return pos;
+			}
+		});
+		
+		label.text = typeof format === 'function'? format.call(this, label): this.field; // 格式化label
+		this.labels.push(label);
+		this.graph.chartArea.children.add(label);
+	}
+
+	/**
 	* 获取当前轴所占宽
 	*
 	* @method width
@@ -627,11 +661,17 @@ export default class jmAxis extends jmArrowLine {
 	clear() {
 		this._min = null;
 		this._max = null;
-
+		this.children.each((i, c) => {
+			c.remove();
+		}, true);
 		// 清空栅格线
 		this.gridLines && this.gridLines.forEach((line)=>{
 			line.remove();
 		});
+		this.labels && this.labels.forEach((label)=>{
+			label.remove();
+		});
+		this.labels = [];
 		this.gridLines = [];
 	}
 

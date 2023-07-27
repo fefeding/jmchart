@@ -41,6 +41,9 @@
 						height: h,
 						enableAnimate: true,
 						autoRefresh: true,
+						yLabelFormat: function() {
+							return this.field;
+						},
                         style: {
 							markLine: false, // 不展示标线
                             chartArea: {
@@ -80,6 +83,9 @@
 							e.cancel = true;
 							return false;
 						},
+						itemLabelFormat: function(point) {
+							return point.yValue.toFixed(2);
+						},
 						style: {
 							// 指定颜色获取方式，不指定就会使用默认的
 							color: function(option) {	
@@ -93,20 +99,13 @@
                 				return `rgba(${color.r},${color.g},${color.b}, 0.2)`;
 							},
 							label: {
-								show: true, // 默认就是true
+								show: true, // 默认就是true, 如果不想显示标签，设为false
 								stroke: '#ccc',
-								fill: 'blue',
+								fill: 'green',
 								textAlign: 'center',
 								textBaseline: 'middle',
-								border: {
-									top: true,
-									left: true,
-									right: true,
-									bottom: true,
-									style: {
-										fill: '#000'
-									}
-								}
+								zIndex: -1,
+								border: 0
 							}
 						}
 					});

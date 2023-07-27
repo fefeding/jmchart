@@ -5488,6 +5488,8 @@ System.register([], function (exports) {
 
           _defineProperty(this, "scalePoints", []);
 
+          _defineProperty(this, "labels", []);
+
           this.arrowVisible = !!options.arrowVisible;
           this.zeroBase = options.zeroBase || false;
           this.labelCount = options.labelCount || 5;
@@ -5671,14 +5673,12 @@ System.register([], function (exports) {
 
 
         createLabel() {
-          if (this.visible === false) return; // 雷达图不生成label
+          if (this.visible === false) return; // 雷达图的标签单独处理
 
-          if (this.radarOption) return; //移除原有的标签 
+          if (this.radarOption) {
+            return this.createRadarLabel();
+          } //如果是？X轴则执行X轴标签生成
 
-          this.children.each(function (i, c) {
-            c.remove();
-          }, true);
-          this.labels = []; //如果是？X轴则执行X轴标签生成
 
           if (this.type == 'x') {
             this.createXLabel();
@@ -5906,6 +5906,42 @@ System.register([], function (exports) {
           }
         }
         /**
+         * 生成雷达图的Y轴标签
+         */
+
+
+        createRadarLabel() {
+          const format = this.option.format;
+          const bounds = this.graph.chartArea.getBounds(); // 获取画图区域
+
+          const self = this;
+          const label = this.graph.createShape('label', {
+            style: this.style.yLabel,
+            position: function () {
+              // 因为axis是相对于chart的，而center是相对于chartArea的，所以要计算axis位置相对于chartArea来比较
+              const pos = {
+                x: self.end.x - bounds.left,
+                y: self.end.y - bounds.top
+              };
+              const size = this.testSize();
+
+              if (pos.x < self.radarOption.center.x) {
+                pos.x -= size.width;
+              }
+
+              if (pos.y < self.radarOption.center.y) {
+                pos.y -= size.height;
+              }
+
+              return pos;
+            }
+          });
+          label.text = typeof format === 'function' ? format.call(this, label) : this.field; // 格式化label
+
+          this.labels.push(label);
+          this.graph.chartArea.children.add(label);
+        }
+        /**
         * 获取当前轴所占宽
         *
         * @method width
@@ -6051,11 +6087,18 @@ System.register([], function (exports) {
 
         clear() {
           this._min = null;
-          this._max = null; // 清空栅格线
+          this._max = null;
+          this.children.each((i, c) => {
+            c.remove();
+          }, true); // 清空栅格线
 
           this.gridLines && this.gridLines.forEach(line => {
             line.remove();
           });
+          this.labels && this.labels.forEach(label => {
+            label.remove();
+          });
+          this.labels = [];
           this.gridLines = [];
         }
         /**
@@ -7459,7 +7502,8 @@ System.register([], function (exports) {
             }
 
             shape.zIndex += p.radius / this.radius; // 用每个轴占比做为排序号，这样占面积最大的排最底层
-            // 在动画中，则一直刷新
+
+            let point = null; // 在动画中，则一直刷新
 
             if (isRunningAni) {
               let step = p.radius / aniCount * this.___animateCounter;
@@ -7470,14 +7514,16 @@ System.register([], function (exports) {
                 aniIsEnd = false;
               }
 
-              shape.points.push({
+              point = { ...p,
                 x: this.center.x + p.axis.radarOption.cos * step,
-                y: this.center.y - p.axis.radarOption.sin * step,
-                radius: p.radius
-              });
+                y: this.center.y - p.axis.radarOption.sin * step
+              };
             } else {
-              shape.points.push(p);
+              point = p;
             }
+
+            shape.points.push(point);
+            this.createLabel(point); // 生成标签
           } // 所有动画都完成，则清空计数器
 
 
@@ -7548,23 +7594,23 @@ System.register([], function (exports) {
               p.x = center.x + axis.radarOption.cos * p.radius;
               p.y = center.y - axis.radarOption.sin * p.radius; // 生成标点的回调
 
-              this.emit('onPointCreated', p); //this.createLabel(p);// 生成标签
+              this.emit('onPointCreated', p);
             }
 
             points.push(...shapePoints);
           }
 
           return points;
-        } // 生成柱图的标注
+        } // 生成图的标注
 
 
         createLabel(point) {
           if (this.style.label && this.style.label.show === false) return;
-          const text = this.option.itemLabelFormat ? this.option.itemLabelFormat.call(this, point) : point.step;
+          const text = this.option.itemLabelFormat ? this.option.itemLabelFormat.call(this, point) : point.yValue;
           if (!text) return; // v如果指定了为控件，则直接加入
 
           if (text instanceof jmControl) {
-            point.shape.children.add(text);
+            this.addShape(text);
             return text;
           }
 
@@ -7572,42 +7618,25 @@ System.register([], function (exports) {
           const label = this.graph.createShape('label', {
             style: this.style.label,
             text: text,
+            point,
             position: function () {
-              if (!this.parent || !this.parent.points || !this.parent.points.length) return {
-                x: 0,
-                y: 0
-              }; // 动态计算位置
+              const p = {
+                x: this.option.point.x,
+                y: this.option.point.y
+              };
 
-              const parentRect = this.parent.getBounds(); //const rect = this.getBounds.call(this.parent);
-              // 圆弧的中间位，离圆心最近和最完的二个点
-
-              let centerMaxPoint = this.parent.points[Math.floor(this.parent.points.length / 2)];
-              let centerMinPoint = this.parent.center; // 如果是空心圆，则要计算 1/4 和 3/4位的点。顺时针和逆时针二个点大小不一样，这里只取，大小计算时处理
-
-              if (self.style.isHollow) {
-                centerMaxPoint = this.parent.points[Math.floor(this.parent.points.length * 0.25)];
-                centerMinPoint = this.parent.points[Math.floor(this.parent.points.length * 0.75)];
+              if (p.x < self.center.x) {
+                p.x -= this.width;
               }
 
-              const centerMinX = Math.min(centerMaxPoint.x, centerMinPoint.x);
-              const centerMaxX = Math.max(centerMaxPoint.x, centerMinPoint.x);
-              const centerMinY = Math.min(centerMaxPoint.y, centerMinPoint.y);
-              const centerMaxY = Math.max(centerMaxPoint.y, centerMinPoint.y); // 中心点
+              if (p.y < self.center.y) {
+                p.y -= this.height;
+              }
 
-              const center = {
-                x: (centerMaxX - centerMinX) / 2 + centerMinX,
-                y: (centerMaxY - centerMinY) / 2 + centerMinY
-              };
-              const size = this.testSize(); // 取图形中间的二个点
-              // rect是相对于图形坐标点形图的图形的左上角，而parentRect是图形重新指定的整圆区域。减去整圆区域左上角就是相对于整圆区域坐标
-
-              return {
-                x: center.x - parentRect.left - size.width / 2,
-                y: center.y - parentRect.top - size.height / 2
-              };
+              return p;
             }
           });
-          point.shape.children.add(label);
+          this.addShape(label);
         }
 
       }

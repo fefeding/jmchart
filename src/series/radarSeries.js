@@ -149,6 +149,7 @@ export default class jmRadarSeries extends jmSeries {
             }
 
             shape.zIndex += p.radius / this.radius;// 用每个轴占比做为排序号，这样占面积最大的排最底层
+            let point = null;
             // 在动画中，则一直刷新
             if(isRunningAni) {
                 let step = p.radius / aniCount * this.___animateCounter;
@@ -158,15 +159,17 @@ export default class jmRadarSeries extends jmSeries {
                 else {
                     aniIsEnd = false;
                 }
-                shape.points.push({
+                point = {
+                    ...p,
                     x: this.center.x + p.axis.radarOption.cos * step,
                     y: this.center.y - p.axis.radarOption.sin * step,
-                    radius: p.radius
-                });            
+                };            
             }
             else {
-                shape.points.push(p);
+                point = p;
             }
+            shape.points.push(point);
+            this.createLabel(point);// 生成标签
         }
         // 所有动画都完成，则清空计数器
         if(aniIsEnd) {
@@ -239,7 +242,6 @@ export default class jmRadarSeries extends jmSeries {
 
                 // 生成标点的回调
 				this.emit('onPointCreated', p);	
-                //this.createLabel(p);// 生成标签
             }
 			points.push(...shapePoints);
 		}
@@ -247,61 +249,40 @@ export default class jmRadarSeries extends jmSeries {
 		return points;
 	}
 
-	// 生成柱图的标注
+	// 生成图的标注
 	createLabel(point) {
 		if(this.style.label && this.style.label.show === false) return;
 
-		const text = this.option.itemLabelFormat?this.option.itemLabelFormat.call(this, point): point.step;
+		const text = this.option.itemLabelFormat?this.option.itemLabelFormat.call(this, point): point.yValue;
 		if(!text) return;
 		
 		// v如果指定了为控件，则直接加入
 		if(text instanceof jmControl) {
-			point.shape.children.add(text);
+			this.addShape(text);
 			return text;
 		}
 		const self = this;
-		
 		const label = this.graph.createShape('label', {
 			style: this.style.label,
-			text: text,
+			text: text,            
+            point,
 			position: function() {
-				if(!this.parent || !this.parent.points || !this.parent.points.length) return {x: 0, y: 0};
-
-				// 动态计算位置
-				const parentRect = this.parent.getBounds();
-				//const rect = this.getBounds.call(this.parent);
-
-				// 圆弧的中间位，离圆心最近和最完的二个点
-				let centerMaxPoint = this.parent.points[Math.floor(this.parent.points.length / 2)];
-				let centerMinPoint = this.parent.center;
-				// 如果是空心圆，则要计算 1/4 和 3/4位的点。顺时针和逆时针二个点大小不一样，这里只取，大小计算时处理
-				if(self.style.isHollow) {
-					centerMaxPoint = this.parent.points[Math.floor(this.parent.points.length * 0.25)];
-					centerMinPoint = this.parent.points[Math.floor(this.parent.points.length * 0.75)];
-				}
-				const centerMinX = Math.min(centerMaxPoint.x, centerMinPoint.x);
-				const centerMaxX = Math.max(centerMaxPoint.x, centerMinPoint.x);
-				const centerMinY = Math.min(centerMaxPoint.y, centerMinPoint.y);
-				const centerMaxY = Math.max(centerMaxPoint.y, centerMinPoint.y);
-
-				// 中心点
-				const center = {
-					x: (centerMaxX - centerMinX) / 2 + centerMinX,
-					y: (centerMaxY - centerMinY) / 2 + centerMinY,
-				};
-
-				const size = this.testSize();
-
-				// 取图形中间的二个点
-				// rect是相对于图形坐标点形图的图形的左上角，而parentRect是图形重新指定的整圆区域。减去整圆区域左上角就是相对于整圆区域坐标
-				return {
-					x: center.x - parentRect.left - size.width / 2,
-					y: center.y - parentRect.top - size.height / 2
-				}
+                const p = {
+                    x: this.option.point.x,
+                    y: this.option.point.y
+                }
+                if(p.x < self.center.x) {
+                    p.x -= this.width;
+                }
+                
+                if(p.y < self.center.y) {
+                    p.y -= this.height;
+                }
+				return p;
 			}
 		});
 
-		point.shape.children.add(label);
+		this.addShape(label);
 	}
 }
 
