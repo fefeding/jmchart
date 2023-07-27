@@ -15,6 +15,8 @@ html5图表控件
 
 饼图[http://jiamao.github.io/jmchart/example/pie.html]
 
+雷达图[http://jiamao.github.io/jmchart/example/radar.html]
+
 K线[http://jiamao.github.io/jmchart/example/candlestick.html]
 
 stackBar[http://jiamao.github.io/jmchart/example/stackBar.html]
