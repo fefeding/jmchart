@@ -73,26 +73,8 @@ jmLegend.prototype.append = function(series, shape, options = {}) {
 	panel.height = shape.height;
 
 	//执行进入事件
-	//触动图例后加粗显示图
-	/*const hover = options.hover || function() {	
-		//应用图的动态样式		
-		//Object.assign(series.style, series.style.hover);
-
-		//Object.assign(this.style, this.style.hover || {});
-
-		//series.graph.refresh();
-	};
-	panel.bind('mouseover', hover);
-	//执行离开
-	const leave = options.leave || function() {	
-		//应用图的普通样式		
-		//Object.assign(series.style, series.style.normal);
-
-		//Object.assign(this.style, this.style.normal || {});
-		//jmUtils.apply(this.series.style.normal,this.series.style);
-		//series.graph.refresh();
-	};
-	panel.bind('mouseleave', leave);*/
+	options.hover && panel.bind('mouseover touchover', options.hover);
+	options.leave && panel.bind('mouseleave touchleave', options.leave);
 
 	const legendPosition = this.legendPosition || this.style.legendPosition || 'right';
 	if(legendPosition == 'top' || legendPosition == 'bottom') {

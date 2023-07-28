@@ -330,18 +330,6 @@ jmPieSeries.prototype.createLegend = function() {
 		//此处重写图例事件
 		this.graph.legend.append(this, shape, {
 			name: this.legendLabel, 
-			hover: function() {	
-				//var sp = this.children.get(0);
-				//应用图的动态样式
-				Object.assign(this.targetShape.style, this.targetShape.style.hover);	
-				Object.assign(this.style, this.style.hover);
-			},
-			leave: function() {	
-				//var sp = this.children.get(0);
-				//应用图的普通样式
-				Object.assign(this.targetShape.style, this.targetShape.style.normal);			
-				Object.assign(this.style, this.style.normal);
-			}, 
 			data: this.data[k]
 		});
 	}	

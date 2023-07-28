@@ -6217,28 +6217,9 @@ jmLegend.prototype.append = function (series, shape, options = {}) {
   }
 
   panel.height = shape.height; //执行进入事件
-  //触动图例后加粗显示图
 
-  /*const hover = options.hover || function() {	
-  	//应用图的动态样式		
-  	//Object.assign(series.style, series.style.hover);
-  
-  	//Object.assign(this.style, this.style.hover || {});
-  
-  	//series.graph.refresh();
-  };
-  panel.bind('mouseover', hover);
-  //执行离开
-  const leave = options.leave || function() {	
-  	//应用图的普通样式		
-  	//Object.assign(series.style, series.style.normal);
-  
-  	//Object.assign(this.style, this.style.normal || {});
-  	//jmUtils.apply(this.series.style.normal,this.series.style);
-  	//series.graph.refresh();
-  };
-  panel.bind('mouseleave', leave);*/
-
+  options.hover && panel.bind('mouseover touchover', options.hover);
+  options.leave && panel.bind('mouseleave touchleave', options.leave);
   const legendPosition = this.legendPosition || this.style.legendPosition || 'right';
 
   if (legendPosition == 'top' || legendPosition == 'bottom') {
@@ -7341,18 +7322,6 @@ jmPieSeries.prototype.createLegend = function () {
 
     this.graph.legend.append(this, shape, {
       name: this.legendLabel,
-      hover: function () {
-        //var sp = this.children.get(0);
-        //应用图的动态样式
-        Object.assign(this.targetShape.style, this.targetShape.style.hover);
-        Object.assign(this.style, this.style.hover);
-      },
-      leave: function () {
-        //var sp = this.children.get(0);
-        //应用图的普通样式
-        Object.assign(this.targetShape.style, this.targetShape.style.normal);
-        Object.assign(this.style, this.style.normal);
-      },
       data: this.data[k]
     });
   }
@@ -7455,8 +7424,7 @@ class jmRadarSeries extends jmSeries {
     const {
       points,
       dataChanged
-    } = this.initDataPoint(this.center, this.radius);
-    this.createLegend(points); // 是否正在动画中
+    } = this.initDataPoint(this.center, this.radius); // 是否正在动画中
 
     const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0);
     const aniCount = this.style.aniCount || 20;
@@ -7494,6 +7462,8 @@ class jmRadarSeries extends jmSeries {
             return self.option.onLeave.call(this, e);
           });
         }
+
+        this.createLegend(p);
       }
 
       shape.zIndex += p.radius / this.radius; // 用每个轴占比做为排序号，这样占面积最大的排最底层
@@ -7641,44 +7611,23 @@ class jmRadarSeries extends jmSeries {
  * @method createLegend	 
  */
 
-jmRadarSeries.prototype.createLegend = function (points) {
-  if (!points || !points.length) return;
-  const legendMap = {};
+jmRadarSeries.prototype.createLegend = function (point) {
+  if (!point) return; //生成图例前的图标
 
-  for (let k in points) {
-    const p = points[k];
-    if (!p) continue;
-    if (legendMap[p.index]) continue; //生成图例前的图标
+  const style = this.graph.utils.clone(point.style); //delete style.stroke;
 
-    const style = this.graph.utils.clone(p.style);
-    style.fill = style.fill; //delete style.stroke;
+  const shape = this.graph.createShape('rect', {
+    style: style,
+    position: {
+      x: 0,
+      y: 0
+    }
+  }); //此处重写图例事件
 
-    const shape = legendMap[p.index] = this.graph.createShape('rect', {
-      style: style,
-      position: {
-        x: 0,
-        y: 0
-      }
-    }); //shape.targetShape = p.shape;
-    //此处重写图例事件
-
-    this.graph.legend.append(this, shape, {
-      name: this.legendLabel,
-      hover: function () {
-        //var sp = this.children.get(0);
-        //应用图的动态样式
-        Object.assign(this.targetShape.style, this.targetShape.style.hover);
-        Object.assign(this.style, this.style.hover);
-      },
-      leave: function () {
-        //var sp = this.children.get(0);
-        //应用图的普通样式
-        Object.assign(this.targetShape.style, this.targetShape.style.normal);
-        Object.assign(this.style, this.style.normal);
-      },
-      data: p.data
-    });
-  }
+  this.graph.legend.append(this, shape, {
+    name: this.legendLabel,
+    data: point.data
+  });
 };
 
 /**
