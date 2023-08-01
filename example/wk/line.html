@@ -61,6 +61,13 @@
                                 left: 100,
                                 right: 100
 							},
+							markLine: {
+								longtap: false, //  长按才出现标线
+								lock: {
+									y: 10,
+									x: 10
+								}
+							},
 							//layout: 'inside'
 						},
 						xAxisOption: {
@@ -76,6 +83,11 @@
 					// touch改变数据点事件
 					chart.on('touchPointChange', function(args) {
 						console.log(args);
+					});
+					// 滑动标线，阻止默认事件
+					chart.on('marklinemove', (args)=>{
+						//args.event.preventDefault();// 阻止默认行为		
+						//args.event.stopPropagation();	
 					});
 
 					var line1 = chart.createSeries('line', {
