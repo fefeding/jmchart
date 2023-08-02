@@ -120,7 +120,8 @@ export default class jmStackBarSeries extends jmBarSeries {
 		
 		for(const row of this.data) {
 			let max, min;
-			for(const f of fields) {
+			for(let i=0; i<fields.length; i++) {
+				const f = fields[i];
 				const v = Number(row[f]);	
 				if(typeof max === 'undefined') max = v;			
 				else {

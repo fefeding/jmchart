@@ -260,7 +260,9 @@ export default class jmSeries extends jmPath {
 			// 这里的点应相对于chartArea
 			p.x = xstep * i + this.xAxis.labelStart;			
 			
-			for(const f of fields) {
+			for(let j=0; j<fields.length; j++) {
+				const f = fields[j];
+				
 				const yv = s[f];
 				p.yLabel = p.yValue = yv;
 				// 高度

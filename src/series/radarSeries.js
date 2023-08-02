@@ -215,6 +215,7 @@ export default class jmRadarSeries extends jmSeries {
 
             const shapePoints = [];
             for(const axis of this.axises) {
+                if(!axis || !axis.field) continue;
                 const yv = s[axis.field];
 
                 const p = {

@@ -314,7 +314,7 @@ jmPieSeries.prototype.createLegend = function() {
 	const points = this.createPoints();
 	if(!points || !points.length) return;
 	
-	for(let k in points) {
+	for(let k=0; k < points.length; k++) {
 		const p = points[k];
 		if(!p) continue;
 

@@ -415,4 +415,10 @@ export default class jmChart extends jmGraph  {
 		}
 		return serie;
 	}
+
+	// 销毁
+	destroy() {
+		super.destroy();
+		this.touchGraph && this.touchGraph.destroy();
+	}
 }

@@ -1405,7 +1405,7 @@ define(['exports'], function (exports) { 'use strict';
   	get context() {
   		let s = this.__pro('context');
   		if(s) return s;
-  		else if(this.is('jmGraph') && this.canvas) {
+  		else if(this.is('jmGraph') && this.canvas && this.canvas.getContext) {
   			return this.context = this.canvas.getContext('2d');
   		}
   		let g = this.graph;
@@ -3756,43 +3756,62 @@ define(['exports'], function (exports) { 'use strict';
   	 */
   	draw() {	
   		try {
-  			let bounds = this.parent && this.parent.absoluteBounds?this.parent.absoluteBounds:this.absoluteBounds;
-  			if(!bounds) bounds = this.parent && this.parent.getAbsoluteBounds?this.parent.getAbsoluteBounds():this.getAbsoluteBounds();
-  			let p = this.getLocation();
-  			p.left += bounds.left;
-  			p.top += bounds.top;
   			
-  			let sp = this.sourcePosition;
-  			let sw = this.sourceWidth;
-  			let sh = this.sourceHeight;
   			let img = this.getImage();
-  				
-  			if(sp || typeof sw != 'undefined' || typeof sh != 'undefined') {	
-  				if(typeof sw == 'undefined') sw= p.width || img.width || 0;
-  				if(typeof sh == 'undefined') sh= p.height || img.height || 0;
-  				sp = sp || {x:0, y:0};
-
-  				if(p.width && p.height) this.context.drawImage(img,sp.x,sp.y,sw,sh,p.left,p.top,p.width,p.height);
-  				else if(p.width) {
-  					this.context.drawImage(img,sp.x,sp.y,sw,sh,p.left,p.top,p.width,sh);
-  				}		
-  				else if(p.height) {
-  					this.context.drawImage(img,sp.x,sp.y,sw,sh,p.left,p.top,sw,p.height);
-  				}		
-  				else this.context.drawImage(img,sp.x,sp.y,sw,sh,p.left,p.top,sw,sh);		
-  			}
-  			else if(p) {
-  				if(p.width && p.height) this.context.drawImage(img,p.left,p.top,p.width,p.height);
-  				else if(p.width) this.context.drawImage(img,p.left,p.top,p.width,img.height);
-  				else if(p.height) this.context.drawImage(img,p.left,p.top,img.width,p.height);
-  				else this.context.drawImage(img,p.left,p.top);
+  			if(this.graph.isWXMiniApp && this.graph.canvas) {
+  				// 图片对象
+  				const image = this.graph.canvas.createImage();
+  				// 图片加载完成回调
+  				image.onload = () => {
+  					// 将图片绘制到 canvas 上
+  					this.drawImg(image);
+  				};
+  				// 设置图片src
+  				image.src = img;
   			}
   			else {
-  				this.context.drawImage(img);
+  				this.drawImg(img);
   			}
   		}
   		catch(e) {
   			console.error && console.error(e);
+  		}
+  	}
+
+  	// 绘制
+  	drawImg(img) {
+  		let bounds = this.parent && this.parent.absoluteBounds?this.parent.absoluteBounds:this.absoluteBounds;
+  		if(!bounds) bounds = this.parent && this.parent.getAbsoluteBounds?this.parent.getAbsoluteBounds():this.getAbsoluteBounds();
+  		let p = this.getLocation();
+  		p.left += bounds.left;
+  		p.top += bounds.top;
+
+  		let sp = this.sourcePosition;
+  		let sw = this.sourceWidth;
+  		let sh = this.sourceHeight;
+
+  		if(sp || typeof sw != 'undefined' || typeof sh != 'undefined') {	
+  			if(typeof sw == 'undefined') sw= p.width || img.width || 0;
+  			if(typeof sh == 'undefined') sh= p.height || img.height || 0;
+  			sp = sp || {x:0, y:0};
+
+  			if(p.width && p.height) this.context.drawImage(img,sp.x,sp.y,sw,sh,p.left,p.top,p.width,p.height);
+  			else if(p.width) {
+  				this.context.drawImage(img,sp.x,sp.y,sw,sh,p.left,p.top,p.width,sh);
+  			}		
+  			else if(p.height) {
+  				this.context.drawImage(img,sp.x,sp.y,sw,sh,p.left,p.top,sw,p.height);
+  			}		
+  			else this.context.drawImage(img,sp.x,sp.y,sw,sh,p.left,p.top,sw,sh);		
+  		}
+  		else if(p) {
+  			if(p.width && p.height) this.context.drawImage(img,p.left,p.top,p.width,p.height);
+  			else if(p.width) this.context.drawImage(img,p.left,p.top,p.width,img.height);
+  			else if(p.height) this.context.drawImage(img,p.left,p.top,img.width,p.height);
+  			else this.context.drawImage(img,p.left,p.top);
+  		}
+  		else {
+  			this.context.drawImage(img);
   		}
   	}
 
@@ -3831,7 +3850,7 @@ define(['exports'], function (exports) { 'use strict';
   		else if(src && src.src) {
   			this.__img = src;
   		}
-  		else if(document && document.createElement) {
+  		else if(typeof document !== 'undefined' && document.createElement) {
   			this.__img = document.createElement('img');
   			if(src && typeof src == 'string') this.__img.src = src;
   		}
@@ -4400,9 +4419,9 @@ define(['exports'], function (exports) { 'use strict';
   	};
 
   	// 销毁
-  	destory() {
-  		this.mouseHandler.destory();
-  		this.keyHandler.destory();
+  	destroy() {
+  		this.mouseHandler.destroy();
+  		this.keyHandler.destroy();
   	}
   }
 
@@ -4520,7 +4539,7 @@ define(['exports'], function (exports) { 'use strict';
   	}
 
   	// 销毁所有事件
-  	destory() {
+  	destroy() {
   		for(let name in this.eventEvents) {
   			const event = this.eventEvents[name];
   			if(!event || !event.fun) continue;
@@ -4596,7 +4615,7 @@ define(['exports'], function (exports) { 'use strict';
   	}
 
   	// 销毁所有事件
-  	destory() {
+  	destroy() {
   		for(let name in this.eventEvents) {
   			const event = this.eventEvents[name];
   			if(!event || !event.fun) continue;
@@ -4642,9 +4661,8 @@ define(['exports'], function (exports) { 'use strict';
   		this.util = this.utils = jmUtils;		
 
   		//如果是小程序
-  		if(typeof wx != 'undefined' && wx.createCanvasContext) {
-  			this.context = wx.createCanvasContext(canvas);
-  			canvas = wx.createSelectorQuery().select('#' + canvas);
+  		if(typeof wx != 'undefined' && wx.canIUse && wx.canIUse('canvas')) {			
+  			if(typeof canvas === 'string') canvas = wx.createSelectorQuery().select('#' + canvas);
   			this.isWXMiniApp = true;// 微信小程序平台
   		}
   		else {
@@ -4665,10 +4683,10 @@ define(['exports'], function (exports) { 'use strict';
   			}	
   			else {
   				this.container = canvas.parentElement;
-  			}			
-  			this.context = canvas.getContext('2d');
-  		}
-  		this.canvas = canvas;
+  			}
+  		}	
+  		this.canvas = canvas;	
+  		this.context = canvas.getContext('2d');
   		this.__init(callback);
   	}
 
@@ -4719,16 +4737,19 @@ define(['exports'], function (exports) { 'use strict';
   	//  重置canvas大小，并判断高清屏，画图先放大二倍
   	resize(w, h) {
 
-  		const scale = typeof window != 'undefined' && window.devicePixelRatio > 1? window.devicePixelRatio : 1;
-  		if (scale > 1) {
+  		let scale = typeof window != 'undefined' && window.devicePixelRatio > 1? window.devicePixelRatio : 1;
+  		if(this.isWXMiniApp) {
+  			scale = wx.getSystemInfoSync().pixelRatio || 1;
+  		}
+  		else if (scale > 1) {
   		  this.__normalSize = this.__normalSize || { width: 0, height: 0};
   		  w = w || this.__normalSize.width || this.width, h = h || this.__normalSize.height || this.height;
 
   		  if(w) this.__normalSize.width = w;
   		  if(h) this.__normalSize.height = h;
-
-  		  this.canvas.style.width = w + "px";
-  		  this.canvas.style.height = h + "px";
+  		
+  		  this.canvas.style && (this.canvas.style.width = w + "px");
+  		  this.canvas.style && (this.canvas.style.height = h + "px");
   		  this.canvas.height = h * scale;
   		  this.canvas.width = w *scale;
   		  this.context.scale(scale, scale);
@@ -5095,7 +5116,7 @@ define(['exports'], function (exports) { 'use strict';
   		this.___isAutoRefreshing = true;
   		
   		function update() {
-  			if(self.destoryed) {
+  			if(self.destroyed) {
   				self.___isAutoRefreshing = false;
   				return;// 已销毁
   			}
@@ -5110,9 +5131,9 @@ define(['exports'], function (exports) { 'use strict';
   	}
 
   	// 销毁当前对象
-  	destory() {
-  		this.eventHandler.destory();
-  		this.destoryed = true;// 标记已销毁
+  	destroy() {
+  		this.eventHandler.destroy();
+  		this.destroyed = true;// 标记已销毁
   	}
   }
 
@@ -5551,7 +5572,7 @@ define(['exports'], function (exports) { 'use strict';
         this.points = [];
 
         for (const axis of this.radarOption.yAxises) {
-          this.points.push(axis.end);
+          axis.end && this.points.push(axis.end);
         }
 
         this.points.push(this.points[0]);
@@ -5583,6 +5604,7 @@ define(['exports'], function (exports) { 'use strict';
                   const curRadius = this.radarOption.radius / this.labelCount * i;
 
                   for (const axis of this.radarOption.yAxises) {
+                    if (!axis.radarOption) continue;
                     const point = {};
                     point.x = axis.radarOption.center.x + axis.radarOption.cos * curRadius + bounds.left;
                     point.y = axis.radarOption.center.y - axis.radarOption.sin * curRadius + bounds.top;
@@ -6567,7 +6589,8 @@ define(['exports'], function (exports) { 'use strict';
 
         p.x = xstep * i + this.xAxis.labelStart;
 
-        for (const f of fields) {
+        for (let j = 0; j < fields.length; j++) {
+          const f = fields[j];
           const yv = s[f];
           p.yLabel = p.yValue = yv; // 高度
 
@@ -6977,7 +7000,8 @@ define(['exports'], function (exports) { 'use strict';
       for (const row of this.data) {
         let max, min;
 
-        for (const f of fields) {
+        for (let i = 0; i < fields.length; i++) {
+          const f = fields[i];
           const v = Number(row[f]);
           if (typeof max === 'undefined') max = v;else {
             if (v < 0 || max < 0) max = Math.max(max, v);else {
@@ -7306,7 +7330,7 @@ define(['exports'], function (exports) { 'use strict';
     const points = this.createPoints();
     if (!points || !points.length) return;
 
-    for (let k in points) {
+    for (let k = 0; k < points.length; k++) {
       const p = points[k];
       if (!p) continue; //生成图例前的图标
 
@@ -7539,6 +7563,7 @@ define(['exports'], function (exports) { 'use strict';
         const shapePoints = [];
 
         for (const axis of this.axises) {
+          if (!axis || !axis.field) continue;
           const yv = s[axis.field];
           const p = {
             x: center.x,
@@ -8195,6 +8220,7 @@ define(['exports'], function (exports) { 'use strict';
             this.start.x = this.end.x = isTocuhGraph ? point.x + graph.chartArea.position.x : point.x;
 
             for (const p of point.points) {
+              if (!p || typeof p.y === 'undefined') continue;
               this.markArc = graph.createShape('circle', {
                 style: this.style,
                 radius: (this.style.radius || 5) * this.graph.devicePixelRatio
@@ -8897,6 +8923,12 @@ define(['exports'], function (exports) { 'use strict';
       }
 
       return serie;
+    } // 销毁
+
+
+    destroy() {
+      super.destroy();
+      this.touchGraph && this.touchGraph.destroy();
     }
 
   }
@@ -8943,8 +8975,7 @@ define(['exports'], function (exports) { 'use strict';
 
     // 销毁
     destroyed() {
-      this.chartInstance && this.chartInstance.destory();
-      this.chartInstance && this.chartInstance.touchGraph && this.chartInstance.touchGraph.destory();
+      this.chartInstance && this.chartInstance.destroy();
     },
 
     watch: {

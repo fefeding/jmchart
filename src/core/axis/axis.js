@@ -124,7 +124,7 @@ export default class jmAxis extends jmArrowLine {
 		if(this.radarOption && this.type === 'x') {
 			this.points = [];
 			for(const axis of this.radarOption.yAxises) {
-				this.points.push(axis.end);
+				axis.end && this.points.push(axis.end);
 			}
 			this.points.push(this.points[0]);
 			return this.points;
@@ -153,6 +153,7 @@ export default class jmAxis extends jmArrowLine {
 							const points = [];
 							const curRadius = this.radarOption.radius / this.labelCount * i;
 							for(const axis of this.radarOption.yAxises) {
+								if(!axis.radarOption) continue;
 								const point = {};
 								point.x = axis.radarOption.center.x + axis.radarOption.cos * curRadius + bounds.left;
 								point.y = axis.radarOption.center.y - axis.radarOption.sin * curRadius + bounds.top;

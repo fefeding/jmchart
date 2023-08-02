@@ -70,6 +70,7 @@ export default class jmMarkLine extends jmLine {
                     this.start.x = this.end.x = isTocuhGraph? (point.x + graph.chartArea.position.x): point.x;
 
                     for(const p of point.points) {
+                        if(!p || typeof p.y === 'undefined') continue;
                         this.markArc = graph.createShape('circle', {
                             style: this.style,
                             radius: (this.style.radius || 5) * this.graph.devicePixelRatio
