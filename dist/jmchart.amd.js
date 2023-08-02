@@ -8437,7 +8437,7 @@ define(['exports'], function (exports) { 'use strict';
             else lineTouching = 1;
           }
 
-          args.event.stopPropagation(); // 如果指定了锁定图表标线操作值，则触发后当次滑动不再响应系统默认行为
+          args.event.stopPropagation && args.event.stopPropagation(); // 如果指定了锁定图表标线操作值，则触发后当次滑动不再响应系统默认行为
 
           if (chart.style.markLine.lock) {
             // 标线状态一直禁用系统能力
@@ -8492,9 +8492,9 @@ define(['exports'], function (exports) { 'use strict';
 
       if (moved) {
         if (args.longtap === 2 && args.event) {
-          args.event.preventDefault(); // 阻止默认行为		
+          args.event.preventDefault && args.event.preventDefault(); // 阻止默认行为		
 
-          args.event.stopPropagation();
+          args.event.stopPropagation && args.event.stopPropagation();
         }
 
         if (!args.cancel) this.chart.emit('marklinemove', args);
