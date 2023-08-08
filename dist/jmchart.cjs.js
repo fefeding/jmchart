@@ -5085,8 +5085,8 @@ class jmGraph$1 extends jmControl {
 			// 触发刷新事件
 			self.emit('update');
 
-			self.__requestAnimationFrameFunHandler && this.cancelAnimationFrame(self.__requestAnimationFrameFunHandler);
-			self.__requestAnimationFrameFunHandler = this.requestAnimationFrame(update);
+			self.__requestAnimationFrameFunHandler && self.cancelAnimationFrame(self.__requestAnimationFrameFunHandler);
+			self.__requestAnimationFrameFunHandler = self.requestAnimationFrame(update);
 			if(callback) callback();
 		}
 		self.__requestAnimationFrameFunHandler && this.cancelAnimationFrame(self.__requestAnimationFrameFunHandler);
