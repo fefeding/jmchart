@@ -1840,18 +1840,12 @@ class jmControl extends jmProperty {
 			if(typeof this.canvas.width === 'function') {
 				rect.right = this.canvas.width(); 
 			}
-			else if(this.canvas.width) {
-				rect.right = this.canvas.width; 
-			}
 			else if(this.width) {
 				rect.right = this.width;
 			}
 			
 			if(typeof this.canvas.height === 'function') {
 				rect.bottom = this.canvas.height(); 
-			}
-			else if(this.canvas.height) {
-				rect.bottom = this.canvas.height; 
 			}
 			else if(this.height) {
 				rect.bottom = this.height;
@@ -2347,8 +2341,8 @@ class jmControl extends jmProperty {
 			//获取dom位置
 			let position = this.getPosition();
 			// 由于高清屏会有放大坐标，所以这里用pagex就只能用真实的canvas大小
-			const right = position.left + (this.canvas.clientWidth || this.canvas.offsetWidth || this.canvas.width);
-			const bottom = position.top + (this.canvas.clientHeight || this.canvas.offsetHeight || this.canvas.height);
+			const right = position.left + this.width;
+			const bottom = position.top + this.height;
 			if(p.pageX > right || p.pageX < position.left) {
 				return false;
 			}
@@ -4823,8 +4817,8 @@ class jmGraph$1 extends jmControl {
 	 */
 	getPosition() {
 		let p = jmUtils.getElementPosition(this.canvas.canvas || this.canvas);
-		p.width = this.canvas.width;
-		p.height = this.canvas.height;
+		p.width = this.width;
+		p.height = this.height;
 		p.right = p.left + p.width;
 		p.bottom = p.top + p.height;
 		return p;
@@ -8428,14 +8422,14 @@ class jmMarkLineManager {
           else lineTouching = 1;
         }
 
-        args.event.stopPropagation && args.event.stopPropagation(); // 如果指定了锁定图表标线操作值，则触发后当次滑动不再响应系统默认行为
+        args.event && args.event.stopPropagation && args.event.stopPropagation(); // 如果指定了锁定图表标线操作值，则触发后当次滑动不再响应系统默认行为
 
         if (chart.style.markLine.lock) {
           // 标线状态一直禁用系统能力
           // 如果指定了锁定值，只需要一项符合要求就进行锁定
           if (lineTouching === 0 && (chart.style.markLine.lock.y && Math.abs(args.offsetInfo.y) < chart.style.markLine.lock.y || chart.style.markLine.lock.x && Math.abs(args.offsetInfo.x) < chart.style.markLine.lock.x) || lineTouching === 1) {
             lineTouching = 1;
-            args.event.preventDefault(); // 阻止默认行为
+            args.event && args.event.preventDefault && args.event.preventDefault(); // 阻止默认行为
           }
         }
 
