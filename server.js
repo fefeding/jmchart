@@ -31,7 +31,7 @@ esmWatcher.on('event', event => {
 
 
 let serverInstance = null;
-const port = process.env.PORT || 8800;
+const port = process.env.PORT || 8801;
 const ip = process.env.IP || '127.0.0.1';
 
 startServer();

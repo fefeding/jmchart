@@ -1666,9 +1666,6 @@
   		style = style || jmUtils.clone(this.style, true);
   		if(!style) return;
 
-  		// 当前根据屏幕放大倍数，如果有倍数，则需要对线宽等同比放大
-  		let scale = this.graph.devicePixelRatio;
-
   		/**
   		 * 样式设定
   		 * 
@@ -1718,7 +1715,7 @@
   					}
 
   					// 按比例需要放大的样式
-  					if(scale && style) {
+  					/*if(scale && style) {
   						switch(mpname) {
   							case 'lineWidth': {
   								style *= scale;
@@ -1735,7 +1732,7 @@
   								break;
   							}
   						}
-  					}					
+  					}		*/			
   					this.context[mpname] = style;
   				}	
   				else {
@@ -1917,10 +1914,10 @@
   		local.height = this.height;
 
   		let margin = jmUtils.clone(this.style.margin, {});
-  		margin.left = (margin.left || 0) * this.graph.devicePixelRatio;
-  		margin.top = (margin.top || 0) * this.graph.devicePixelRatio;
-  		margin.right = (margin.right || 0) * this.graph.devicePixelRatio;
-  		margin.bottom = (margin.bottom || 0) * this.graph.devicePixelRatio;
+  		margin.left = (margin.left || 0);
+  		margin.top = (margin.top || 0);
+  		margin.right = (margin.right || 0);
+  		margin.bottom = (margin.bottom || 0);
   		
   		//如果没有指定位置，但指定了margin。则位置取margin偏移量
   		if(local.position) {
@@ -2439,14 +2436,7 @@
 
   			const srcElement = args.srcElement || args.target;			
   			
-  			const position = jmUtils.getEventPosition(args, graph.scaleSize);//初始化事件位置		
-
-  			// 如果有指定scale高清处理，需要对坐标处理
-  			// 因为是对canvas放大N倍，再把style指定为当前大小，所以坐标需要放大N    && srcElement === graph.canvas      
-  			if(graph.devicePixelRatio > 0) {
-  				position.x = position.offsetX = position.x * graph.devicePixelRatio;
-  				position.y = position.offsetY = position.y * graph.devicePixelRatio;
-  			}
+  			const position = jmUtils.getEventPosition(args, graph.scaleSize);//初始化事件位置
   		
   			args = {
   				position: position,
@@ -4722,11 +4712,19 @@
   		this.on('endDraw', function() {	
   			this.context.translate(-0.5, -0.5);		
   		});
-  		
+
+  		// devicePixelRatio初始化
+  		let dpr = typeof window != 'undefined' && window.devicePixelRatio > 1? window.devicePixelRatio : 1;
+  		if(this.isWXMiniApp) {
+  			dpr = wx.getSystemInfoSync().pixelRatio || 1;
+  		}		
+  		this.devicePixelRatio = dpr;
+  		// 为了解决锯齿问题，先放大canvas再缩放
+  		this.dprScaleSize = this.devicePixelRatio > 1? this.devicePixelRatio : 2;
+
   		if(this.option.width > 0) this.width = this.option.width;
   		if(this.option.height > 0) this.height = this.option.height;	
-
-  		this.resize();
+  		this.resize();		
 
   		//绑定事件
   		this.eventHandler = new jmEvents(this, this.canvas.canvas || this.canvas);	
@@ -4741,25 +4739,19 @@
 
   	//  重置canvas大小，并判断高清屏，画图先放大二倍
   	resize(w, h) {
+  		if(!this.canvas) return;
 
-  		let scale = typeof window != 'undefined' && window.devicePixelRatio > 1? window.devicePixelRatio : 1;
-  		if(this.isWXMiniApp) {
-  			scale = wx.getSystemInfoSync().pixelRatio || 1;
-  		}
-  		else if (scale > 1) {
-  		  this.__normalSize = this.__normalSize || { width: 0, height: 0};
-  		  w = w || this.__normalSize.width || this.width, h = h || this.__normalSize.height || this.height;
+  		this.__normalSize = this.__normalSize || { width: 0, height: 0};
+  		w = w || this.__normalSize.width || this.width, h = h || this.__normalSize.height || this.height;
 
-  		  if(w) this.__normalSize.width = w;
-  		  if(h) this.__normalSize.height = h;
-  		
-  		  this.canvas.style && (this.canvas.style.width = w + "px");
-  		  this.canvas.style && (this.canvas.style.height = h + "px");
-  		  this.canvas.height = h * scale;
-  		  this.canvas.width = w *scale;
-  		  this.context.scale(scale, scale);
-  		  this.devicePixelRatio = scale;
-  		}
+  		if(w) this.__normalSize.width = w;
+  		if(h) this.__normalSize.height = h;
+  	
+  		this.css('width', w + "px");
+  		this.css('height', h + "px");
+  		this.canvas.height = h * this.dprScaleSize;
+  		this.canvas.width = w * this.dprScaleSize;
+  		this.context.scale(this.dprScaleSize, this.dprScaleSize);	
   	}
 
   	/**
@@ -4767,10 +4759,10 @@
   	 * @param {x, y} point 内部坐标
   	 */
   	pointToPixes(point) {
-  		if(this.devicePixelRatio && this.devicePixelRatio !== 1) {
+  		if(this.dprScaleSize && this.dprScaleSize !== 1) {
   			point = Object.assign({}, point, {
-  				x: point.x / this.devicePixelRatio,
-  				y: point.y / this.devicePixelRatio
+  				x: point.x / this.dprScaleSize,
+  				y: point.y / this.dprScaleSize
   			});
   		}
   		return point;
@@ -4782,13 +4774,13 @@
   	 * @type {number}
   	 */
   	get width() {
+  		if(this.__normalSize && this.__normalSize.width) return this.__normalSize.width;
   		if(this.canvas) return this.canvas.width;
   		return 0;
   	}
   	set width(v) {
   		this.needUpdate = true;
   		if(this.canvas) {
-  			this.canvas.width = v;	
   			this.resize(v);
   		}	
   		return v;
@@ -4800,13 +4792,13 @@
   	 * @type {number}
   	 */
   	get height() {
+  		if(this.__normalSize && this.__normalSize.height) return this.__normalSize.height;
   		if(this.canvas) return this.canvas.height;
   		return 0;
   	}
   	set height(v) {
   		this.needUpdate = true;
   		if(this.canvas) {
-  			this.canvas.height = v;
   			this.resize(0, v);
   		}
   		return v;
@@ -4965,23 +4957,13 @@
   	 * @param {number} [h] 清除画布的高度
   	 */
   	clear(w, h) {
-  		//this.canvas.width = this.canvas.width;
-  		if(w && h) {
-  			//this.zoomActual();//恢复比例缩放
-  			this.canvas.width = w;
-  			this.canvas.height = h;
-  			//保留原有缩放比例
-  			if(this.scaleSize) {
-  				if(this.context.scale) this.context.scale(this.scaleSize.x,this.scaleSize.y);
-  			}
-  		}
-  		else {
-  			w = this.canvas.width;
-  			h = this.canvas.height;
-  			if(this.scaleSize) {
+  		if(!w || !h) {
+  			w = this.width;
+  			h = this.height;
+  			/*if(this.scaleSize) {
   				w = w / this.scaleSize.x;
   				h = h / this.scaleSize.y;
-  			}
+  			}*/
   		}
   		//如果有指定背景，则等到draw再全屏绘制一次，也同样达到清除画布的功能
   		if(this.style && this.style.fill) {
@@ -5126,6 +5108,9 @@
   				return;// 已销毁
   			}
   			if(self.needUpdate) self.redraw();
+  			// 触发刷新事件
+  			self.emit('update');
+
   			self.__requestAnimationFrameFunHandler && jmUtils.cancelAnimationFrame(self.__requestAnimationFrameFunHandler);
   			self.__requestAnimationFrameFunHandler = jmUtils.requestAnimationFrame(update);
   			if(callback) callback();
@@ -5728,7 +5713,7 @@
       //字符串轴。则显示每个标签	
 
       const format = this.option.format || this.format;
-      const top = (this.style.xLabel.margin.top || 0) * this.graph.devicePixelRatio;
+      const top = this.style.xLabel.margin.top || 0;
 
       for (let i = 0; i < this.data.length; i++) {
         const d = this.data[i];
@@ -5824,8 +5809,8 @@
       const mm = max - min;
       let pervalue = mm / count || 1;
       const format = this.option.format || this.format;
-      const marginLeft = this.style.yLabel.margin.left * this.graph.devicePixelRatio || 0;
-      const marginRight = this.style.yLabel.margin.right * this.graph.devicePixelRatio || 0;
+      const marginLeft = this.style.yLabel.margin.left || 0;
+      const marginRight = this.style.yLabel.margin.right || 0;
       let p = 0;
 
       for (let i = 0; i < count + 1; i++) {
@@ -6253,13 +6238,13 @@
 
     if (legendPosition == 'top' || legendPosition == 'bottom') {
       //顶部和底部图例横排，每次右移位一个单位图例
-      panel.position.x = this.width + 15 * this.graph.devicePixelRatio;
+      panel.position.x = this.width + 15;
       this.width = panel.position.x + panel.width; // 把容器宽指定为所有图例宽和
 
       this.height = Math.max(panel.height, this.height);
     } else {
       //右边和左边图例竖排
-      panel.position.y += this.height + 5 * this.graph.devicePixelRatio;
+      panel.position.y += this.height + 5;
       this.height = panel.position.y + panel.height;
       this.width = Math.max(panel.width, this.width);
     }
@@ -6299,21 +6284,21 @@
           {
             this.graph.chartArea.width = this.graph.chartArea.width - this.width; //画图区域向右偏移
 
-            this.graph.chartArea.position.x = this.position.x + this.width + this.style.margin.right * this.graph.devicePixelRatio;
+            this.graph.chartArea.position.x = this.position.x + this.width + this.style.margin.right;
             break;
           }
 
         case 'top':
           {
             this.graph.chartArea.height = this.graph.chartArea.height - this.height;
-            this.graph.chartArea.position.y = this.position.y + this.height + this.style.margin.bottom * this.graph.devicePixelRatio;
+            this.graph.chartArea.position.y = this.position.y + this.height + this.style.margin.bottom;
             break;
           }
 
         case 'bottom':
           {
             this.graph.chartArea.height = this.graph.chartArea.height - this.height;
-            this.position.y = this.graph.chartArea.position.y + this.graph.chartArea.height + this.style.margin.top * this.graph.devicePixelRatio;
+            this.position.y = this.graph.chartArea.position.y + this.graph.chartArea.height + this.style.margin.top;
             break;
           }
 
@@ -6321,7 +6306,7 @@
         default:
           {
             this.graph.chartArea.width = this.graph.chartArea.width - this.width;
-            this.position.x = this.graph.chartArea.position.x + this.graph.chartArea.width + this.style.margin.left * this.graph.devicePixelRatio;
+            this.position.x = this.graph.chartArea.position.x + this.graph.chartArea.width + this.style.margin.left;
             break;
           }
       }
@@ -7068,7 +7053,7 @@
         x: this.graph.chartArea.width / 2,
         y: this.graph.chartArea.height / 2
       };
-      const radius = Math.min(center.x - this.style.margin.left * this.graph.devicePixelRatio - this.style.margin.right * this.graph.devicePixelRatio, center.y - this.style.margin.top * this.graph.devicePixelRatio - this.style.margin.bottom * this.graph.devicePixelRatio); //生成描点位
+      const radius = Math.min(center.x - this.style.margin.left - this.style.margin.right, center.y - this.style.margin.top - this.style.margin.bottom); //生成描点位
       // super.init会把参数透传给 createPoints
 
       const {
@@ -7434,7 +7419,7 @@
         x: this.graph.chartArea.width / 2,
         y: this.graph.chartArea.height / 2
       };
-      this.radius = Math.min(this.center.x - this.style.margin.left * this.graph.devicePixelRatio - this.style.margin.right * this.graph.devicePixelRatio, this.center.y - this.style.margin.top * this.graph.devicePixelRatio - this.style.margin.bottom * this.graph.devicePixelRatio);
+      this.radius = Math.min(this.center.x - this.style.margin.left - this.style.margin.right, this.center.y - this.style.margin.top - this.style.margin.bottom);
       const axises = this.createAxises(this.center, this.radius); // 重置所有轴
       // 计算最大最小值
       // 当前需要先更新axis的边界值，轴好画图
@@ -8228,7 +8213,7 @@
               if (!p || typeof p.y === 'undefined') continue;
               this.markArc = graph.createShape('circle', {
                 style: this.style,
-                radius: (this.style.radius || 5) * this.graph.devicePixelRatio
+                radius: this.style.radius || 5
               });
               this.markArc.center.y = p.y;
               this.children.add(this.markArc);
@@ -8657,7 +8642,7 @@
         this.touchGraph.chartGraph = this;
         this.on('propertyChange', (name, args) => {
           if (['width', 'height'].includes(name)) {
-            this.touchGraph[name] = args.newValue / this.devicePixelRatio;
+            this.touchGraph[name] = args.newValue;
           }
         }); // 把上层canvse事件传递给绘图层对象
 
@@ -8797,10 +8782,10 @@
 
 
     resetAreaPosition() {
-      this.chartArea.position.x = (this.style.margin.left || 0) * this.graph.devicePixelRatio;
-      this.chartArea.position.y = (this.style.margin.top || 0) * this.graph.devicePixelRatio;
-      const w = this.width - this.style.margin.right * this.graph.devicePixelRatio - this.chartArea.position.x;
-      const h = this.height - this.style.margin.bottom * this.graph.devicePixelRatio - this.chartArea.position.y;
+      this.chartArea.position.x = this.style.margin.left || 0;
+      this.chartArea.position.y = this.style.margin.top || 0;
+      const w = this.width - this.style.margin.right - this.chartArea.position.x;
+      const h = this.height - this.style.margin.bottom - this.chartArea.position.y;
       this.chartArea.width = w;
       this.chartArea.height = h;
     }

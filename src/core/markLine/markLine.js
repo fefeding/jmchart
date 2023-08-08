@@ -73,7 +73,7 @@ export default class jmMarkLine extends jmLine {
                         if(!p || typeof p.y === 'undefined') continue;
                         this.markArc = graph.createShape('circle', {
                             style: this.style,
-                            radius: (this.style.radius || 5) * this.graph.devicePixelRatio
+                            radius: (this.style.radius || 5)
                         });
 
                         this.markArc.center.y = p.y;
