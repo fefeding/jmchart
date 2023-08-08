@@ -874,21 +874,13 @@ define(['exports'], function (exports) { 'use strict';
           return r;
       }
       // window.requestAnimationFrame() 告诉浏览器——你希望执行一个动画，并且要求浏览器在下次重绘之前调用指定的回调函数更新动画。该方法需要传入一个回调函数作为参数，该回调函数会在浏览器下一次重绘之前执行
-      static requestAnimationFrame(callback) {
-          if(typeof requestAnimationFrame === 'undefined') {
-  			return setTimeout(callback, 20);
-  		}
-  		else {
-  			return requestAnimationFrame(callback);
-  		}
+      static requestAnimationFrame(callback, win) {
+          let fun = win && win.requestAnimationFrame? win.requestAnimationFrame: (typeof window !== 'undefined' && window.requestAnimationFrame? window.requestAnimationFrame: setTimeout);        
+  		return fun(callback, 20);
       }
-      static cancelAnimationFrame(handler) {
-          if(typeof requestAnimationFrame === 'undefined') {
-  			return clearTimeout(handler);
-  		}
-  		else {
-  			return cancelAnimationFrame(handler);
-  		}
+      static cancelAnimationFrame(handler, win) {
+          let fun = win && win.cancelAnimationFrame? win.cancelAnimationFrame: (typeof window !== 'undefined' && window.cancelAnimationFrame? window.cancelAnimationFrame: clearTimeout);        
+  		return fun(handler);
       }	
   }
 
@@ -1327,7 +1319,47 @@ define(['exports'], function (exports) { 'use strict';
   	set graph(v) {
   		return this.__pro('graph', v);
   	}
+
+  	/**
+  	 * 在下次进行重绘时执行
+  	 * @param {Function} handler 
+  	 */
+  	requestAnimationFrame(handler) {
+  		return jmUtils.requestAnimationFrame(handler, this.graph? this.graph.canvas: null);
+  	}
+  	/**
+  	 * 清除执行回调
+  	 * @param {Function} handler 
+  	 * @returns 
+  	 */
+  	cancelAnimationFrame(handler) {
+  		return jmUtils.cancelAnimationFrame(handler, this.graph? this.graph.canvas: null);
+  	}
   }
+
+  //样式名称，也当做白名单使用		
+  const jmStyleMap = {
+  	'fill':'fillStyle',
+  	'stroke':'strokeStyle',
+  	'shadow.blur':'shadowBlur',
+  	'shadow.x':'shadowOffsetX',
+  	'shadow.y':'shadowOffsetY',
+  	'shadow.color':'shadowColor',
+  	'lineWidth' : 'lineWidth',
+  	'miterLimit': 'miterLimit',
+  	'fillStyle' : 'fillStyle',
+  	'strokeStyle' : 'strokeStyle',
+  	'font' : 'font',
+  	'opacity' : 'globalAlpha',
+  	'textAlign' : 'textAlign',
+  	'textBaseline' : 'textBaseline',
+  	'shadowBlur' : 'shadowBlur',
+  	'shadowOffsetX' : 'shadowOffsetX',
+  	'shadowOffsetY' : 'shadowOffsetY',
+  	'shadowColor' : 'shadowColor',
+  	'lineJoin': 'lineJoin',//线交汇处的形状,miter(默认，尖角),bevel(斜角),round（圆角）
+  	'lineCap':'lineCap' //线条终端点,butt(默认，平),round(圆),square（方）
+  };
 
   /**
    * 控件基础对象
@@ -1354,30 +1386,6 @@ define(['exports'], function (exports) { 'use strict';
   		this.graph = params.graph || null;
   		this.zIndex = params.zIndex || 0;
   		this.interactive = typeof params.interactive == 'undefined'? true : params.interactive;
-
-  		//样式名称，也当做白名单使用		
-  		this.jmStyleMap = {
-  			'fill':'fillStyle',
-  			'stroke':'strokeStyle',
-  			'shadow.blur':'shadowBlur',
-  			'shadow.x':'shadowOffsetX',
-  			'shadow.y':'shadowOffsetY',
-  			'shadow.color':'shadowColor',
-  			'lineWidth' : 'lineWidth',
-  			'miterLimit': 'miterLimit',
-  			'fillStyle' : 'fillStyle',
-  			'strokeStyle' : 'strokeStyle',
-  			'font' : 'font',
-  			'opacity' : 'globalAlpha',
-  			'textAlign' : 'textAlign',
-  			'textBaseline' : 'textBaseline',
-  			'shadowBlur' : 'shadowBlur',
-  			'shadowOffsetX' : 'shadowOffsetX',
-  			'shadowOffsetY' : 'shadowOffsetY',
-  			'shadowColor' : 'shadowColor',
-  			'lineJoin': 'lineJoin',//线交汇处的形状,miter(默认，尖角),bevel(斜角),round（圆角）
-  			'lineCap':'lineCap' //线条终端点,butt(默认，平),round(圆),square（方）
-  		};
 
   		this.initializing();	
   		
@@ -1676,120 +1684,93 @@ define(['exports'], function (exports) { 'use strict';
   		 * @param {string} mpkey 样式名称在映射中的key(例如：shadow.blur为模糊值)
   		 */
   		let __setStyle = (style, name, mpkey) => {
-  			//let styleValue = style[mpkey||name]||style;
-  			if(style) {				
-  				if(typeof style === 'function') {
+  			
+  			if(style) {		
+  				let styleValue = style;		
+  				if(typeof styleValue === 'function') {
   					try {
-  						style = style.call(this);
+  						styleValue = styleValue.call(this);
   					}
   					catch(e) {
   						console.warn(e);
   						return;
   					}
   				}
-  				let t = typeof style;	
-  				let mpname = this.jmStyleMap[mpkey || name];
+  				let t = typeof styleValue;	
+  				let mpname = jmStyleMap[mpkey || name];
 
   				//如果为渐变对象
-  				if((style instanceof jmGradient) || (t == 'string' && style.indexOf('-gradient') > -1)) {
+  				if((styleValue instanceof jmGradient) || (t == 'string' && styleValue.indexOf('-gradient') > -1)) {
   					//如果是渐变，则需要转换
-  					if(t == 'string' && style.indexOf('-gradient') > -1) {
-  						style = new jmGradient(style);
+  					if(t == 'string' && styleValue.indexOf('-gradient') > -1) {
+  						styleValue = new jmGradient(styleValue);
   					}
-  					__setStyle(style.toGradient(this), mpname||name);	
-  				}
-  				else if(t == 'function') {					
-  					if(mpname) {
-  						style = style.call(this, mpname);
-  						if(style) {
-  							__setStyle(style, mpname);	
-  						}
-  					}
+  					__setStyle(styleValue.toGradient(this), mpname||name);	
   				}
   				else if(mpname) {
   					//只有存在白名单中才处理
   					//颜色转换
   					if(t == 'string' && ['fillStyle', 'strokeStyle', 'shadowColor'].indexOf(mpname) > -1) {
-  						style = jmUtils.toColor(style);
+  						styleValue = jmUtils.toColor(styleValue);
   					}
-
-  					// 按比例需要放大的样式
-  					/*if(scale && style) {
-  						switch(mpname) {
-  							case 'lineWidth': {
-  								style *= scale;
-  								break;
-  							}
-  							// 字体放大
-  							case 'fontSize':
-  							case 'font': {
-  								const ms = style.toString().match(/[\d\.]+/);
-  								if(ms && ms.length) {
-  									const size = Number(ms[0]) * scale;
-  									style = style.toString().replace(ms[0], size);
-  								}
-  								break;
-  							}
-  						}
-  					}		*/			
-  					this.context[mpname] = style;
+  					this.context[mpname] = styleValue;
   				}	
   				else {
   					switch(name) {
   						//阴影样式
   						case 'shadow' : {
   							if(t == 'string') {
-  								__setStyle(new jmShadow(style), name);
+  								__setStyle(new jmShadow(styleValue), name);
   								break;
   							}
-  							for(let k in style) {
-  								__setStyle(style[k], k, name + '.' + k);
+  							for(let k in styleValue) {
+  								__setStyle(styleValue[k], k, name + '.' + k);
   							}
   							break;
   						}
   						//平移
   						case 'translate' : {
-  							this.context.translate(style.x,style.y);
+  							this.context.translate(styleValue.x, styleValue.y);
   							break;
   						}
   						//旋转
   						case 'rotation' : {	
-  							if(!style.angle) break;							
+  							if(!styleValue.angle) break;							
   							//旋 转先移位偏移量
   							let tranX = 0;
   							let tranY = 0;
   							//旋转，则移位，如果有中心位则按中心旋转，否则按左上角旋转
   							//这里只有style中的旋转才能生效，不然会导至子控件多次旋转
-  							if(style.point) {
+  							if(styleValue.point) {
   								let bounds = this.absoluteBounds?this.absoluteBounds:this.getAbsoluteBounds();
-  								style = this.getRotation(style);
+  								styleValue = this.getRotation(styleValue);
   								
-  								tranX = style.rotateX + bounds.left;
-  								tranY = style.rotateY + bounds.top;	
+  								tranX = styleValue.rotateX + bounds.left;
+  								tranY = styleValue.rotateY + bounds.top;	
   							}
   												
   							if(tranX!=0 || tranY != 0) this.context.translate(tranX,tranY);
-  							this.context.rotate(style.angle);
+  							this.context.rotate(styleValue.angle);
   							if(tranX!=0 || tranY != 0) this.context.translate(-tranX,-tranY);
   							break;
   						}
   						case 'transform' : {
-  							if(Array.isArray(style)) {
-  								this.context.transform.apply(this.context, style);
+  							if(Array.isArray(styleValue)) {
+  								this.context.transform.apply(this.context, styleValue);
   							}
-  							else if(typeof style == 'object') {
-  								this.context.transform(style.scaleX,//水平缩放
-  									style.skewX,//水平倾斜
-  									style.skewY,//垂直倾斜
-  									style.scaleY,//垂直缩放
-  									style.offsetX,//水平位移
-  									style.offsetY);//垂直位移
+  							else if(typeof styleValue == 'object') {
+  								this.context.transform(styleValue.scaleX,//水平缩放
+  								styleValue.skewX,//水平倾斜
+  								styleValue.skewY,//垂直倾斜
+  								styleValue.scaleY,//垂直缩放
+  								styleValue.offsetX,//水平位移
+  								styleValue.offsetY);//垂直位移
   							}								
   							break;
   						}
   						//鼠标指针
   						case 'cursor' : {
-  							this.cursor = style;
+  							this.cursor = styleValue;
   							break;
   						}
   					}							
@@ -2218,8 +2199,6 @@ define(['exports'], function (exports) { 'use strict';
   			this.emit('endDraw',this);	
   			this.context.restore();
   			
-  			//兼容小程序
-  			if(this.is('jmGraph') && this.context.draw) this.context.draw();
   			this.needUpdate = false;
   		}
   	}
@@ -5104,12 +5083,12 @@ define(['exports'], function (exports) { 'use strict';
   			// 触发刷新事件
   			self.emit('update');
 
-  			self.__requestAnimationFrameFunHandler && jmUtils.cancelAnimationFrame(self.__requestAnimationFrameFunHandler);
-  			self.__requestAnimationFrameFunHandler = jmUtils.requestAnimationFrame(update);
+  			self.__requestAnimationFrameFunHandler && jmUtils.cancelAnimationFrame(self.__requestAnimationFrameFunHandler, self.canvas);
+  			self.__requestAnimationFrameFunHandler = jmUtils.requestAnimationFrame(update, self.canvas);
   			if(callback) callback();
   		}
-  		self.__requestAnimationFrameFunHandler && jmUtils.cancelAnimationFrame(self.__requestAnimationFrameFunHandler);
-  		self.__requestAnimationFrameFunHandler = jmUtils.requestAnimationFrame(update);
+  		self.__requestAnimationFrameFunHandler && jmUtils.cancelAnimationFrame(self.__requestAnimationFrameFunHandler, self.canvas);
+  		self.__requestAnimationFrameFunHandler = jmUtils.requestAnimationFrame(update, self.canvas);
   		return this;
   	}
 
@@ -6816,7 +6795,7 @@ define(['exports'], function (exports) { 'use strict';
       } else {
         this.___animateCounter++; // next tick 再次刷新
 
-        setTimeout(() => {
+        this.graph.utils.requestAnimationFrame(() => {
           this.needUpdate = true; //需要刷新
         });
       }
@@ -6968,7 +6947,7 @@ define(['exports'], function (exports) { 'use strict';
       } else {
         this.___animateCounter++; // next tick 再次刷新
 
-        setTimeout(() => {
+        this.graph.utils.requestAnimationFrame(() => {
           this.needUpdate = true; //需要刷新
         });
       }
@@ -7084,7 +7063,7 @@ define(['exports'], function (exports) { 'use strict';
         } else {
           this.___animateCounter++; // next tick 再次刷新
 
-          setTimeout(() => {
+          this.graph.utils.requestAnimationFrame(() => {
             this.needUpdate = true; //需要刷新
           });
         }
@@ -7726,7 +7705,7 @@ define(['exports'], function (exports) { 'use strict';
       } else if (isRunningAni) {
         this.___animateCounter += aniStep; // next tick 再次刷新
 
-        setTimeout(() => {
+        this.graph.utils.requestAnimationFrame(() => {
           this.needUpdate = true; //需要刷新
         });
       }
@@ -7973,7 +7952,7 @@ define(['exports'], function (exports) { 'use strict';
       } else if (isRunningAni) {
         this.___animateCounter += aniStep; // next tick 再次刷新
 
-        setTimeout(() => {
+        this.graph.utils.requestAnimationFrame(() => {
           this.needUpdate = true; //需要刷新
         });
       }
@@ -8228,7 +8207,7 @@ define(['exports'], function (exports) { 'use strict';
         } // 触发touch数据点改变事件
 
 
-        touchChange && setTimeout(() => {
+        touchChange && this.graph.utils.requestAnimationFrame(() => {
           graph.emit('touchPointChange', {
             points: touchPoints
           });

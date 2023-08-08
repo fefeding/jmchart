@@ -98,7 +98,7 @@ export default class jmMarkLine extends jmLine {
             }
 
             // 触发touch数据点改变事件
-            touchChange && setTimeout(()=>{
+            touchChange && this.graph.utils.requestAnimationFrame(()=>{
                     graph.emit('touchPointChange', {
                         points: touchPoints
                     });

@@ -1,6 +1,6 @@
 {
   "name": "jmchart",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "chart",
   "main": "./index.js",
   "directories": {
@@ -28,7 +28,7 @@
   },
   "homepage": "https://github.com/jiamao/jmchart#readme",
   "dependencies": {
-    "jmgraph": "^3.1.97"
+    "jmgraph": "^3.1.98"
   },
   "devDependencies": {
     "@babel/core": "^7.10.2",
