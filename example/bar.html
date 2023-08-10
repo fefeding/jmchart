@@ -12,17 +12,6 @@
 			width:100%;
 			height:100%;
 		}
-		#mycanvas canvas, #mycanvas div{
-			background-color:#fff;
-			margin:0 auto;		
-		}
-		/*div.jm-tooltip {
-			background-color: rgba(255,255,255,0.8);
-			padding:4px;
-			border:1px solid #000;
-			box-shadow: 0 0 3px #000;
-			border-radius: 6px;
-		}*/
 		</style>
 		<script type="module">
 			//window.devicePixelRatio = 1;
@@ -36,6 +25,7 @@
 			
 
 			function inichart(w, h) {
+				var touchCanvas = document.getElementById('mytouchcanvas');
 					var chart = new jmChart('mycanvas', {
 						width: w,
 						height: h,
@@ -47,6 +37,8 @@
 						//minYValue: -200,
 						//maxYValue: 300,
 						autoRefresh: true,
+						// 指定了操作层的canvas，如果不想自已指定，也可以把touchGraph设置为true也是一样的效果
+						touchCanvas,
 						style: {
 							axis: {
 								x: true,
@@ -194,8 +186,12 @@
 		</script>
 	</head>
 	<body>
-		<div id="mycanvas">
-			</div>	
+		<div>
+			<canvas id="mycanvas">
+			</canvas>	
+			<canvas id="mytouchcanvas" style="position: absolute; left:0; top: 0;">
+			</canvas>
+		</div>
 			<button id="btnRedraw">重绘</button>		
 	</body>
 </html>

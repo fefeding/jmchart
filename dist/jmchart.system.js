@@ -235,9 +235,13 @@ System.register([], function (exports) {
                   
                   for(let k in source) {
                       if(k === 'constructor') continue;
+                      const v = source[k];
+                      // 不复制页面元素和class对象
+                      if(v && (v.tagName || v.getContext)) continue;
+
                       // 如果不是对象和空，则采用target的属性
                       if(typeof target[k] === 'object' || typeof target[k] === 'undefined') {                    
-                          target[k] = this.clone(source[k], target[k], deep, copyHandler, deepIndex);
+                          target[k] = this.clone(v, target[k], deep, copyHandler, deepIndex);
                       }
                   }
                   return target;
@@ -8599,35 +8603,43 @@ System.register([], function (exports) {
             container = container.parentElement;
           }
 
-          container && (container.style.position = 'relative');
+          container && container.style && (container.style.position = 'relative'); // 要先从选项中取出canvas，否则clone过滤掉
+
+          let cn = options.touchCanvas;
           options = this.utils.clone(options, {
             autoRefresh: true
           }, true); // 生成图层, 当图刷新慢时，需要用一个操作图层来进行滑动等操作重绘
           // isWXMiniApp 非微信小程序下才能创建
 
-          if (!this.isWXMiniApp && container && options.touchGraph) {
-            let cn = document.createElement('canvas');
-            cn.width = container.offsetWidth || container.clientWidth;
-            cn.height = container.offsetHeight || container.clientHeight;
-            cn.style.position = 'absolute';
-            cn.style.top = 0;
-            cn.style.left = 0;
-            this.touchGraph = new jmGraph(cn, options);
-            container.appendChild(cn);
-            this.touchGraph.chartGraph = this;
-            this.on('propertyChange', (name, args) => {
-              if (['width', 'height'].includes(name)) {
-                this.touchGraph[name] = args.newValue;
-              }
-            }); // 把上层canvse事件传递给绘图层对象
+          if (container && (options.touchGraph || cn)) {
+            if (!cn && !this.isWXMiniApp) {
+              cn = document.createElement('canvas');
+              cn.width = container.offsetWidth || container.clientWidth;
+              cn.height = container.offsetHeight || container.clientHeight;
+              cn.style.position = 'absolute';
+              cn.style.top = 0;
+              cn.style.left = 0;
+              container.appendChild(cn);
+            }
 
-            this.touchGraph.on('mousedown touchstart mousemove touchmove mouseup touchend touchcancel touchleave', args => {
-              const eventName = args.event.eventName || args.event.type;
+            if (cn) {
+              this.touchGraph = new jmGraph(cn, options);
+              this.touchGraph.chartGraph = this;
+              this.on('propertyChange', (name, args) => {
+                if (['width', 'height'].includes(name)) {
+                  this.touchGraph[name] = args.newValue;
+                }
+              }); // 把上层canvse事件传递给绘图层对象
 
-              if (eventName) {
-                this.emit(eventName, args);
-              }
-            });
+              this.touchGraph.on('mousedown touchstart mousemove touchmove mouseup touchend touchcancel touchleave', args => {
+                const eventName = args.event.eventName || args.event.type;
+
+                if (eventName) {
+                  this.emit(eventName, args);
+                  args.event.stopPropagation && args.event.stopPropagation();
+                }
+              });
+            }
           } // 初始化标线
 
 
