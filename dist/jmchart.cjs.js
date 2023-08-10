@@ -4637,6 +4637,7 @@ class jmGraph$1 extends jmControl {
 		if(typeof wx != 'undefined' && wx.canIUse && wx.canIUse('canvas')) {			
 			if(typeof canvas === 'string') canvas = wx.createSelectorQuery().select('#' + canvas);
 			this.isWXMiniApp = true;// 微信小程序平台
+			this.container = canvas;
 		}
 		else {
 			if(typeof canvas === 'string' && typeof document != 'undefined') {
@@ -8604,10 +8605,7 @@ class jmChart extends jmGraph {
 
     container && container.style && (container.style.position = 'relative'); // 要先从选项中取出canvas，否则clone过滤掉
 
-    let cn = options.touchCanvas;
-    options = this.utils.clone(options, {
-      autoRefresh: true
-    }, true); // 生成图层, 当图刷新慢时，需要用一个操作图层来进行滑动等操作重绘
+    let cn = options.touchCanvas; // 生成图层, 当图刷新慢时，需要用一个操作图层来进行滑动等操作重绘
     // isWXMiniApp 非微信小程序下才能创建
 
     if (container && (options.touchGraph || cn)) {
@@ -8622,6 +8620,9 @@ class jmChart extends jmGraph {
       }
 
       if (cn) {
+        options = this.utils.clone(options, {
+          autoRefresh: true
+        }, true);
         this.touchGraph = new jmGraph(cn, options);
         this.touchGraph.chartGraph = this;
         this.on('propertyChange', (name, args) => {
