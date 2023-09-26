@@ -175,6 +175,151 @@ System.register([], function (exports) {
           }
       }
 
+      const colorKeywords = {
+          aliceblue:            "#f0f8ff",
+          antiquewhite:         "#faebd7",
+          aqua:                 "#00ffff",
+          aquamarine:           "#7fffd4",
+          azure:                "#f0ffff",
+          beige:                "#f5f5dc",
+          bisque:               "#ffe4c4",
+          black:                "#000000",
+          blanchedalmond:       "#ffebcd",
+          blue:                 "#0000ff",
+          blueviolet:           "#8a2be2",
+          brown:                "#a52a2a",
+          burlywood:            "#deb887",
+          cadetblue:            "#5f9ea0",
+          chartreuse:           "#7fff00",
+          chocolate:            "#d2691e",
+          coral:                "#ff7f50",
+          cornflowerblue:       "#6495ed",
+          cornsilk:             "#fff8dc",
+          crimson:              "#dc143c",
+          cyan:                 "#00ffff",
+          darkblue:             "#00008b",
+          darkcyan:             "#008b8b",
+          darkgoldenrod:        "#b8860b",
+          darkgray:             "#a9a9a9",
+          darkgreen:            "#006400",
+          darkkhaki:            "#bdb76b",
+          darkmagenta:          "#8b008b",
+          darkolivegreen:       "#556b2f",
+          darkorange:           "#ff8c00",
+          darkorchid:           "#9932cc",
+          darkred:              "#8b0000",
+          darksalmon:           "#e9967a",
+          darkseagreen:         "#8fbc8f",
+          darkslateblue:        "#483d8b",
+          darkslategray:        "#2f4f4f",
+          darkturquoise:        "#00ced1",
+          darkviolet:           "#9400d3",
+          deeppink:             "#ff1493",
+          deepskyblue:          "#00bfff",
+          dimgray:              "#696969",
+          dodgerblue:           "#1e90ff",
+          firebrick:            "#b22222",
+          floralwhite:          "#fffaf0",
+          forestgreen:          "#228b22",
+          fuchsia:              "#ff00ff",
+          gainsboro:            "#dcdcdc",
+          ghostwhite:           "#f8f8ff",
+          gold:                 "#ffd700",
+          goldenrod:            "#daa520",
+          gray:                 "#808080",
+          green:                "#008000",
+          greenyellow:          "#adff2f",
+          grey:                 "#808080",
+          honeydew:             "#f0fff0",
+          hotpink:              "#ff69b4",
+          indianred:            "#cd5c5c",
+          indigo:               "#4b0082",
+          ivory:                "#fffff0",
+          khaki:                "#f0e68c",
+          lavender:             "#e6e6fa",
+          lavenderblush:        "#fff0f5",
+          lawngreen:            "#7cfc00",
+          lemonchiffon:         "#fffacd",
+          lightblue:            "#add8e6",
+          lightcoral:           "#f08080",
+          lightcyan:            "#e0ffff",
+          lightgoldenrodyellow: "#fafad2",
+          lightgrey:            "#d3d3d3",
+          lightgreen:           "#90ee90",
+          lightpink:            "#ffb6c1",
+          lightsalmon:          "#ffa07a",
+          lightseagreen:        "#20b2aa",
+          lightskyblue:         "#87cefa",
+          lightslategray:       "#778899",
+          lightsteelblue:       "#b0c4de",
+          lightyellow:          "#ffffe0",
+          lime:                 "#00ff00",
+          limegreen:            "#32cd32",
+          linen:                "#faf0e6",
+          magenta:              "#ff00ff",
+          maroon:               "#800000",
+          mediumaquamarine:     "#66cdaa",
+          mediumblue:           "#0000cd",
+          mediumorchid:         "#ba55d3",
+          mediumpurple:         "#9370d8",
+          mediumseagreen:       "#3cb371",
+          mediumslateblue:      "#7b68ee",
+          mediumspringgreen:    "#00fa9a",
+          mediumturquoise:      "#48d1cc",
+          mediumvioletred:      "#c71585",
+          midnightblue:         "#191970",
+          mintcream:            "#f5fffa",
+          mistyrose:            "#ffe4e1",
+          moccasin:             "#ffe4b5",
+          navajowhite:          "#ffdead",
+          navy:                 "#000080",
+          oldlace:              "#fdf5e6",
+          olive:                "#808000",
+          olivedrab:            "#6b8e23",
+          orange:               "#ffa500",
+          orangered:            "#ff4500",
+          orchid:               "#da70d6",
+          palegoldenrod:        "#eee8aa",
+          palegreen:            "#98fb98",
+          paleturquoise:        "#afeeee",
+          palevioletred:        "#d87093",
+          papayawhip:           "#ffefd5",
+          peachpuff:            "#ffdab9",
+          peru:                 "#cd853f",
+          pink:                 "#ffc0cb",
+          plum:                 "#dda0dd",
+          powderblue:           "#b0e0e6",
+          purple:               "#800080",
+          red:                  "#ff0000",
+          rosybrown:            "#bc8f8f",
+          royalblue:            "#4169e1",
+          saddlebrown:          "#8b4513",
+          salmon:               "#fa8072",
+          sandybrown:           "#f4a460",
+          seagreen:             "#2e8b57",
+          seashell:             "#fff5ee",
+          sienna:               "#a0522d",
+          silver:               "#c0c0c0",
+          skyblue:              "#87ceeb",
+          slateblue:            "#6a5acd",
+          slategray:            "#708090",
+          snow:                 "#fffafa",
+          springgreen:          "#00ff7f",
+          steelblue:            "#4682b4",
+          tan:                  "#d2b48c",
+          teal:                 "#008080",
+          thistle:              "#d8bfd8",
+          tomato:               "#ff6347",
+          turquoise:            "#40e0d0",
+          violet:               "#ee82ee",
+          wheat:                "#f5deb3",
+          white:                "#ffffff",
+          whitesmoke:           "#f5f5f5",
+          yellow:               "#ffff00",
+          yellowgreen:          "#9acd32",
+          transparent:          "rgba(0,0,0,0)"
+        };
+
       /**
        * 画图基础对象
        * 当前库的工具类
@@ -237,7 +382,10 @@ System.register([], function (exports) {
                       if(k === 'constructor') continue;
                       const v = source[k];
                       // 不复制页面元素和class对象
-                      if(v && (v.tagName || v.getContext)) continue;
+                      if(v && (v.tagName || v.getContext)) {
+                          target[k] = v;
+                          continue;
+                      }
 
                       // 如果不是对象和空，则采用target的属性
                       if(typeof target[k] === 'object' || typeof target[k] === 'undefined') {                    
@@ -787,65 +935,104 @@ System.register([], function (exports) {
            * @param {string}} hex 16进度的颜色
            */
           static hexToRGBA(hex) {
-              hex = this.trim(hex);        
+              if(typeof hex === 'string') hex = this.trim(hex);   
+              else return hex;
+
+              // 如果缓存存在，则直接返回
+              this.__hexToRGBA_Cache = this.__hexToRGBA_Cache || {};
+              if(this.__hexToRGBA_Cache[hex]) return this.__hexToRGBA_Cache[hex];
+
+              let res = hex;
+
+              // 系统颜色
+              if(colorKeywords[res]) res = colorKeywords[res];
 
               //当为7位时，表示需要转为带透明度的rgba
-              if(hex[0] == '#') {
+              if(res[0] == '#') {
                   const color = {
                       a: 1
                   };
-                  if(hex.length >= 8) {
-                      color.a = hex.substr(1,2);
-                      color.g = hex.substr(5,2);
-                      color.b = hex.substr(7,2);
-                      color.r = hex.substr(3,2);
+                  if(res.length >= 8) {
+                      color.a = res.substr(1,2);
+                      color.g = res.substr(5,2);
+                      color.b = res.substr(7,2);
+                      color.r = res.substr(3,2);
                       //透明度
-                      color.a = (this.hexToNumber(color.a) / 255).toFixed(4);
+                      color.a = Number((this.hexToNumber(color.a) / 255).toFixed(4));
 
                       color.r = this.hexToNumber(color.r||0);
                       color.g = this.hexToNumber(color.g||0);
                       color.b = this.hexToNumber(color.b||0);
-                      return color; 
+                      res = color; 
                   }
                   // #cccccc || #ccc
-                  else if(hex.length === 7 || hex.length === 4) {
+                  else if(res.length === 7 || res.length === 4) {
                       // #ccc这种情况，把每个位复制一份
-                      if(hex.length === 4) {
-                          color.g = hex.substr(2, 1);
+                      if(res.length === 4) {
+                          color.g = res.substr(2, 1);
                           color.g = color.g + color.g;
-                          color.b = hex.substr(3, 1);
+                          color.b = res.substr(3, 1);
                           color.b = color.b + color.b;
-                          color.r = hex.substr(1, 1);
+                          color.r = res.substr(1, 1);
                           color.r = color.r + color.r;
                       }
                       else {
-                          color.g = hex.substr(3, 2);//除#号外的第二位
-                          color.b = hex.substr(5, 2);
-                          color.r = hex.substr(1, 2);
+                          color.g = res.substr(3, 2);//除#号外的第二位
+                          color.b = res.substr(5, 2);
+                          color.r = res.substr(1, 2);
                       }
 
                       color.r = this.hexToNumber(color.r||0);
                       color.g = this.hexToNumber(color.g||0);
                       color.b = this.hexToNumber(color.b||0);
                       
-                      return color; 
+                      res = color; 
                   }
                   //如果是5位的话，# 则第2位表示A，后面依次是r,g,b
-                  else if(hex.length === 5) {
-                      color.a = hex.substr(1,1);
-                      color.g = hex.substr(3,1);//除#号外的第二位
-                      color.b = hex.substr(4,1);
-                      color.r = hex.substr(2,1);
+                  else if(res.length === 5) {
+                      color.a = res.substr(1,1);
+                      color.g = res.substr(3,1);//除#号外的第二位
+                      color.b = res.substr(4,1);
+                      color.r = res.substr(2,1);
 
                       color.r = this.hexToNumber(color.r||0);
                       color.g = this.hexToNumber(color.g||0);
                       color.b = this.hexToNumber(color.b||0);
                       //透明度
-                      color.a = (this.hexToNumber(color.a) / 255).toFixed(4);
-                      return color; 
+                      color.a = Number((this.hexToNumber(color.a) / 255).toFixed(4));
+                      res = color; 
                   }
               }  
-              return hex;     
+              if(typeof res === 'string') {
+                  const m = res.match(/rgb(a)?\s*\(\s*([\d\.]+)\s*,\s*([\d\.]+)\s*,\s*([\d\.]+)\s*(,\s*[\d\.]+)?\s*\)/i); 
+                  if(m && m.length === 6) {
+                      const color = {
+                          r: Number(m[2]),
+                          g: Number(m[3]),
+                          b: Number(m[4]),
+                          a: Number(this.trimStart(m[5]||'1', ','))
+                      };
+                      res = color;
+                  }
+              }
+              return this.__hexToRGBA_Cache[hex] = res;     
+          }
+
+          /**
+           * 把255的rgb值转为0-1的值
+           * @param {rgba} color 颜色
+           */
+          static rgbToDecimal(color) {
+              color = this.clone(color);
+              color.r = this.byteToDecimal(color.r);
+              color.g = this.byteToDecimal(color.g);
+              color.b = this.byteToDecimal(color.b);
+              return color;
+          }
+
+          //255值转为0-1的小数
+          static byteToDecimal(b) {
+              return b / 255;
           }
 
           /**
@@ -865,10 +1052,10 @@ System.register([], function (exports) {
                   const color = this.hexToRGBA(r);
                   if(typeof color === 'string') return color;
                   
-                  r = color.r || r;
-                  g = color.g || g;
-                  b = color.b || b;
-                  a = color.a || a;
+                  r = typeof color.r !== 'undefined'? color.r: r;
+                  g = typeof color.g !== 'undefined'? color.g: g;
+                  b = typeof color.b !== 'undefined'? color.b: b;
+                  a = typeof color.a !== 'undefined'? color.a: a;
               }
               if(typeof r != 'undefined' && typeof g != 'undefined' && typeof b != 'undefined') {
                   if(typeof a != 'undefined') {            
@@ -974,8 +1161,13 @@ System.register([], function (exports) {
       		let sy1 = Number(y1) + bounds.top;
       		let sx2 = Number(x2) + bounds.left;
       		let sy2 = Number(y2) + bounds.top;
-      		if(this.type === 'linear') {		
-      			gradient = context.createLinearGradient(sx1, sy1, sx2, sy2);
+      		if(this.type === 'linear') {
+      			if(control.mode === 'webgl' && control.webglControl) {
+      				gradient = control.webglControl.createLinearGradient(x1, y1, x2, y2, bounds);
+      			}	
+      			else {		
+      				context.createLinearGradient && (gradient = context.createLinearGradient(sx1, sy1, sx2, sy2));
+      			}
       		}
       		else if(this.type === 'radial') {
       			let r1 = this.r1||0;
@@ -987,22 +1179,32 @@ System.register([], function (exports) {
       			if(jmUtils.checkPercent(r2)) {
       				r2 = jmUtils.percentToNumber(r2);
       				r2 = d * r2;
+      			}
+      			if(control.mode === 'webgl' && control.webglControl) {
+      				gradient = control.webglControl.createRadialGradient(x1, y1, r1, x2, y2, r2, bounds);
       			}	
       			//offsetLine = Math.abs(r2 - r1);//二圆半径差
+      			else if(context.createRadialGradient) {
+      				gradient = context.createRadialGradient(sx1, sy1, r1, sx2, sy2, r2);	
+      			}
       			//小程序的接口特殊
-      			if(context.createCircularGradient) { 
+      			else if(context.createCircularGradient) { 
       				gradient = context.createCircularGradient(sx1, sy1, r2);
       			}
-      			else {
-      				gradient = context.createRadialGradient(sx1, sy1, r1, sx2, sy2, r2);	
-      			}	
       		}
+      		
       		//颜色渐变
-      		this.stops.each(function(i,s) {	
-      			let c = jmUtils.toColor(s.color);
-      			//s.offset 0.0 ~ 1.0
-      			gradient.addColorStop(s.offset, c);		
-      		});
+      		if(gradient) {
+      			this.stops.each(function(i,s) {	
+      				let c = jmUtils.toColor(s.color);
+      				//s.offset 0.0 ~ 1.0
+      				gradient && gradient.addColorStop(s.offset, c);		
+      			});
+      		}
+      		else {
+      			const s = this.stops.get(0);
+      			return (s && s.color) || '#000';
+      		}
       		
       		return gradient;
       	}
@@ -1081,14 +1283,14 @@ System.register([], function (exports) {
       	toString() {
       		let str = this.type + '-gradient(';
       		if(this.type == 'linear') {
-      			str += this.x1 + ' ' + this.y1 + ' ' + this.x2 + ' ' + this.y2;
+      			str += this.x1.toFixed(2) + ' ' + this.y1.toFixed(2) + ' ' + this.x2.toFixed(2) + ' ' + this.y2.toFixed(2);
       		}
       		else {
-      			str += this.x1 + ' ' + this.y1 + ' ' + this.r1 + ' ' + this.x2 + ' ' + this.y2 + ' ' + this.r2;
+      			str += this.x1.toFixed(2) + ' ' + this.y1.toFixed(2) + ' ' + this.r1.toFixed(2) + ' ' + this.x2.toFixed(2) + ' ' + this.y2.toFixed(2) + ' ' + this.r2.toFixed(2);
       		}
       		//颜色渐变
       		this.stops.each(function(i,s) {	
-      			str += ',' + s.color + ' ' + s.offset;
+      			str += ',' + s.color + ' ' + s.offset.toFixed(2);
       		});
       		return str + ')';
       	}
@@ -1157,6 +1359,7 @@ System.register([], function (exports) {
       	}
       }
 
+      var control_id_counter = 0;
       /**
        *  所有jm对象的基础对象
        * 
@@ -1169,7 +1372,7 @@ System.register([], function (exports) {
       		if(g && g.type == 'jmGraph') {
       			this.graph = g;
       		}
-      		//this.id = Symbol("id"); //生成一个唯一id
+      		this.id = ++control_id_counter; //生成一个唯一id
       	}
       	
       	/**
@@ -1267,31 +1470,31 @@ System.register([], function (exports) {
        */
       class jmProperty extends jmObject {		
       	
-      	constructor() {
+      	constructor(params) {
       		super();
-      		
       		this[PROPERTY_KEY] = {};
+      		if(params && params.mode) this.mode = params.mode;
       	}
 
       	/**
       	 * 基础属性读写接口
-      	 * @method __pro
+      	 * @method property
       	 * @param {string} name 属性名
       	 * @param {any} value 属性的值
       	 * @returns {any} 属性的值
       	 */
-      	__pro(...pars) {
+      	 property(...pars) {
       		if(pars) {
-      			let pros = this[PROPERTY_KEY];
-      			let name = pars[0];
+      			const pros = this[PROPERTY_KEY];
+      			const name = pars[0];
       			if(pars.length > 1) {
-      				let value = pars[1];
-      				let args = {oldValue: pros[name], newValue: value};
+      				const value = pars[1];
+      				const args = {oldValue: pros[name], newValue: value};
       				pros[name] = pars[1];
       				if(this.emit) this.emit('propertyChange', name, args);
       				return pars[1];
       			}
-      			else if(pars.length == 1) {
+      			else if(name) {
       				return pros[name];
       			}
       		}
@@ -1303,10 +1506,10 @@ System.register([], function (exports) {
       	 * @type {boolean}
       	 */
       	get needUpdate() {
-      		return this.__pro('needUpdate');
+      		return this.property('needUpdate');
       	}
       	set needUpdate(v) {
-      		this.__pro('needUpdate', v);
+      		this.property('needUpdate', v);
       		//子控件属性改变，需要更新整个画板
       		if(v && !this.is('jmGraph') && this.graph) {
       			this.graph.needUpdate = true;
@@ -1319,12 +1522,27 @@ System.register([], function (exports) {
       	 * @type {jmGraph}
       	 */
       	get graph() {
-      		let g = this.__pro('graph');
-      		g = g || (this.__pro('graph', this.findParent('jmGraph')));
+      		let g = this.property('graph');
+      		g = g || (this.property('graph', this.findParent('jmGraph')));
       		return g;
       	}
       	set graph(v) {
-      		return this.__pro('graph', v);
+      		return this.property('graph', v);
+      	}
+
+      	/**
+      	 * 绘制模式 2d/webgl
+      	 * @property mode
+      	 * @type {string}
+      	 */
+      	get mode() {
+      		let m = this.property('mode');
+      		if(m) return m;
+      		else if(this.is('jmGraph')) return this.property('mode');		
+      		return this.graph.mode;
+      	}
+      	set mode(v) {
+      		return this.property('mode', v);
       	}
 
       	/**
@@ -1344,9 +1562,12 @@ System.register([], function (exports) {
       	}
       }
 
+      //import WebglPath from "../lib/webgl/path.js";
+
       //样式名称，也当做白名单使用		
       const jmStyleMap = {
       	'fill':'fillStyle',
+      	'fillImage':'fillImage',
       	'stroke':'strokeStyle',
       	'shadow.blur':'shadowBlur',
       	'shadow.x':'shadowOffsetX',
@@ -1379,8 +1600,8 @@ System.register([], function (exports) {
 
       	constructor(params, t) {
       		params = params||{};
-      		super();
-      		this.__pro('type', t || new.target.name);
+      		super(params);
+      		this.property('type', t || new.target.name);
       		this.style = params && params.style ? params.style : {};
       		//this.position = params.position || {x:0,y:0};
       		this.width = params.width || 0;
@@ -1393,6 +1614,15 @@ System.register([], function (exports) {
       		this.graph = params.graph || null;
       		this.zIndex = params.zIndex || 0;
       		this.interactive = typeof params.interactive == 'undefined'? true : params.interactive;
+
+      		// webgl模式
+      		/*if(this.mode === 'webgl') {
+      			this.webglControl = new WebglPath(this.graph, {
+      				style: this.style,
+      				isRegular: params.isRegular,
+      				needCut: params.needCut
+      			});
+      		}*/
 
       		this.initializing();	
       		
@@ -1409,7 +1639,7 @@ System.register([], function (exports) {
       	 * @type string
       	 */
       	get type() {
-      		return this.__pro('type');
+      		return this.property('type');
       	}
 
       	/**
@@ -1418,17 +1648,17 @@ System.register([], function (exports) {
       	 * @type {object}
       	 */
       	get context() {
-      		let s = this.__pro('context');
+      		let s = this.property('context');
       		if(s) return s;
       		else if(this.is('jmGraph') && this.canvas && this.canvas.getContext) {
-      			return this.context = this.canvas.getContext('2d');
+      			return this.context = this.canvas.getContext(this.mode || '2d');
       		}
-      		let g = this.graph;
+      		const g = this.graph;
       		if(g) return g.context;
-      		return g.canvas.getContext('2d');
+      		return g.canvas.getContext(this.mode || '2d');
       	}
       	set context(v) {
-      		return this.__pro('context', v);
+      		return this.property('context', v);
       	}
 
       	/**
@@ -1437,13 +1667,13 @@ System.register([], function (exports) {
       	 * @type {object}
       	 */
       	get style() {
-      		let s = this.__pro('style');
-      		if(!s) s = this.__pro('style', {});
+      		let s = this.property('style');
+      		if(!s) s = this.property('style', {});
       		return s;
       	}
       	set style(v) {
       		this.needUpdate = true;
-      		return this.__pro('style', v);
+      		return this.property('style', v);
       	}
 
       	/**
@@ -1453,13 +1683,13 @@ System.register([], function (exports) {
       	 * @type {boolean}
       	 */
       	get visible() {
-      		let s = this.__pro('visible');
-      		if(typeof s == 'undefined') s = this.__pro('visible', true);
+      		let s = this.property('visible');
+      		if(typeof s == 'undefined') s = this.property('visible', true);
       		return s;
       	}
       	set visible(v) {
       		this.needUpdate = true;
-      		return this.__pro('visible', v);
+      		return this.property('visible', v);
       	}	
 
       	/**
@@ -1470,11 +1700,11 @@ System.register([], function (exports) {
       	 * @type {boolean}
       	 */
       	get interactive() {
-      		let s = this.__pro('interactive');
+      		let s = this.property('interactive');
       		return s;
       	}
       	set interactive(v) {
-      		return this.__pro('interactive', v);
+      		return this.property('interactive', v);
       	}
       		
       	/**
@@ -1483,13 +1713,13 @@ System.register([], function (exports) {
       	 * @type {list}
       	 */
       	get children() {
-      		let s = this.__pro('children');
-      		if(!s) s = this.__pro('children', new jmList());
+      		let s = this.property('children');
+      		if(!s) s = this.property('children', new jmList());
       		return s;
       	}
       	set children(v) {
       		this.needUpdate = true;
-      		return this.__pro('children', v);
+      		return this.property('children', v);
       	}
 
       	/**
@@ -1498,13 +1728,13 @@ System.register([], function (exports) {
       	 * @type {number}
       	 */
       	get width() {
-      		let s = this.__pro('width');
-      		if(typeof s == 'undefined') s = this.__pro('width', 0);
+      		let s = this.property('width');
+      		if(typeof s == 'undefined') s = this.property('width', 0);
       		return s;
       	}
       	set width(v) {
       		this.needUpdate = true;
-      		return this.__pro('width', v);
+      		return this.property('width', v);
       	}
 
       	/**
@@ -1513,13 +1743,13 @@ System.register([], function (exports) {
       	 * @type {number}
       	 */
       	get height() {
-      		let s = this.__pro('height');
-      		if(typeof s == 'undefined') s = this.__pro('height', 0);
+      		let s = this.property('height');
+      		if(typeof s == 'undefined') s = this.property('height', 0);
       		return s;
       	}
       	set height(v) {
       		this.needUpdate = true;
-      		return this.__pro('height', v);
+      		return this.property('height', v);
       	}
 
       	/**
@@ -1528,13 +1758,13 @@ System.register([], function (exports) {
       	 * @type {number}
       	 */
       	get zIndex() {
-      		let s = this.__pro('zIndex');
-      		if(!s) s = this.__pro('zIndex', 0);
+      		let s = this.property('zIndex');
+      		if(!s) s = this.property('zIndex', 0);
       		return s;
       	}
       	set zIndex(v) {
       		this.needUpdate = true;
-      		this.__pro('zIndex', v);
+      		this.property('zIndex', v);
       		this.children.sort();//层级发生改变，需要重新排序
       		this.needUpdate = true;
       		return v;
@@ -1715,12 +1945,25 @@ System.register([], function (exports) {
       					__setStyle(styleValue.toGradient(this), mpname||name);	
       				}
       				else if(mpname) {
-      					//只有存在白名单中才处理
-      					//颜色转换
-      					if(t == 'string' && ['fillStyle', 'strokeStyle', 'shadowColor'].indexOf(mpname) > -1) {
-      						styleValue = jmUtils.toColor(styleValue);
+      					
+      					if(this.webglControl) {
+      						//只有存在白名单中才处理
+      						//颜色转换
+      						if(t == 'string' && ['fillStyle', 'strokeStyle', 'shadowColor'].indexOf(mpname) > -1) {
+      							styleValue = jmUtils.hexToRGBA(styleValue);
+      						}
+
+      						this.webglControl.setStyle(mpname, styleValue);
       					}
-      					this.context[mpname] = styleValue;
+      					else {
+      						//只有存在白名单中才处理
+      						//颜色转换
+      						if(t == 'string' && ['fillStyle', 'strokeStyle', 'shadowColor'].indexOf(mpname) > -1) {
+      							styleValue = jmUtils.toColor(styleValue);
+      						}
+
+      						this.context[mpname] = styleValue;
+      					}
       				}	
       				else {
       					switch(name) {
@@ -1737,7 +1980,7 @@ System.register([], function (exports) {
       						}
       						//平移
       						case 'translate' : {
-      							this.context.translate(styleValue.x, styleValue.y);
+      							this.context.translate && this.context.translate(styleValue.x, styleValue.y);
       							break;
       						}
       						//旋转
@@ -1756,9 +1999,9 @@ System.register([], function (exports) {
       								tranY = styleValue.rotateY + bounds.top;	
       							}
       												
-      							if(tranX!=0 || tranY != 0) this.context.translate(tranX,tranY);
+      							if(tranX!=0 || tranY != 0) this.context.translate && this.context.translate(tranX,tranY);
       							this.context.rotate(styleValue.angle);
-      							if(tranX!=0 || tranY != 0) this.context.translate(-tranX,-tranY);
+      							if(tranX!=0 || tranY != 0) this.context.translate && this.context.translate(-tranX,-tranY);
       							break;
       						}
       						case 'transform' : {
@@ -2117,7 +2360,8 @@ System.register([], function (exports) {
       	 */
       	beginDraw() {	
       		this.getLocation(true);//重置位置信息
-      		this.context.beginPath();			
+      		this.context.beginPath && this.context.beginPath();		
+      		//if(this.webglControl && this.webglControl.beginDraw) this.webglControl.beginDraw();
       	}
 
       	/**
@@ -2128,15 +2372,23 @@ System.register([], function (exports) {
       	endDraw() {
       		//如果当前为封闭路径
       		if(this.style.close) {
-      			this.context.closePath();
+      			//if(this.webglControl) this.webglControl.closePath();
+      			this.context.closePath && this.context.closePath();
       		}
       		
       		if(this.style['fill']) {
-      			this.context.fill();
+      			/*if(this.webglControl) {
+      				const bounds = this.getBounds();
+      				this.webglControl.fill(bounds);
+      			}*/
+      			this.context.fill && this.context.fill();
       		}
-      		if(this.style['stroke'] || !this.style['fill']) {
-      			this.context.stroke();
+      		if(this.style['stroke'] || (!this.style['fill'] && !this.is('jmGraph'))) {
+      			//if(this.webglControl) this.webglControl.stroke();
+      			this.context.stroke && this.context.stroke();
       		}
+
+      		//if(this.webglControl && this.webglControl.endDraw) this.webglControl.endDraw();
 
       		this.needUpdate = false;
       	}
@@ -2150,20 +2402,27 @@ System.register([], function (exports) {
       	draw() {	
       		if(this.points && this.points.length > 0) {
       			//获取当前控件的绝对位置
-      			let bounds = this.parent && this.parent.absoluteBounds?this.parent.absoluteBounds:this.absoluteBounds;
-      			
-      			this.context.moveTo(this.points[0].x + bounds.left,this.points[0].y + bounds.top);
-      			let len = this.points.length;			
-      			for(let i=1; i < len;i++) {
-      				let p = this.points[i];
-      				//移至当前坐标
-      				if(p.m) {
-      					this.context.moveTo(p.x + bounds.left,p.y + bounds.top);
-      				}
-      				else {
-      					this.context.lineTo(p.x+ bounds.left,p.y + bounds.top);
-      				}			
-      			}		
+      			const bounds = this.parent && this.parent.absoluteBounds?this.parent.absoluteBounds:this.absoluteBounds;
+      			/*if(this.webglControl) {
+      				this.webglControl.setParentBounds(bounds);
+      				this.webglControl.draw([
+      					...this.points
+      				]);
+      			}*/
+      			if(this.context && this.context.moveTo) {
+      				this.context.moveTo(this.points[0].x + bounds.left,this.points[0].y + bounds.top);
+      				let len = this.points.length;			
+      				for(let i=1; i < len;i++) {
+      					let p = this.points[i];
+      					//移至当前坐标
+      					if(p.m) {
+      						this.context.moveTo(p.x + bounds.left,p.y + bounds.top);
+      					}
+      					else {
+      						this.context.lineTo(p.x+ bounds.left,p.y + bounds.top);
+      					}			
+      				}	
+      			}	
       		}	
       	}
 
@@ -2187,7 +2446,7 @@ System.register([], function (exports) {
       				else if(this.absoluteBounds.bottom <= 0) needDraw = false;
       			}
       			
-      			this.context.save();
+      			this.context.save && this.context.save();
 
       			this.emit('beginDraw', this);
       			
@@ -2204,7 +2463,7 @@ System.register([], function (exports) {
       			}
 
       			this.emit('endDraw',this);	
-      			this.context.restore();
+      			this.context.restore && this.context.restore();
       			
       			this.needUpdate = false;
       		}
@@ -2704,7 +2963,7 @@ System.register([], function (exports) {
       	constructor(params, t='jmPath') {
       		super(params, t);		
       		this.points = params && params.points ? params.points : [];	
-      		
+      		this.polygonIndices = params && params.polygonIndices ? params.polygonIndices : [];	
       	}
       	
       	/**
@@ -2714,13 +2973,29 @@ System.register([], function (exports) {
       	 * @type {array}
       	 */
       	get points() {
-      		let s = this.__pro('points');
+      		let s = this.property('points');
       		return s;
       	}
       	set points(v) {
       		this.needUpdate = true;
-      		return this.__pro('points', v);
+      		return this.property('points', v);
       	}
+
+      	/**
+      	 * 顶点数组索引，对应points中的顶点
+      	 * @property polygonIndices
+      	 * @type {array} 
+      	 */
+      	get polygonIndices() {
+      		let s = this.property('polygonIndices');
+      		return s;
+      	}
+      	set polygonIndices(v) {
+      		this.needUpdate = true;
+      		return this.property('polygonIndices', v);
+      	}
+      	
+      	
       }
 
       /**
@@ -2734,6 +3009,9 @@ System.register([], function (exports) {
 
       	constructor(params, t='jmArc') {
       		if(!params) params = {};
+      		params.isRegular = params.isRegular === false? false: true;// 规则的
+      		params.needCut = params.needCut === true? true: false;// 规则的
+      		
       		super(params, t);
 
       		this.center = params.center || {x:0,y:0};
@@ -2754,11 +3032,11 @@ System.register([], function (exports) {
       	 * @type {point}
       	 */
       	get center() {
-      		return this.__pro('center');
+      		return this.property('center');
       	}
       	set center(v) {
       		this.needUpdate = true;
-      		return this.__pro('center', v);
+      		return this.property('center', v);
       	}
 
       	/**
@@ -2767,11 +3045,11 @@ System.register([], function (exports) {
       	 * @type {number}
       	 */
       	get radius() {
-      		return this.__pro('radius');
+      		return this.property('radius');
       	}
       	set radius(v) {
       		this.needUpdate = true;
-      		return this.__pro('radius', v);
+      		return this.property('radius', v);
       	}
 
       	/**
@@ -2780,11 +3058,11 @@ System.register([], function (exports) {
       	 * @type {number}
       	 */
       	get startAngle() {
-      		return this.__pro('startAngle');
+      		return this.property('startAngle');
       	}
       	set startAngle(v) {
       		this.needUpdate = true;
-      		return this.__pro('startAngle', v);
+      		return this.property('startAngle', v);
       	}
 
       	/**
@@ -2793,11 +3071,11 @@ System.register([], function (exports) {
       	 * @type {number}
       	 */
       	get endAngle() {
-      		return this.__pro('endAngle');
+      		return this.property('endAngle');
       	}
       	set endAngle(v) {
       		this.needUpdate = true;
-      		return this.__pro('endAngle', v);
+      		return this.property('endAngle', v);
       	}
 
       	/**
@@ -2807,11 +3085,11 @@ System.register([], function (exports) {
       	 * @type {boolean}
       	 */
       	get anticlockwise() {
-      		return this.__pro('anticlockwise');
+      		return this.property('anticlockwise');
       	}
       	set anticlockwise(v) {
       		this.needUpdate = true;
-      		return this.__pro('anticlockwise', v);
+      		return this.property('anticlockwise', v);
       	}
 
 
@@ -2861,7 +3139,7 @@ System.register([], function (exports) {
       			if(step > 0 && r > end) r = end;
       			else if(step < 0 && r < end) r = end;
 
-      			let p = {
+      			const p = {
       				x : Math.cos(r) * mw + cx,
       				y : Math.sin(r) * mh + cy
       			};
@@ -2902,11 +3180,11 @@ System.register([], function (exports) {
       	 * @type {point}
       	 */
       	get start() {
-      		return this.__pro('start');
+      		return this.property('start');
       	}
       	set start(v) {
       		this.needUpdate = true;
-      		return this.__pro('start', v);
+      		return this.property('start', v);
       	}
 
       	/**
@@ -2917,11 +3195,11 @@ System.register([], function (exports) {
       	 * @type {point} 结束点
       	 */
       	get end() {
-      		return this.__pro('end');
+      		return this.property('end');
       	}
       	set end(v) {
       		this.needUpdate = true;
-      		return this.__pro('end', v);
+      		return this.property('end', v);
       	}
 
       	/**
@@ -2932,11 +3210,11 @@ System.register([], function (exports) {
       	 * @type {number} 箭头角度
       	 */
       	get angle() {
-      		return this.__pro('angle');
+      		return this.property('angle');
       	}
       	set angle(v) {
       		this.needUpdate = true;
-      		return this.__pro('angle', v);
+      		return this.property('angle', v);
       	}
 
       	/**
@@ -2947,11 +3225,11 @@ System.register([], function (exports) {
       	 * @type {number}
       	 */
       	get offsetX() {
-      		return this.__pro('offsetX');
+      		return this.property('offsetX');
       	}
       	set offsetX(v) {
       		this.needUpdate = true;
-      		return this.__pro('offsetX', v);
+      		return this.property('offsetX', v);
       	}
 
       	/**
@@ -2962,11 +3240,11 @@ System.register([], function (exports) {
       	 * @type {number}
       	 */
       	get offsetY() {
-      		return this.__pro('offsetY');
+      		return this.property('offsetY');
       	}
       	set offsetY(v) {
       		this.needUpdate = true;
-      		return this.__pro('offsetY', v);
+      		return this.property('offsetY', v);
       	}
 
       	/**
@@ -3058,11 +3336,11 @@ System.register([], function (exports) {
       	 * @type {array}
       	 */
       	get cpoints() {
-      		return this.__pro('cpoints');
+      		return this.property('cpoints');
       	}
       	set cpoints(v) {
       		this.needUpdate = true;
-      		return this.__pro('cpoints', v);
+      		return this.property('cpoints', v);
       	}
       	
       	/**
@@ -3149,6 +3427,7 @@ System.register([], function (exports) {
       class jmCircle extends jmArc {		
       	
       	constructor(params, t='jmCircle') {
+      		params.isRegular = true;// 规则的
       		super(params, t);		
       	}
       	/**
@@ -3158,7 +3437,10 @@ System.register([], function (exports) {
       	 * @private
       	 * @for jmCircle
       	 */
-      	initPoints() {			
+      	initPoints() {		
+      		if(this.graph.mode === 'webgl') {
+      			return super.initPoints();
+      		}	
       		let location = this.getLocation();
       		
       		if(!location.radius) {
@@ -3177,6 +3459,9 @@ System.register([], function (exports) {
       	 * @method draw
       	 */
       	draw() {
+      		if(this.graph.mode === 'webgl') {
+      			return super.draw();
+      		}
       		let bounds = this.parent && this.parent.absoluteBounds?this.parent.absoluteBounds:this.absoluteBounds;	
       		let location = this.getLocation();
       		
@@ -3202,6 +3487,8 @@ System.register([], function (exports) {
       class jmHArc extends jmArc {
       		
       	constructor(params, t='jmHArc') {
+      		params.isRegular = true;// 规则的
+      		params.needCut = true;
       		super(params, t);
 
       		this.minRadius = params.minRadius || this.style.minRadius || 0;
@@ -3216,11 +3503,11 @@ System.register([], function (exports) {
       	 * @type {number} 
       	 */
       	get minRadius() {
-      		return this.__pro('minRadius');
+      		return this.property('minRadius');
       	}
       	set minRadius(v) {
       		this.needUpdate = true;
-      		return this.__pro('minRadius', v);
+      		return this.property('minRadius', v);
       	}
 
       	/**
@@ -3231,11 +3518,11 @@ System.register([], function (exports) {
       	 * @type {number} 
       	 */
       	get maxRadius() {
-      		return this.__pro('maxRadius');
+      		return this.property('maxRadius');
       	}
       	set maxRadius(v) {
       		this.needUpdate = true;
-      		return this.__pro('maxRadius', v);
+      		return this.property('maxRadius', v);
       	}
 
       	/**
@@ -3245,18 +3532,18 @@ System.register([], function (exports) {
       	 * @private
       	 */
       	initPoints() {	
-      		let location = this.getLocation();	
+      		const location = this.getLocation();	
       		//如果设定了半径。则以半径为主
-      		let minr = this.minRadius;
-      		let maxr = this.maxRadius;
+      		const minr = this.minRadius;
+      		const maxr = this.maxRadius;
       		
       		let start = this.startAngle;
       		let end = this.endAngle;
-      		let anticlockwise = this.anticlockwise;
+      		const anticlockwise = this.anticlockwise;
 
       		//如果是逆时针绘制，则角度为负数，并且结束角为2Math.PI-end
       		if(anticlockwise) {
-      			let p2 =  Math.PI*2;
+      			const p2 =  Math.PI*2;
       			start = p2 - start;
       			end = p2 - end;
       		}
@@ -3264,8 +3551,8 @@ System.register([], function (exports) {
       		let step = 0.1;
       		if(start > end) step = -step;
 
-      		let minps = [];
-      		let maxps = [];
+      		const minps = [];
+      		const maxps = [];
       		//椭圆方程x=a*cos(r) ,y=b*sin(r)
       		for(let r=start;;r += step) {
       			if(step > 0 && r > end) {
@@ -3275,13 +3562,13 @@ System.register([], function (exports) {
       				r = end;
       			}
 
-      			let cos = Math.cos(r);
-      			let sin = Math.sin(r);
-      			let p1 = {
+      			const cos = Math.cos(r);
+      			const sin = Math.sin(r);
+      			const p1 = {
       				x : cos * minr + location.center.x,
       				y : sin * minr + location.center.y
       			};
-      			let p2 = {
+      			const p2 = {
       				x : cos * maxr + location.center.x,
       				y : sin * maxr + location.center.y
       			};
@@ -3309,12 +3596,16 @@ System.register([], function (exports) {
       class jmLine extends jmPath {	
       	
       	constructor(params, t='jmLine') {
+      		
+      		params.isRegular = true;// 规则的
+
       		super(params, t);
 
       		this.start = params.start || {x:0,y:0};
       		this.end = params.end || {x:0,y:0};
       		this.style.lineType = this.style.lineType || 'solid';
       		this.style.dashLength = this.style.dashLength || 4;
+      		this.style.close = false;
       	}	
 
       	/**
@@ -3325,11 +3616,11 @@ System.register([], function (exports) {
       	 * @type {point}
       	 */
       	get start() {
-      		return this.__pro('start');
+      		return this.property('start');
       	}
       	set start(v) {
       		this.needUpdate = true;
-      		return this.__pro('start', v);
+      		return this.property('start', v);
       	}
 
       	/**
@@ -3340,11 +3631,11 @@ System.register([], function (exports) {
       	 * @type {point}
       	 */
       	get end() {
-      		return this.__pro('end');
+      		return this.property('end');
       	}
       	set end(v) {
       		this.needUpdate = true;
-      		return this.__pro('end', v);
+      		return this.property('end', v);
       	}
 
       	/**
@@ -3353,30 +3644,34 @@ System.register([], function (exports) {
       	 * @private
       	 */
       	initPoints() {	
-      		let start = this.start;
-      		let end = this.end;
+      		const start = this.start;
+      		const end = this.end;
       		this.points = [];	
       		this.points.push(start);
 
       		if(this.style.lineType === 'dotted') {			
       			let dx = end.x - start.x;
       			let dy = end.y - start.y;
-      			let lineLen = Math.sqrt(dx * dx + dy * dy);
+      			const lineLen = Math.sqrt(dx * dx + dy * dy);
       			dx = dx / lineLen;
       			dy = dy / lineLen;
       			let dottedstart = false;
 
-      			let dashLen = this.style.dashLength || 5;
-      			let dottedsp = dashLen / 2;
+      			const dashLen = this.style.dashLength || 5;
+      			const dottedsp = dashLen / 2;
       			for(let l=dashLen; l<=lineLen;) {
-      				if(dottedstart == false) {
-      					this.points.push({x: start.x + dx * l, y: start.y + dy * l});
+      				const p = {
+      					x: start.x + dx * l, 
+      					y: start.y + dy * l
+      				};
+      				if(dottedstart === false) {					
       					l += dottedsp;
       				}
       				else {				
-      					this.points.push({x: start.x + dx * l, y: start.y+ dy * l, m: true});
+      					p.m = true;// 移动到当时坐标
       					l += dashLen;
       				}
+      				this.points.push(p);
       				dottedstart = !dottedstart;				
       			}
       		}
@@ -3395,6 +3690,8 @@ System.register([], function (exports) {
       class jmPrismatic extends jmPath {	
       	
       	constructor(params, t='jmPrismatic') {
+      		params.isRegular = true;// 规则的
+      		
       		super(params, t);
       		this.style.close = typeof this.style.close == 'undefined'? true : this.style.close;
 
@@ -3412,11 +3709,11 @@ System.register([], function (exports) {
       	 * @type {point}
       	 */
       	get center() {
-      		return this.__pro('center');
+      		return this.property('center');
       	}
       	set center(v) {
       		this.needUpdate = true;
-      		return this.__pro('center', v);
+      		return this.property('center', v);
       	}
       	
       	/**
@@ -3450,6 +3747,7 @@ System.register([], function (exports) {
 
       	constructor(params, t='jmRect') {
       		params = params||{};
+      		params.isRegular = true;// 规则的
       		super(params, t);
 
       		this.style.close = true;
@@ -3461,11 +3759,11 @@ System.register([], function (exports) {
       	 * @type {number}
       	 */
       	get radius() {
-      		return this.__pro('radius');
+      		return this.property('radius');
       	}
       	set radius(v) {
       		this.needUpdate = true;
-      		return this.__pro('radius', v);
+      		return this.property('radius', v);
       	}	
 
       	/**
@@ -3474,11 +3772,11 @@ System.register([], function (exports) {
       	 * @type {point}
       	 */
       	get position() {
-      		return this.__pro('position');
+      		return this.property('position');
       	}
       	set position(v) {
       		this.needUpdate = true;
-      		return this.__pro('position', v);
+      		return this.property('position', v);
       	}
 
       	/**
@@ -3653,6 +3951,7 @@ System.register([], function (exports) {
 
       	constructor(params, t) {
       		params = params || {};
+      		params.isRegular = true;// 规则的
       		super(params, t||'jmImage');
 
       		this.style.fill = this.fill || 'transparent';//默认指定一个fill，为了可以鼠标选中
@@ -3670,10 +3969,10 @@ System.register([], function (exports) {
       	 * @type {point}
       	 */
       	get sourcePosition() {
-      		return this.__pro('sourcePosition');
+      		return this.property('sourcePosition');
       	}
       	set sourcePosition(v) {
-      		return this.__pro('sourcePosition', v);
+      		return this.property('sourcePosition', v);
       	}
 
       	/**
@@ -3683,11 +3982,11 @@ System.register([], function (exports) {
       	 * @type {number}
       	 */
       	get sourceWidth() {
-      		return this.__pro('sourceWidth');
+      		return this.property('sourceWidth');
       	}
       	set sourceWidth(v) {
       		this.needUpdate = true;
-      		return this.__pro('sourceWidth', v);
+      		return this.property('sourceWidth', v);
       	}
 
       	/**
@@ -3697,11 +3996,11 @@ System.register([], function (exports) {
       	 * @type {number}
       	 */
       	get sourceHeight() {
-      		return this.__pro('sourceHeight');
+      		return this.property('sourceHeight');
       	}
       	set sourceHeight(v) {
       		this.needUpdate = true;
-      		return this.__pro('sourceHeight', v);
+      		return this.property('sourceHeight', v);
       	}
 
       	/**
@@ -3711,11 +4010,11 @@ System.register([], function (exports) {
       	 * @type {img}
       	 */
       	get image() {
-      		return this.__pro('image');
+      		return this.property('image');
       	}
       	set image(v) {
       		this.needUpdate = true;
-      		return this.__pro('image', v);
+      		return this.property('image', v);
       	}
 
       	/**
@@ -3725,23 +4024,9 @@ System.register([], function (exports) {
       	 * @method draw
       	 */
       	draw() {	
-      		try {
-      			
-      			let img = this.getImage();
-      			if(this.graph.isWXMiniApp && this.graph.canvas && typeof img === 'string') {
-      				// 图片对象
-      				const image = this.graph.canvas.createImage();
-      				// 图片加载完成回调
-      				image.onload = () => {
-      					// 将图片绘制到 canvas 上
-      					this.drawImg(image);
-      				};
-      				// 设置图片src
-      				image.src = img;
-      			}
-      			else {
-      				this.drawImg(img);
-      			}
+      		try {			
+      			const img = this.getImage();	
+      			this.drawImg(img);
       		}
       		catch(e) {
       			console.error && console.error(e);
@@ -3750,42 +4035,72 @@ System.register([], function (exports) {
 
       	// 绘制
       	drawImg(img) {
-      		if(!img) {
+      		if(!img || !img.complete) {
       			console.warn('image is empty');
       			return;
       		}
       		let bounds = this.parent && this.parent.absoluteBounds?this.parent.absoluteBounds:this.absoluteBounds;
       		if(!bounds) bounds = this.parent && this.parent.getAbsoluteBounds?this.parent.getAbsoluteBounds():this.getAbsoluteBounds();
-      		let p = this.getLocation();
-      		p.left += bounds.left;
-      		p.top += bounds.top;
+
+      		let p = this.getLocation();		
 
       		let sp = this.sourcePosition;
       		let sw = this.sourceWidth;
       		let sh = this.sourceHeight;
+
+      		const ctx = this.webglControl || this.context;
+      		if(this.webglControl) {
+      			ctx.setParentBounds && ctx.setParentBounds(bounds);
+      			const localBounds = this.getBounds();
+      			// 给图片给定顶点
+      			ctx.draw([
+      				{
+      					x: localBounds.left,
+      					y: localBounds.top
+      				},
+      				{
+      					x: localBounds.left + localBounds.width,
+      					y: localBounds.top
+      				},
+      				{
+      					x: localBounds.left + localBounds.width,
+      					y: localBounds.top + localBounds.height
+      				},
+      				 {
+      					x: localBounds.left, 
+      					y: localBounds.top + localBounds.height
+      				 }
+      			], bounds);
+      			ctx.drawImage(img, localBounds.left, localBounds.top, localBounds.width, localBounds.height);
+      			return;
+      		}
+
+      		// 计算绝对定位
+      		p.left += bounds.left;
+      		p.top += bounds.top;
 
       		if(sp || typeof sw != 'undefined' || typeof sh != 'undefined') {	
       			if(typeof sw == 'undefined') sw= p.width || img.width || 0;
       			if(typeof sh == 'undefined') sh= p.height || img.height || 0;
       			sp = sp || {x:0, y:0};
 
-      			if(p.width && p.height) this.context.drawImage(img,sp.x,sp.y,sw,sh,p.left,p.top,p.width,p.height);
+      			if(p.width && p.height) ctx.drawImage(img,sp.x,sp.y,sw,sh,p.left,p.top,p.width,p.height);
       			else if(p.width) {
-      				this.context.drawImage(img,sp.x,sp.y,sw,sh,p.left,p.top,p.width,sh);
+      				ctx.drawImage(img,sp.x,sp.y,sw,sh,p.left,p.top,p.width,sh);
       			}		
       			else if(p.height) {
-      				this.context.drawImage(img,sp.x,sp.y,sw,sh,p.left,p.top,sw,p.height);
+      				ctx.drawImage(img,sp.x,sp.y,sw,sh,p.left,p.top,sw,p.height);
       			}		
-      			else this.context.drawImage(img,sp.x,sp.y,sw,sh,p.left,p.top,sw,sh);		
+      			else ctx.drawImage(img,sp.x,sp.y,sw,sh,p.left,p.top,sw,sh);		
       		}
       		else if(p) {
-      			if(p.width && p.height) this.context.drawImage(img,p.left,p.top,p.width,p.height);
-      			else if(p.width) this.context.drawImage(img,p.left,p.top,p.width,img.height);
-      			else if(p.height) this.context.drawImage(img,p.left,p.top,img.width,p.height);
-      			else this.context.drawImage(img,p.left,p.top);
+      			if(p.width && p.height) ctx.drawImage(img,p.left,p.top,p.width,p.height);
+      			else if(p.width) ctx.drawImage(img,p.left,p.top,p.width,img.height);
+      			else if(p.height) ctx.drawImage(img,p.left,p.top,img.width,p.height);
+      			else ctx.drawImage(img,p.left,p.top);
       		}
       		else {
-      			this.context.drawImage(img);
+      			ctx.drawImage(img);
       		}
       	}
 
@@ -3817,7 +4132,7 @@ System.register([], function (exports) {
       	 * @return {img} 图片对象
       	 */
       	getImage() {
-      		let src = this.image || this.style.src || this.style.image;
+      		const src = this.image || this.style.src || this.style.image;
       		if(this.__img && this.__img.src && this.__img.src.indexOf(src) != -1) {
       			return this.__img;
       		}
@@ -3826,11 +4141,24 @@ System.register([], function (exports) {
       		}
       		else if(typeof document !== 'undefined' && document.createElement) {
       			this.__img = document.createElement('img');
+      			this.__img.onload = ()=>{
+      				this.needUpdate = true;
+      			};
       			if(src && typeof src == 'string') this.__img.src = src;
+      		}
+      		else if(this.graph.isWXMiniApp && this.graph.canvas && typeof src === 'string') {
+      			// 图片对象
+      			this.__img = this.graph.canvas.createImage();
+      			this.__img.onload = ()=>{
+      				this.needUpdate = true;
+      			};
+      			// 设置图片src
+      			this.__img.src = src;
       		}
       		else {
       			this.__img = src;
       		}
+      		if(this.__img) this.image = this.__img.src;
       		return this.__img;
       	}
       }
@@ -3846,6 +4174,7 @@ System.register([], function (exports) {
 
       	constructor(params, t) {
       		params = params || {};
+      		params.isRegular = true;// 规则的
       		super(params, t||'jmLabel');
 
       		this.style.font = this.style.font || "15px Arial";
@@ -3868,11 +4197,11 @@ System.register([], function (exports) {
       	 * @type {string}
       	 */
       	get text() {
-      		return this.__pro('text');
+      		return this.property('text');
       	}
       	set text(v) {
       		this.needUpdate = true;
-      		return this.__pro('text', v);
+      		return this.property('text', v);
       	}
 
       	/**
@@ -3882,11 +4211,11 @@ System.register([], function (exports) {
       	 * @type {point}
       	 */
       	get center() {
-      		return this.__pro('center');
+      		return this.property('center');
       	}
       	set center(v) {
       		this.needUpdate = true;
-      		return this.__pro('center', v);
+      		return this.property('center', v);
       	}	
 
       	/**
@@ -3895,11 +4224,11 @@ System.register([], function (exports) {
       	 * @type {point}
       	 */
       	get position() {
-      		return this.__pro('position');
+      		return this.property('position');
       	}
       	set position(v) {
       		this.needUpdate = true;
-      		return this.__pro('position', v);
+      		return this.property('position', v);
       	}
 
       	/**
@@ -3950,17 +4279,17 @@ System.register([], function (exports) {
       	testSize() {
       		if(this.__size) return this.__size;
       		
-      		this.context.save();
+      		this.context.save && this.context.save();
       		// 修改字体，用来计算
       		this.setStyle({
-      			font: this.style.font || (this.style.fontSize + 'px ' + this.style.fontFamily)
+      			font: this.style.font || `${this.style.fontSize}px "${this.style.fontFamily}"`
       		});
       		//计算宽度
       		this.__size = this.context.measureText?
       							this.context.measureText(this.text):
       							{width:15};
-      		this.context.restore();
-      		this.__size.height = this.style.fontSize?this.style.fontSize:15;
+      		this.context.restore && this.context.restore();
+      		if(!this.__size.height) this.__size.height = this.style.fontSize? this.style.fontSize: 15;
       		if(!this.width) this.width = this.__size.width;
       		if(!this.height) this.height = this.__size.height;
       		return this.__size;
@@ -4028,7 +4357,7 @@ System.register([], function (exports) {
       		if(this.style.border) {
       			//如果指定了边框样式
       			if(this.style.border.style) {
-      				this.context.save();
+      				this.context.save && this.context.save();
       				this.setStyle(this.style.border.style);
       			}
       			this.context.moveTo(this.points[0].x + bounds.left,this.points[0].y + bounds.top);
@@ -4052,7 +4381,7 @@ System.register([], function (exports) {
       			}
       			//如果指定了边框颜色
       			if(this.style.border.style) {
-      				this.context.restore();
+      				this.context.restore && this.context.restore();
       			}	
       		}		
       	}
@@ -4070,6 +4399,8 @@ System.register([], function (exports) {
 
       	constructor(params, t='jmResize') {
       		params = params || {};
+      		params.isRegular = true;// 规则的
+      		
       		super(params, t);
       		//是否可拉伸
       		this.resizable = params.resizable === false?false:true;	
@@ -4085,10 +4416,10 @@ System.register([], function (exports) {
       	 * @type {number}
       	 */
       	get rectSize() {
-      		return this.__pro('rectSize');
+      		return this.property('rectSize');
       	}
       	set rectSize(v) {
-      		return this.__pro('rectSize', v);
+      		return this.property('rectSize', v);
       	}
 
       	/**
@@ -4097,10 +4428,10 @@ System.register([], function (exports) {
       	 * @type {boolean}
       	 */
       	get resizable() {
-      		return this.__pro('resizable');
+      		return this.property('resizable');
       	}
       	set resizable(v) {
-      		return this.__pro('resizable', v);
+      		return this.property('resizable', v);
       	}
 
       	/**
@@ -4415,7 +4746,7 @@ System.register([], function (exports) {
       	
       	init(instance, container, target) {
       		let canvas = this.target;	
-      		let doc = typeof typeof document != 'undefined'?document:null;
+      		let doc = typeof document != 'undefined'? document: null;
       		//禁用鼠标右健系统菜单
       		//canvas.oncontextmenu = function() {
       		//	return false;
@@ -4540,7 +4871,7 @@ System.register([], function (exports) {
       	 * 初始化健盘事件
       	 */
       	init(container, target) {
-      		let doc = typeof typeof document != 'undefined'?document:null;
+      		let doc = typeof document != 'undefined'? document: null;
       		/**
       		 * 检查是否触发健盘事件至画布
       		 * 如果触发对象为输入框等对象则不响应事件
@@ -4618,9 +4949,10 @@ System.register([], function (exports) {
       		}
       	
       		option = option || {};
-      		option.mode = option.mode || '2d'; // webgl | 2d
+      		option.mode = '2d'; // webgl | 2d 暂不支持webgl
       		option.interactive = true;
-      		
+      		option.isRegular = true;// 规则的
+
       		super(option, 'jmGraph');
 
       		this.option = option || {};
@@ -4632,7 +4964,9 @@ System.register([], function (exports) {
       		 * @property utils/util
       		 * @type {jmUtils}
       		 */
-      		this.util = this.utils = jmUtils;		
+      		this.util = this.utils = jmUtils;	
+      		// 模式 webgl | 2d
+      		this.mode = option.mode;
 
       		//如果是小程序
       		if(typeof wx != 'undefined' && wx.canIUse && wx.canIUse('canvas')) {			
@@ -4648,7 +4982,7 @@ System.register([], function (exports) {
       				canvas = canvas[0];
       			}
 
-      			if(canvas.tagName != 'CANVAS') {
+      			if(!canvas.getContext && typeof document != 'undefined') {
       				this.container = canvas;
       				let cn = document.createElement('canvas');
       				canvas.appendChild(cn);
@@ -4661,7 +4995,25 @@ System.register([], function (exports) {
       			}
       		}	
       		this.canvas = canvas;	
-      		this.context = canvas.getContext('2d');
+      		this.context = canvas.getContext(this.mode);
+
+      		this.textureCanvas = option.textureCanvas || null;
+      		
+      		// webgl模式
+      		if(this.mode === 'webgl') {
+
+      			this.context.enable(this.context.BLEND);// 开启混合功能：（注意，它不可和gl.DEPTH_TEST一起使用）
+      			this.context.blendFunc(this.context.SRC_ALPHA, this.context.ONE_MINUS_SRC_ALPHA); // 指定混合函数：
+      			// webglcontextlost webglcontextrestored
+      			jmUtils.bindEvent(canvas, 'webglcontextlost', (e)=> {
+      				console.log('canvas webglcontextlost', e);
+      				this.emit('webglcontextlost', e);
+      			});
+      			jmUtils.bindEvent(canvas, 'webglcontextrestored', (e)=> {
+      				console.log('canvas webglcontextrestored', e);
+      				this.emit('webglcontextrestored', e);
+      			});
+      		} 
       		this.__init(callback);
       	}
 
@@ -4684,13 +5036,13 @@ System.register([], function (exports) {
       		 * 为了解决一像素线条问题
       		 */
       		this.on('beginDraw', function() {	
-      			this.context.translate(0.5, 0.5);
+      			this.context.translate && this.context.translate(0.5, 0.5);
       		});
       		/**
       		 * 结束控件绘制 为了解决一像素线条问题
       		 */
       		this.on('endDraw', function() {	
-      			this.context.translate(-0.5, -0.5);		
+      			this.context.translate && this.context.translate(-0.5, -0.5);		
       		});
 
       		// devicePixelRatio初始化
@@ -4701,7 +5053,7 @@ System.register([], function (exports) {
       		this.devicePixelRatio = dpr;
       		// 为了解决锯齿问题，先放大canvas再缩放
       		this.dprScaleSize = this.devicePixelRatio > 1? this.devicePixelRatio : 2;
-
+      		
       		if(this.option.width > 0) this.width = this.option.width;
       		if(this.option.height > 0) this.height = this.option.height;	
       		this.resize();		
@@ -4729,9 +5081,17 @@ System.register([], function (exports) {
       	
       		this.css('width', w + "px");
       		this.css('height', h + "px");
-      		this.canvas.height = h * this.dprScaleSize;
-      		this.canvas.width = w * this.dprScaleSize;
-      		this.context.scale(this.dprScaleSize, this.dprScaleSize);	
+      		if(this.mode === '2d') {
+      			this.canvas.height = h * this.dprScaleSize;
+      			this.canvas.width = w * this.dprScaleSize;
+      			if(this.dprScaleSize !== 1) this.context.scale && this.context.scale(this.dprScaleSize, this.dprScaleSize);	
+      		}
+      		else {
+      			this.canvas.width = w;
+      			this.canvas.height = h;
+      		}
+
+      		this.context.viewport && this.context.viewport(0, 0, w, h);
       	}
 
       	/**
@@ -4801,7 +5161,7 @@ System.register([], function (exports) {
       	 * @return {postion} 返回定位坐标
       	 */
       	getPosition() {
-      		let p = jmUtils.getElementPosition(this.canvas.canvas || this.canvas);
+      		const p = jmUtils.getElementPosition(this.canvas.canvas || this.canvas);
       		p.width = this.width;
       		p.height = this.height;
       		p.right = p.left + p.width;
@@ -4852,7 +5212,7 @@ System.register([], function (exports) {
       	 * @return {jmShadow} 阴影对象
       	 */
       	createShadow(x, y, blur, color) {
-      		let sh = new jmShadow(x, y, blur, color);
+      		const sh = new jmShadow(x, y, blur, color);
       		return sh;
       	}
 
@@ -4867,7 +5227,7 @@ System.register([], function (exports) {
       	 * @return {jmGradient} 线性渐变对象
       	 */
       	createLinearGradient(x1, y1, x2, y2) {
-      		let gradient = new jmGradient({
+      		const gradient = new jmGradient({
       			type:'linear',
       			x1: x1,
       			y1: y1,
@@ -4890,7 +5250,7 @@ System.register([], function (exports) {
       	 * @return {jmGradient} 放射渐变对象
       	 */
       	createRadialGradient(x1, y1, r1, x2, y2, r2) {	
-      		let gradient = new jmGradient({
+      		const gradient = new jmGradient({
       			type:'radial',
       			x1: x1,
       			y1: y1,
@@ -4945,16 +5305,30 @@ System.register([], function (exports) {
       				h = h / this.scaleSize.y;
       			}*/
       		}
-      		//如果有指定背景，则等到draw再全屏绘制一次，也同样达到清除画布的功能
-      		if(this.style && this.style.fill) {
-      			this.points = [
-      				{x:0,y:0},
-      				{x:w,y:0},
-      				{x:w,y:h},
-      				{x:0,y:h}
-      			];
+      		
+      		if(this.context.clearRect) {
+      			if(this.style && this.style.fill) {
+      				this.points = [
+      					{x:0, y:0},
+      					{x:w, y:0},
+      					{x:w, y:h},
+      					{x:0, y:h}
+      				];
+      				this.style.close = true;// 封闭填充
+      			}
+
+      			this.context.clearRect(0, 0, w, h);
       		}
-      		else if(this.context.clearRect) this.context.clearRect(0,0,w,h);
+      		else if(this.mode === 'webgl' && this.context.clear) {
+      			const color = this.style && this.style.fill? this.utils.hexToRGBA(this.style.fill): {
+      				r: 0,
+      				g: 0,
+      				b: 0,
+      				a: 0
+      			};
+      			this.context.clearColor(color.r, color.g, color.b, color.a); // 设置清空颜色缓冲时的颜色值
+              	this.context.clear(this.context.COLOR_BUFFER_BIT); // 清空颜色缓冲区，也就是清空画布
+      		}
       	}
 
       	/**
@@ -4979,10 +5353,11 @@ System.register([], function (exports) {
       	 * @param {style} style 当前路径的样式
       	 * @return {jmPath} 路径对象jmPath
       	 */
-      	createPath(points, style) {
-      		let path = this.createShape('path',{
+      	createPath(points, style, option={}) {
+      		const path = this.createShape('path',{
       			points: points,
-      			style: style
+      			style: style,
+      			...option
       		});
       		return path;
       	}
@@ -4997,7 +5372,7 @@ System.register([], function (exports) {
       	 * @return {jmLine} 直线对象
       	 */
       	createLine(start, end, style) {
-      		let line = this.createShape('line', {
+      		const line = this.createShape('line', {
       			start: start,
       			end: end,
       			style: style
@@ -5147,7 +5522,16 @@ System.register([], function (exports) {
               
               super(canvas, option, callback);
           }
+
+          static create(...args) {
+              return createJmGraph(...args);
+          }
       }
+
+      //创建实例
+      const createJmGraph = (...args) => {
+      	return new jmGraph(...args);
+      };
 
       /**
        * 基础样式
