@@ -1,0 +1,21 @@
+language: node_js
+node_js:
+  - "10.16.0"
+
+branches:
+  only:
+    - master
+
+before_install:
+  - npm install
+
+script: 
+  - npm run build
+
+cache:
+  directories:
+  - node_modules
+
+notifications:
+  email:
+    - haofefe@163.com
