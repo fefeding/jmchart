@@ -2,30 +2,30 @@ jmchart
 =========
 
 [![Latest NPM release][npm-badge]][npm-badge-url]
-[![Build Status](https://travis-ci.org/jiamao/jmchart.svg?branch=master)](https://travis-ci.org/jiamao/jmchart)
+[![Build Status](https://travis-ci.org/fefeding/jmchart.svg?branch=master)](https://travis-ci.org/fefeding/jmchart)
 
-jmchart 轻量级图表组件（支持微信小程序），依赖 [jmgraph](https://github.com/jiamao/jmgraph)
+jmchart 轻量级图表组件（支持微信小程序），依赖 [jmgraph](https://github.com/fefeding/jmgraph)
 =======
 
 html5图表控件
 
-线条[http://jiamao.github.io/jmchart/example/line.html]
+线条[http://fefeding.github.io/jmchart/example/line.html]
 
-柱图[http://jiamao.github.io/jmchart/example/bar.html]
+柱图[http://fefeding.github.io/jmchart/example/bar.html]
 
-饼图[http://jiamao.github.io/jmchart/example/pie.html]
+饼图[http://fefeding.github.io/jmchart/example/pie.html]
 
-雷达图[http://jiamao.github.io/jmchart/example/radar.html]
+雷达图[http://fefeding.github.io/jmchart/example/radar.html]
 
-K线[http://jiamao.github.io/jmchart/example/candlestick.html]
+K线[http://fefeding.github.io/jmchart/example/candlestick.html]
 
-stackBar[http://jiamao.github.io/jmchart/example/stackBar.html]
+stackBar[http://fefeding.github.io/jmchart/example/stackBar.html]
 
-stackLine[http://jiamao.github.io/jmchart/example/stackLine.html]
+stackLine[http://fefeding.github.io/jmchart/example/stackLine.html]
 
-vue[http://jiamao.github.io/jmchart/example/vue.html]
+vue[http://fefeding.github.io/jmchart/example/vue.html]
 
-微信小程序[https://github.com/jiamao/mini-jmchart]
+微信小程序[https://github.com/fefeding/mini-jmchart]
 
 
 安装
