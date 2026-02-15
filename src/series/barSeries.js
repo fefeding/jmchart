@@ -1,5 +1,7 @@
 import jmSeries from './series.js';
 
+const ANIMATION_DATA_THRESHOLD = 100;
+const DEFAULT_ANIMATION_COUNT = 10;
 
 /**
  * 柱图
@@ -11,69 +13,58 @@ import jmSeries from './series.js';
  * @param {style} style 样式
  */
 
-//构造函数
 export default class jmBarSeries extends jmSeries {
 	constructor(options) {
 		super(options);
 	}
+
 	/**
-	 * 绘制当前图形
+	 * 初始化柱图
 	 *
-	 * @method beginDraw
+	 * @method init
 	 * @for jmBarSeries
 	 */
 	init() {			
-		//生成描点位
 		const {points, dataChanged} = this.initDataPoint();				
 
-		const len = points.length;		
+		const len = points.length;
+		if(!len) return;
+		
 		this.initWidth(len);
 		
-		// 是否正在动画中
-		// 如果数据点多于100 个，暂时不启用动画，太慢了
-		const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0 ) && len < 100;		
-		let aniIsEnd = true;// 当次是否结束动画
-		const aniCount = (this.style.aniCount || 10);
+		const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0) && len < ANIMATION_DATA_THRESHOLD;		
+		let aniIsEnd = true;
+		const aniCount = (this.style.aniCount || DEFAULT_ANIMATION_COUNT);
 
-		for(let i=0; i<len; i++) {
-			//const label = this.xAxis.labels[i];
+		for(let i = 0; i < len; i++) {
 			const point = points[i];
 			
-			//如果当前点无效，则跳致下一点
-			if(typeof point.y === 'undefined'  || point.y === null) {
+			if(typeof point.y === 'undefined' || point.y === null) {
 				continue;
 			}
 			
 			point.style.fill = this.getColor(point);
 			const sp = this.addShape(this.graph.createPath(null, point.style));
 			
-			//绑定提示框
-			//this.bindTooltip(sp, point);
-
-			//首先确定p1和p4,因为他们是底脚。会固定
 			const p1 = {x: point.x - this.barTotalWidth / 2 + this.barWidth * this.barIndex, y: this.baseY };			
 			const p4 = {x: p1.x + this.barWidth, y: p1.y };
 
 			const p2 = {x: p1.x, y: p1.y };
 			const p3 = {x: p4.x, y: p1.y };
 
-			// 如果要动画。则动态改变高度
 			if(isRunningAni) {
 				const step = point.height / aniCount;
-				const offHeight = step * this.___animateCounter;// 动态计算当前高度
-				p2.y = p1.y - offHeight;// 计算高度
+				const offHeight = step * this.___animateCounter;
+				p2.y = p1.y - offHeight;
 
-				// 当次动画完成
 				if((step >= 0 && p2.y <= point.y) || (step < 0 && p2.y >= point.y)) {
 					p2.y = point.y;
-				}
-				else {
-					aniIsEnd = false;// 只要有一个没完成，就还没有完成动画
+				} else {
+					aniIsEnd = false;
 				}
 
 				p3.y = p2.y;
-			}
-			else {
+			} else {
 				p2.y = point.y;
 				p3.y = point.y;					
 			}
@@ -85,18 +76,15 @@ export default class jmBarSeries extends jmSeries {
 
 			this.createItemLabel(point);
 
-			// 生成标点的回调
 			this.emit('onPointCreated', point);
 		}
 
 		if(aniIsEnd) {			
 			this.___animateCounter = 0;
-		}
-		else {
+		} else {
 			this.___animateCounter++;
-			// next tick 再次刷新
-			this.graph.utils.requestAnimationFrame(()=>{
-				this.needUpdate = true;//需要刷新
+			this.graph.utils.requestAnimationFrame(() => {
+				this.needUpdate = true;
 			});
 		}
 	}

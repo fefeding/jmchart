@@ -1,8 +1,11 @@
 
 import jmSeries from './series.js';
 
+const ANIMATION_DATA_THRESHOLD = 100;
+const DEFAULT_ANIMATION_COUNT = 10;
+
 /**
- * 图形基类
+ * 线图
  *
  * @class jmLineSeries
  * @module jmChart
@@ -11,72 +14,54 @@ import jmSeries from './series.js';
  * @param {style} style 样式
  */
 
-//构造函数
 export default class jmLineSeries extends jmSeries {
 	constructor(options) {
 		options.style = options.style || options.graph.style.line;
 		super(options);
-
-		//this.on('beginDraw', this[PreDrawKey]);
 	}
 
 	/**
-	 * 绘制图形前 初始化线条
+	 * 初始化线条
 	 *
-	 * @method preDraw
+	 * @method init
 	 * @for jmLineSeries
 	 */
 	init() {
-		//生成描点位
 		const {
 			points, 
 			dataChanged
-		}  = this.initDataPoint();	
+		} = this.initDataPoint();	
 
-		//去除多余的线条
-		//当数据源线条数比现有的少时，删除多余的线条
 		const len = points.length;
+		if(!len) return;
 
-		//设定其填充颜色
-		//if(!this.style.fill) this.style.fill = jmUtils.toColor(this.style.stroke,null,null,20);	
 		this.style.stroke = this.style.color;
-		//是否启用动画效果
-		//var ani = typeof this.enableAnimate === 'undefined'? this.graph.enableAnimate: this.enableAnimate;
 		this.style.item.stroke = this.style.color;
 
-		// 是否正在动画中
-		// 如果数据点多于100 个，暂时不启用动画，太慢了
-		const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0 );
+		const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0) && len < ANIMATION_DATA_THRESHOLD;
 
-		let shapePoints = []; // 计算出来的曲线点集合	
-		const aniCount = (this.style.aniCount || 10);
-		const aniStep = Math.floor(len / aniCount) || 1;// 每次动画播放点个数
+		let shapePoints = [];	
+		const aniCount = (this.style.aniCount || DEFAULT_ANIMATION_COUNT);
+		const aniStep = Math.floor(len / aniCount) || 1;
 
-		for(let i=0; i< len;i++) {
+		for(let i = 0; i < len; i++) {
 			const p = points[i];
 			
-			//如果当前点无效，则跳致下一点
-			if(typeof p.y === 'undefined'  || p.y === null) {
-				//prePoint = null;						
+			if(typeof p.y === 'undefined' || p.y === null) {
 				continue;
 			}
 
-			if(isRunningAni) {
-				if(i > this.___animateCounter) {
-					break;
-				}
+			if(isRunningAni && i > this.___animateCounter) {
+				break;
 			}
 
-			// 是否显示数值点圆
 			if(this.style.showItem) {
 				this.createPointItem(p);
 			}
-			// 平滑曲线
+			
 			if(this.style.curve) {
 				shapePoints = this.createCurePoints(shapePoints, p);
-			}
-			// 如果是虚线
-			else if(this.style.lineType === 'dotted') {
+			} else if(this.style.lineType === 'dotted') {
 				shapePoints = this.createDotLine(shapePoints, p);
 			}
 
@@ -84,24 +69,20 @@ export default class jmLineSeries extends jmSeries {
 
 			this.createItemLabel(p);
 
-			// 生成关健值标注
 			this.emit('onPointCreated', p);
 		}
 
-		// 如果所有都已经结束，则重置成初始化状态
 		if(this.___animateCounter >= len - 1) {
 			this.___animateCounter = 0;
-		}
-		else if(isRunningAni) {	
+		} else if(isRunningAni) {	
 			this.___animateCounter += aniStep;		
-			// next tick 再次刷新
-			this.graph.utils.requestAnimationFrame(()=>{
-				this.needUpdate = true;//需要刷新
+			this.graph.utils.requestAnimationFrame(() => {
+				this.needUpdate = true;
 			});
 		}
 
 		this.points = shapePoints;
-		this.createArea(shapePoints);// 仓建区域效果
+		this.createArea(shapePoints);
 	}
 
 	// 生成点的小圆圈

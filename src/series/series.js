@@ -2,6 +2,8 @@
 import { jmPath, jmList, jmControl } from 'jmgraph';
 import utils from '../common/utils.js';
 
+const ANIMATION_DATA_THRESHOLD = 100;
+
 /**
  * 图形基类
  *
@@ -12,7 +14,6 @@ import utils from '../common/utils.js';
  * @param {style} style 样式
  */
 
-//构造线图
 export default class jmSeries extends jmPath {	
 	constructor(options) {
 		super(options);
@@ -22,19 +23,18 @@ export default class jmSeries extends jmPath {
 		this.field = options.field || options.fields || '';
 		this.index = options.index || 1;
 		this.legendLabel = options.legendLabel || '';
-		this.___animateCounter = 0; // 动画计数		
+		this.___animateCounter = 0;
+		this._cache = new Map();
 
-		this.xAxis = this.graph.createXAxis(); // 生成X轴
+		this.xAxis = this.graph.createXAxis();
 		
-		// 生成当前Y轴
 		this.yAxis = this.yAxis || this.graph.createYAxis({
 			index: this.index,
 			format: options.yLabelFormat || this.graph.option.yLabelFormat
 		});
 		
-		// 初始化一些参数， 因为这里有多个Y轴的可能，所以每次都需要重调一次init
 		this.yAxis.init({
-			field: Array.isArray(this.field)? this.field[0]: this.field,
+			field: Array.isArray(this.field) ? this.field[0] : this.field,
 			minYValue: options.minYValue,
 			maxYValue: options.maxYValue
 		});
@@ -99,32 +99,30 @@ export default class jmSeries extends jmPath {
 	 */
 	baseYValue = 0;
 
-	// 做一些基础初始化工作
 	initDataPoint(...args) {
-		//生成描点位
-		// 如果有动画，则需要判断是否改变，不然不需要重新动画
 		let dataChanged = false;
-		if(this.enableAnimate) {
-			// 拷贝一份上次的点集合，用于判断数据是否改变
+		
+		if(this.enableAnimate && this.data && this.data.length < ANIMATION_DATA_THRESHOLD) {
 			this.lastPoints = this.graph.utils.clone(this.dataPoints, null, true, (obj) => {
 				if(obj instanceof jmControl) return obj;
 			});
 
-			// 重新生成描点
 			this.dataPoints = this.createPoints(...args);
 			dataChanged = utils.arrayIsChange(this.lastPoints, this.dataPoints, (s, t) => {
 				return s.x === t.x && s.y === t.y;
 			});
 
-			if(dataChanged) this.___animateCounter = 0;// 数据改变。动画重新开始
-		}	
-		else {
+			if(dataChanged) {
+				this.___animateCounter = 0;
+			}
+		} else {
 			this.dataPoints = this.createPoints(...args);
 		}
-		// 执行初始化函数回调
+		
 		if(this.option && this.option.onInit) {
 			this.option.onInit.apply(this, args);
 		}
+		
 		return {
 			dataChanged,
 			points: this.dataPoints
@@ -175,22 +173,13 @@ export default class jmSeries extends jmPath {
 	}
 
 		
-	/**
-	 * 重置属性
-	 * 根据数据源计算轴的属性
-	 *
-	 * @method reset
-	 */
 	reset() {
-		// 重置所有图形
 		var shape;
 		while(shape = this.shapes.shift()) {
 			shape && shape.remove();
 		}
 
-		this.initAxisValue();// 处理最大值最小值
-		
-		//生成图例  这里要放到shape清理后面
+		this.initAxisValue();
 		this.createLegend();
 
 		return this.chartInfo = {
@@ -199,53 +188,51 @@ export default class jmSeries extends jmPath {
 		};
 	}
 
-	// 计算最大值和最小值，一般图形直接采用最大最小值即可，有些需要多值叠加
 	initAxisValue() {
-		// 计算最大最小值
-		// 当前需要先更新axis的边界值，轴好画图
-		for(var i=0; i< this.data.length;i++) {	
+		if(!this.data || !this.data.length) return;
+		
+		for(var i = 0; i < this.data.length; i++) {	
 			if(Array.isArray(this.field)) {
-				this.field.forEach((f)=> {
+				this.field.forEach((f) => {
 					const v = this.data[i][f]; 
+					if(v != null) {
+						this.yAxis.max(v);
+						this.yAxis.min(v);
+					}
+				});
+			} else {
+				const v = this.data[i][this.field]; 
+				if(v != null) {
 					this.yAxis.max(v);
 					this.yAxis.min(v);
-				});
-			}
-			else {
-				const v = this.data[i][this.field]; 
-				this.yAxis.max(v);
-				this.yAxis.min(v);
+				}
 			}
 
 			const xv = this.data[i][this.xAxis.field]; 
-			this.xAxis.max(xv);
-			this.xAxis.min(xv);
+			if(xv != null) {
+				this.xAxis.max(xv);
+				this.xAxis.min(xv);
+			}
 		}
 	}
 
-	/**
-	 * 生成序列图描点
-	 *
-	 * @method createPoints
-	 */
 	createPoints(data) {
 		data = data || this.data;		
-		if(!data) return;
+		if(!data || !data.length) return [];
 
 		const xstep = this.xAxis.step();
 		const minY = this.yAxis.min();
 		const ystep = this.yAxis.step();
 
-		this.baseYValue = typeof this.graph.baseY === 'undefined'? minY: (this.graph.baseY||0);
-		this.baseYHeight = (this.baseYValue - minY) * ystep;// 基线的高度		
-		this.baseY = this.graph.chartArea.height - this.baseYHeight;// Y轴基线的Y坐标
-		// 有些图形是有多属性值的
-		const fields = Array.isArray(this.field)? this.field: [this.field];
-
-		this.dataPoints = [];
-		for(let i=0;i < data.length; i++) {
+		this.baseYValue = typeof this.graph.baseY === 'undefined' ? minY : (this.graph.baseY || 0);
+		this.baseYHeight = (this.baseYValue - minY) * ystep;
+		this.baseY = this.graph.chartArea.height - this.baseYHeight;
+		
+		const fields = Array.isArray(this.field) ? this.field : [this.field];
+		const dataPoints = [];
+		
+		for(let i = 0; i < data.length; i++) {
 			const s = data[i];
-			
 			const xv = s[this.xAxis.field];		
 
 			const p = {				
@@ -257,29 +244,24 @@ export default class jmSeries extends jmPath {
 				style: this.graph.utils.clone(this.style),
 			};
 			
-			// 这里的点应相对于chartArea
 			p.x = xstep * i + this.xAxis.labelStart;			
 			
-			for(let j=0; j<fields.length; j++) {
+			for(let j = 0; j < fields.length; j++) {
 				const f = fields[j];
-				
 				const yv = s[f];
 				p.yLabel = p.yValue = yv;
-				// 高度
 				p.height = (yv - this.baseYValue) * ystep;
 
 				const point = {
 					x: p.x,
-					// 高度
 					height: p.height,
 					yValue: yv,
 					field: f				
 				}
-				//如果Y值不存在。则此点无效，不画图
+				
 				if(yv == null || typeof yv == 'undefined') {
 					point.m = p.m = true;
-				}
-				else {
+				} else {
 					if(this.yAxis.dataType != 'number') {
 						yv = i;
 					}
@@ -288,13 +270,14 @@ export default class jmSeries extends jmPath {
 				p.points.push(point);
 			}
 
-			// 初始化项
 			if(typeof this.option.initItemHandler === 'function') {
 				this.option.initItem.call(this, p);
 			}
 				
-			this.dataPoints.push(p);							
+			dataPoints.push(p);													
 		}
+		
+		this.dataPoints = dataPoints;
 		return this.dataPoints;
 	}
 

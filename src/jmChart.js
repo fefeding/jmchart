@@ -16,6 +16,9 @@ import jmStackLineSeries from './series/stackLineSeries.js';
 import jmCandlestickSeries from './series/candlestickSeries.js';
 import jmMarkLineManager from './core/markLine/manager';
 
+const ANIMATION_DATA_THRESHOLD = 100;
+const DEFAULT_ANIMATION_COUNT = 10;
+
 /**
  * jm图表组件
  * option参数:graph=jmgraph
@@ -27,28 +30,25 @@ import jmMarkLineManager from './core/markLine/manager';
 export default class jmChart extends jmGraph  {
 
 	constructor(container, options) {
-		options = options||{};
+		options = options || {};
 
 		const enableAnimate = !!options.enableAnimate;
-		options.autoRefresh = typeof options.autoRefresh === 'undefined'? enableAnimate: options.autoRefresh;
+		options.autoRefresh = typeof options.autoRefresh === 'undefined' ? enableAnimate : options.autoRefresh;
 
 		if(enableAnimate && !options.autoRefresh) {
 			console.warn('开启了动画，却没有开户自动刷新');
 		}
 
-		 // 深度复制默认样式，以免被改
 		options.style = jmUtils.clone(defaultStyle, options.style, true);
 
 		super(container, options);
 
 		this.enableAnimate = enableAnimate;
 		this.data = options.data || [];
-		// x轴绑定的字段名
-		this.xField = options.xField || '';	
+		this.xField = options.xField || '';
+		this._cache = new Map();
 
-		this.init(options);	
-
-		// 创建操作图层
+		this.init(options);
 		this.createTouchGraph(this.container, options);
 	}
 
@@ -205,17 +205,26 @@ export default class jmChart extends jmGraph  {
 		}
 	}
 	/**
-	 * 获取颜色
+	 * 获取颜色，使用缓存优化性能
 	 *
 	 * @method getColor 
 	 * @param {int} index 颜色索引
 	 */
-	getColor(index) {	
-		//如果颜色超过最大个数，则重新获取	
-		if(index >= this.style.chartColors.length) {
-			index = Math.floor((index - 1) / this.style.chartColors.length)
+	getColor(index) {
+		const cacheKey = `color_${index}`;
+		if(this._cache.has(cacheKey)) {
+			return this._cache.get(cacheKey);
 		}
-		return this.style.chartColors[index];
+		
+		let color;
+		if(index >= this.style.chartColors.length) {
+			color = this.style.chartColors[index % this.style.chartColors.length];
+		} else {
+			color = this.style.chartColors[index];
+		}
+		
+		this._cache.set(cacheKey, color);
+		return color;
 	}
 
 	/**
@@ -225,67 +234,58 @@ export default class jmChart extends jmGraph  {
 	 * @method beginDraw 
 	 */
 	beginDraw() {
-		//const startTime = Date.now();
-		//重置图例
-		this.legend && this.legend.init();
+		if(this.legend) {
+			this.legend.init();
+		}
 
-		//先定位图例等信息，确定画图区域
 		this.resetAreaPosition();
 
 		if(this.xAxis) {
 			this.xAxis.clear();
 		}
 
-		//计算Y轴位置
 		if(this.yAxises) {
 			for(let i in this.yAxises) {
 				this.yAxises[i].clear();
 			}
 		}
 
-		//console.log('beginDraw1', Date.now() - startTime);
-
-		//计算柱形图个数
 		this.barSeriesCount = 0;
-		//初始化图序列，并初始化轴值,生成图例项
-		this.series.each(function(i, serie) {
-			//设定边框颜色和数据项图示颜 色
-			if(!serie.style.color) serie.style.color = serie.graph.getColor(i);
-			//如果排版指定非内缩的方式，但出现了柱图，还是会采用内缩一个刻度的方式
+		this.series.each((i, serie) => {
+			if(!serie.style.color) {
+				serie.style.color = serie.graph.getColor(i);
+			}
+			
 			if(serie.graph.style.layout != 'inside') {
 				if(serie instanceof jmBarSeries) {			
 					serie.graph.style.layout = 'inside';
 				}
 			}
 			
-			//对柱图计算,并标记为第几个柱图，用为排列
 			if(serie instanceof jmBarSeries) {
 				serie.barIndex = serie.graph.barSeriesCount;
-				serie.graph.barSeriesCount ++;
+				serie.graph.barSeriesCount++;
 			}
 			serie.reset();
 		});	
-		//console.log('beginDraw2', Date.now() - startTime);
-		//重置图例
-		this.legend && this.legend.reset();	
 
-		//计算Y轴位置
+		if(this.legend) {
+			this.legend.reset();	
+		}
+
 		if(this.yAxises) {
-			for(var i in this.yAxises) {
+			for(let i in this.yAxises) {
 				this.yAxises[i].reset();
 			}
 		}
-		// y 处理完才能处理x
+		
 		if(this.xAxis) {
 			this.xAxis.reset();
 		}
 
-		//console.log('beginDraw3', Date.now() - startTime);
-		//最后再来初始化图形，这个必须在轴初始化完后才能执行
-		this.series.each(function(i, serie) {		
+		this.series.each((i, serie) => {		
 			serie.init && serie.init();
 		});	
-		//console.log('beginDraw4', Date.now() - startTime);
 	}
 
 	/**

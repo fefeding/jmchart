@@ -18,72 +18,63 @@ export default {
     },
     data: function() {
         return {
-            //chartData: this.chartData,
             option: this.chartOptions
         }
     },
-    // jmChart实例
     chartInstance: null,
 
     mounted () {
         this.option = Object.assign({
             enableAnimate: false,
             legendPosition: 'top',
-            legendVisible: true, // 不显示图例    
+            legendVisible: true,
             width: this.width,
             height: this.height        
         }, this.chartOptions);   
         
         this.initChart();
     },
-    // DOM更新
+
     updated() {
         this.initChart();
     },
 
-    // 销毁
     destroyed() {
         this.chartInstance && this.chartInstance.destroy();
     },
 
     watch: {
-        // 数据发生改变，刷新
         chartData: function(newData, oldData) {
             this.refresh();
         },
         width: function(newWidth, oldWidth) {
             if(!this.chartInstance) return;            
-            this.$nextTick(()=>{
+            this.$nextTick(() => {
                 if(!this.chartInstance || !this.$refs.jmChartContainer) return;          
-                this.chartInstance.width = this.$refs.jmChartContainer.clientWidth||this.$refs.jmChartContainer.offsetWidth;
-                //this.chartInstance.refresh();
+                this.chartInstance.width = this.$refs.jmChartContainer.clientWidth || this.$refs.jmChartContainer.offsetWidth;
             });
         },
         height: function(newHeight, oldHeight) {
             if(!this.chartInstance) return;
-            this.$nextTick(()=>{
+            this.$nextTick(() => {
                 if(!this.chartInstance || !this.$refs.jmChartContainer) return;          
-                this.chartInstance.height = this.$refs.jmChartContainer.clientHeight||this.$refs.jmChartContainer.offsetHeight;
-                //this.chartInstance.refresh();
+                this.chartInstance.height = this.$refs.jmChartContainer.clientHeight || this.$refs.jmChartContainer.offsetHeight;
             });
         }
     },
 
     methods: {
-        // 初始化图表组件
         initChart() {
             if(this.chartInstance) return;
             
             this.chartInstance = new jmChart(this.$refs.jmChartContainer, this.option);
             
-            if(this.chartData && this.chartData.length) this.refresh(); // 这里有死循环的问题，但上面 chartInstance不为空就返回了，就没有这个问题了
+            if(this.chartData && this.chartData.length) this.refresh();
             
-            // touch改变数据点事件
             this.chartInstance.bind('touchPointChange', (args) => {
                 this.$emit('touch-point-change', args);
             });
 
-            // 图表标线事件
             this.chartInstance.bind('marklinelongtapstart', (args) => {
                 this.$emit('markline-longtap-start', args);
             });
@@ -97,7 +88,6 @@ export default {
                 this.$emit('markline-end-move', args);
             });
 
-            // touch事件
             this.chartInstance.touchGraph.bind('touchstart mousedown', (args) => {
                 this.$emit('touchstart', args);
                 this.$emit('mousedown', args);
@@ -115,16 +105,13 @@ export default {
             });
         },
 
-        // 刷新图表
         refresh() {
-            this.$nextTick(()=>{
+            this.$nextTick(() => {
                 this.initChart();
 
-                // 清空当前图形，重新生成
                 this.chartInstance.reset();
     
-                // 生成图
-                if(this.chartSeries.length) {
+                if(this.chartSeries && this.chartSeries.length) {
                     for(let s of this.chartSeries) {
                         if(!s.type) {
                             console.error('必须指定serie type');
