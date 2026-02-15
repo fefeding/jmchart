@@ -248,7 +248,7 @@ export default class jmSeries extends jmPath {
 			
 			for(let j = 0; j < fields.length; j++) {
 				const f = fields[j];
-				const yv = s[f];
+				let yv = s[f];
 				p.yLabel = p.yValue = yv;
 				p.height = (yv - this.baseYValue) * ystep;
 
