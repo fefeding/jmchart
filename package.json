@@ -8,14 +8,14 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "clone": "git clone https://ghproxy.com/https://github.com/jiamao/jmchart.git",
+    "clone": "git clone https://ghproxy.com/https://github.com/fefeding/jmchart.git",
     "dev": "node server.js",
     "push": "npm publish --registry=https://registry.npmjs.org",
     "build": "node build.js"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jiamao/jmchart.git"
+    "url": "git+https://github.com/fefeding/jmchart.git"
   },
   "keywords": [
     "chart",
@@ -24,9 +24,9 @@
   "author": "jiamao",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/jiamao/jmchart/issues"
+    "url": "https://github.com/fefeding/jmchart/issues"
   },
-  "homepage": "https://github.com/jiamao/jmchart#readme",
+  "homepage": "https://github.com/fefeding/jmchart#readme",
   "dependencies": {
     "jmgraph": "^3.2.17"
   },
