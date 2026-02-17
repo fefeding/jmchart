@@ -20,31 +20,25 @@ export default class jmCandlestickSeries extends jmSeries {
 		//this.on('beginDraw', this[PreDrawKey]);
 	}
 
-	/**
-	 * 绘制图形前 初始化线条
-	 *
-	 * @method preDraw
-	 * @for jmLineSeries
-	 */
 	init() {
-		//生成描点位
-		const {
-			points
-		}  = this.initDataPoint();	
+		const { points } = this.initDataPoint();	
 
-		//去除多余的线条
-		//当数据源线条数比现有的少时，删除多余的线条
 		const len = points.length;
+		if(!len) return;
+		
 		this.initWidth(len);
 
-		const w = this.barWidth / 2;  //实心处宽度的一半
+		const w = this.barWidth / 2;
 
-		for(let i=0; i< len;i++) {
+		for(let i = 0; i < len; i++) {
 			const p = points[i];
 			
-			//如果当前点无效，则跳致下一点
-			if(typeof p.y === 'undefined'  || p.y === null) {
-				//prePoint = null;						
+			if(typeof p.y === 'undefined' || p.y === null) {
+				continue;
+			}
+
+			if(!p.points || p.points.length < 4) {
+				console.warn('K线图数据不完整，需要4个字段（开盘、收盘、最高、最低）');
 				continue;
 			}
 
@@ -67,12 +61,10 @@ export default class jmCandlestickSeries extends jmSeries {
 				y: p.points[1].y
 			};
 
-			// 默认认为是阳线
 			let tm = p.points[1];
 			let bm = p.points[0];
 			p.style.stroke = p.style.fill = p.style.masculineColor || 'red';
 
-			// 开盘大于收盘，则阴线
 			if(p.points[0].yValue > p.points[1].yValue) {
 				p.style.stroke = p.style.fill = p.style.negativeColor || 'green';
 				bl.y = br.y = p.points[1].y;
@@ -84,7 +76,6 @@ export default class jmCandlestickSeries extends jmSeries {
 
 			sp.points.push(p.points[2], tm, tl, bl, bm, p.points[3], bm, br, tr, tm, p.points[2]);
 
-			// 生成关健值标注
 			this.emit('onPointCreated', p);
 		}
 	}

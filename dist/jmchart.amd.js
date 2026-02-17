@@ -9938,46 +9938,45 @@ define(['exports'], (function (exports) { 'use strict';
       pointShape.zIndex = (pointShape.style.zIndex || 1) + 1;
       return this.addShape(pointShape);
     }
-
-    // 根据上下点生成平滑曲线
     createCurePoints(shapePoints, p) {
       const startPoint = shapePoints[shapePoints.length - 1];
-      if (startPoint && startPoint.y != undefined && startPoint.y != null) {
-        //如果需要画曲线，则计算贝塞尔曲线坐标				
-        const p1 = {
-          x: startPoint.x + (p.x - startPoint.x) / 5,
-          y: startPoint.y
-        };
-        const p2 = {
-          x: startPoint.x + (p.x - startPoint.x) / 2,
-          y: p.y - (p.y - startPoint.y) / 2
-        };
-        const p3 = {
-          x: p.x - (p.x - startPoint.x) / 5,
-          y: p.y
-        };
-
-        //圆滑线条使用的贝塞尔对象
-        this.__bezier = this.__bezier || this.graph.createShape('bezier');
-        this.__bezier.cpoints = [startPoint, p1, p2, p3, p]; //设置控制点
-
-        const bzpoints = this.__bezier.initPoints();
+      if (!startPoint || !p) return shapePoints;
+      if (startPoint.x === undefined || startPoint.x === null || startPoint.y === undefined || startPoint.y === null || p.x === undefined || p.x === null || p.y === undefined || p.y === null) {
+        return shapePoints;
+      }
+      const p1 = {
+        x: startPoint.x + (p.x - startPoint.x) / 5,
+        y: startPoint.y
+      };
+      const p2 = {
+        x: startPoint.x + (p.x - startPoint.x) / 2,
+        y: p.y - (p.y - startPoint.y) / 2
+      };
+      const p3 = {
+        x: p.x - (p.x - startPoint.x) / 5,
+        y: p.y
+      };
+      this.__bezier = this.__bezier || this.graph.createShape('bezier');
+      this.__bezier.cpoints = [startPoint, p1, p2, p3, p];
+      const bzpoints = this.__bezier.initPoints();
+      if (bzpoints && bzpoints.length) {
         shapePoints = shapePoints.concat(bzpoints);
       }
       return shapePoints;
     }
-
-    // 生成虚线
     createDotLine(shapePoints, p) {
       const startPoint = shapePoints[shapePoints.length - 1];
-      if (startPoint && startPoint.y != undefined && startPoint.y != null) {
-        //使用线条来画虚线效果
-        this.__line = this.__line || this.graph.createShape('line', {
-          style: this.style
-        });
-        this.__line.start = startPoint;
-        this.__line.end = p;
-        const dots = this.__line.initPoints();
+      if (!startPoint || !p) return shapePoints;
+      if (startPoint.x === undefined || startPoint.x === null || startPoint.y === undefined || startPoint.y === null || p.x === undefined || p.x === null || p.y === undefined || p.y === null) {
+        return shapePoints;
+      }
+      this.__line = this.__line || this.graph.createShape('line', {
+        style: this.style
+      });
+      this.__line.start = startPoint;
+      this.__line.end = p;
+      const dots = this.__line.initPoints();
+      if (dots && dots.length) {
         shapePoints = shapePoints.concat(dots);
       }
       return shapePoints;
@@ -10230,31 +10229,21 @@ define(['exports'], (function (exports) { 'use strict';
 
       //this.on('beginDraw', this[PreDrawKey]);
     }
-
-    /**
-     * 绘制图形前 初始化线条
-     *
-     * @method preDraw
-     * @for jmLineSeries
-     */
     init() {
-      //生成描点位
       const {
         points
       } = this.initDataPoint();
-
-      //去除多余的线条
-      //当数据源线条数比现有的少时，删除多余的线条
       const len = points.length;
+      if (!len) return;
       this.initWidth(len);
-      const w = this.barWidth / 2; //实心处宽度的一半
-
+      const w = this.barWidth / 2;
       for (let i = 0; i < len; i++) {
         const p = points[i];
-
-        //如果当前点无效，则跳致下一点
         if (typeof p.y === 'undefined' || p.y === null) {
-          //prePoint = null;						
+          continue;
+        }
+        if (!p.points || p.points.length < 4) {
+          console.warn('K线图数据不完整，需要4个字段（开盘、收盘、最高、最低）');
           continue;
         }
         const sp = this.addShape(this.graph.createPath([], p.style));
@@ -10274,13 +10263,9 @@ define(['exports'], (function (exports) { 'use strict';
           x: p.x + w,
           y: p.points[1].y
         };
-
-        // 默认认为是阳线
         let tm = p.points[1];
         let bm = p.points[0];
         p.style.stroke = p.style.fill = p.style.masculineColor || 'red';
-
-        // 开盘大于收盘，则阴线
         if (p.points[0].yValue > p.points[1].yValue) {
           p.style.stroke = p.style.fill = p.style.negativeColor || 'green';
           bl.y = br.y = p.points[1].y;
@@ -10289,8 +10274,6 @@ define(['exports'], (function (exports) { 'use strict';
           bm = p.points[1];
         }
         sp.points.push(p.points[2], tm, tl, bl, bm, p.points[3], bm, br, tr, tm, p.points[2]);
-
-        // 生成关健值标注
         this.emit('onPointCreated', p);
       }
     }

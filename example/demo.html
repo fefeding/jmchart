@@ -1,0 +1,740 @@
+<!doctype html>
+<html>
+	<head>
+		<meta content="text/html; charset=UTF-8" http-equiv="content-type" />
+		<meta name="viewport" content="width=device-width,initial-scale=1">
+		<title>jmChart 图表示例</title>
+		<style>
+			* {
+				margin: 0;
+				padding: 0;
+				box-sizing: border-box;
+			}
+			
+			html, body {
+				width: 100%;
+				height: 100%;
+				font-family: Arial, sans-serif;
+				background-color: #f5f5f5;
+			}
+
+			.header {
+				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+				color: white;
+				padding: 20px;
+				box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+			}
+
+			.header-content {
+				max-width: 1200px;
+				margin: 0 auto;
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+			}
+
+			.header-title {
+				display: flex;
+				align-items: center;
+				gap: 15px;
+			}
+
+			.header-title h1 {
+				font-size: 24px;
+				margin: 0;
+			}
+
+			.header-title .badge {
+				background: rgba(255,255,255,0.2);
+				padding: 4px 12px;
+				border-radius: 20px;
+				font-size: 12px;
+			}
+
+			.header-preview {
+				width: 300px;
+				height: 150px;
+				background: rgba(255,255,255,0.1);
+				border-radius: 10px;
+				position: relative;
+				overflow: hidden;
+			}
+
+			.header-preview canvas {
+				width: 100% !important;
+				height: 100% !important;
+			}
+
+			.container {
+				max-width: 1200px;
+				margin: 20px auto;
+				background: white;
+				border-radius: 10px;
+				box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+				overflow: hidden;
+			}
+
+			.tabs {
+				display: flex;
+				background: #f8f9fa;
+				border-bottom: 1px solid #dee2e6;
+				overflow-x: auto;
+			}
+
+			.tab {
+				padding: 15px 25px;
+				cursor: pointer;
+				transition: all 0.3s;
+				white-space: nowrap;
+				border-bottom: 3px solid transparent;
+				font-weight: 500;
+				color: #495057;
+			}
+
+			.tab:hover {
+				background: #e9ecef;
+			}
+
+			.tab.active {
+				color: #667eea;
+				border-bottom-color: #667eea;
+				background: white;
+			}
+
+			.tab-content {
+				display: none;
+				padding: 30px;
+				min-height: 500px;
+			}
+
+			.tab-content.active {
+				display: block;
+			}
+
+			.chart-container {
+				width: 100%;
+				min-height: 400px;
+				margin-bottom: 20px;
+			}
+
+			.chart-info {
+				background: #f8f9fa;
+				padding: 15px;
+				border-radius: 8px;
+				margin-top: 15px;
+			}
+
+			.chart-info h3 {
+				color: #495057;
+				margin-bottom: 10px;
+				font-size: 16px;
+			}
+
+			.chart-info p {
+				color: #6c757d;
+				font-size: 14px;
+				line-height: 1.6;
+				margin: 5px 0;
+			}
+
+			.chart-info code {
+				background: #e9ecef;
+				padding: 2px 6px;
+				border-radius: 3px;
+				font-family: 'Courier New', monospace;
+				color: #d63384;
+			}
+
+			.btn {
+				padding: 8px 16px;
+				background: #667eea;
+				color: white;
+				border: none;
+				border-radius: 5px;
+				cursor: pointer;
+				font-size: 14px;
+				transition: all 0.3s;
+			}
+
+			.btn:hover {
+				background: #5568d3;
+				transform: translateY(-2px);
+				box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+			}
+
+			.loading {
+				text-align: center;
+				padding: 50px;
+				color: #6c757d;
+			}
+
+			.loading::after {
+				content: '...';
+				animation: dots 1.5s steps(5, end) infinite;
+			}
+
+			@keyframes dots {
+				0%, 20% { content: '.'; }
+				40% { content: '..'; }
+				60% { content: '...'; }
+				80%, 100% { content: ''; }
+			}
+
+			@media (max-width: 768px) {
+				.header-content {
+					flex-direction: column;
+					gap: 15px;
+				}
+
+				.header-preview {
+					width: 100%;
+				}
+
+				.tab {
+					padding: 12px 15px;
+					font-size: 14px;
+				}
+
+				.tab-content {
+					padding: 15px;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<div class="header">
+			<div class="header-content">
+				<div class="header-title">
+					<h1>📊 jmChart</h1>
+					<span class="badge">v1.2.10</span>
+				</div>
+				<div class="header-preview" id="headerPreview">
+				</div>
+			</div>
+		</div>
+
+		<div class="container">
+			<div class="tabs">
+				<div class="tab active" data-tab="line">📈 折线图</div>
+				<div class="tab" data-tab="bar">📊 柱状图</div>
+				<div class="tab" data-tab="pie">🥧 饼图</div>
+				<div class="tab" data-tab="radar">🎯 雷达图</div>
+				<div class="tab" data-tab="candlestick">📈 K线图</div>
+				<div class="tab" data-tab="stackBar">📊 堆叠柱状图</div>
+				<div class="tab" data-tab="stackLine">📈 堆叠折线图</div>
+			</div>
+
+			<div class="tab-content active" id="line">
+				<div class="chart-container" id="lineChart"></div>
+				<button class="btn" onclick="refreshLineChart()">刷新数据</button>
+				<div class="chart-info">
+					<h3>折线图</h3>
+					<p>折线图用于展示数据随时间或类别变化的趋势，适合显示连续的数据序列。</p>
+					<p>支持特性：</p>
+					<p>• 平滑曲线（<code>curve: true</code>）</p>
+					<p>• 区域填充（<code>area: true</code>）</p>
+					<p>• 数据点标记（<code>showItem: true</code>）</p>
+					<p>• 虚线样式（<code>lineType: 'dotted'</code>）</p>
+				</div>
+			</div>
+
+			<div class="tab-content" id="bar">
+				<div class="chart-container" id="barChart"></div>
+				<button class="btn" onclick="refreshBarChart()">刷新数据</button>
+				<div class="chart-info">
+					<h3>柱状图</h3>
+					<p>柱状图用于比较不同类别之间的数据大小，适合展示离散的数据。</p>
+					<p>支持特性：</p>
+					<p>• 自定义宽度（<code>barWidth</code>）</p>
+					<p>• 宽度占比（<code>perWidth</code>）</p>
+					<p>• 渐变颜色</p>
+					<p>• 标签显示（<code>label.show: true</code>）</p>
+				</div>
+			</div>
+
+			<div class="tab-content" id="pie">
+				<div class="chart-container" id="pieChart"></div>
+				<button class="btn" onclick="refreshPieChart()">刷新数据</button>
+				<div class="chart-info">
+					<h3>饼图</h3>
+					<p>饼图用于展示各部分占整体的比例关系，适合显示百分比数据。</p>
+					<p>支持特性：</p>
+					<p>• 空心圆环（<code>isHollow: true</code>）</p>
+					<p>• 自定义半径</p>
+					<p>• 点击事件</p>
+					<p>• 标签自定义</p>
+				</div>
+			</div>
+
+			<div class="tab-content" id="radar">
+				<div class="chart-container" id="radarChart"></div>
+				<button class="btn" onclick="refreshRadarChart()">刷新数据</button>
+				<div class="chart-info">
+					<h3>雷达图</h3>
+					<p>雷达图用于多维度数据的对比分析，适合展示多个指标的相对表现。</p>
+					<p>支持特性：</p>
+					<p>• 多维度数据</p>
+					<p>• 自定义轴数</p>
+					<p>• 区域填充</p>
+					<p>• 标签显示</p>
+				</div>
+			</div>
+
+			<div class="tab-content" id="candlestick">
+				<div class="chart-container" id="candlestickChart"></div>
+				<button class="btn" onclick="refreshCandlestickChart()">刷新数据</button>
+				<div class="chart-info">
+					<h3>K线图</h3>
+					<p>K线图（蜡烛图）用于金融数据的展示，显示开盘、收盘、最高、最低价。</p>
+					<p>支持特性：</p>
+					<p>• 阳线/阴线颜色自定义</p>
+					<p>• 实体宽度控制</p>
+					<p>• 标线联动</p>
+					<p>• 数据缩放</p>
+				</div>
+			</div>
+
+			<div class="tab-content" id="stackBar">
+				<div class="chart-container" id="stackBarChart"></div>
+				<button class="btn" onclick="refreshStackBarChart()">刷新数据</button>
+				<div class="chart-info">
+					<h3>堆叠柱状图</h3>
+					<p>堆叠柱状图用于展示多个系列数据的累计效果，适合显示总量和分量的关系。</p>
+					<p>支持特性：</p>
+					<p>• 多系列堆叠</p>
+					<p>• 自定义颜色</p>
+					<p>• 标签显示</p>
+					<p>• 与其他图表混用</p>
+				</div>
+			</div>
+
+			<div class="tab-content" id="stackLine">
+				<div class="chart-container" id="stackLineChart"></div>
+				<button class="btn" onclick="refreshStackLineChart()">刷新数据</button>
+				<div class="chart-info">
+					<h3>堆叠折线图</h3>
+					<p>堆叠折线图用于展示多个系列数据的累计趋势，适合显示总量和分量的变化。</p>
+					<p>支持特性：</p>
+					<p>• 多系列堆叠</p>
+					<p>• 区域填充</p>
+					<p>• 自定义样式</p>
+					<p>• 百分比显示</p>
+				</div>
+			</div>
+		</div>
+
+		<script type="module">
+			import { jmChart } from '../dist/jmchart.esm.js';
+
+			let charts = {};
+
+			function initHeaderPreview() {
+				const chart = new jmChart('headerPreview', {
+					width: 300,
+					height: 150,
+					enableAnimate: false,
+					style: {
+						markLine: false,
+						axis: {
+							stroke: 'transparent',
+							grid: {
+								x: false,
+								y: false
+							}
+						},
+						chartArea: {
+							stroke: 'transparent'
+						},
+						margin: { top: 10, left: 10, right: 10, bottom: 10 }
+					}
+				});
+
+				chart.createSeries('line', {
+					field: 'value',
+					style: {
+						curve: true,
+						area: true,
+						showItem: false,
+						lineWidth: 2,
+						color: 'rgba(255,255,255,0.8)'
+					}
+				});
+
+				chart.data = [
+					{ x: 0, value: 30 },
+					{ x: 1, value: 50 },
+					{ x: 2, value: 45 },
+					{ x: 3, value: 70 },
+					{ x: 4, value: 60 },
+					{ x: 5, value: 80 },
+					{ x: 6, value: 75 }
+				];
+				chart.refresh();
+			}
+
+			function initLineChart() {
+				if(charts.line) {
+					charts.line.destroy();
+				}
+
+				const chart = new jmChart('lineChart', {
+					width: document.getElementById('lineChart').offsetWidth,
+					height: 400,
+					xField: 'x',
+					enableAnimate: true,
+					autoRefresh: true,
+					style: {
+						margin: { left: 60, top: 30, right: 30, bottom: 40 }
+					}
+				});
+
+				chart.createSeries('line', {
+					field: 'y1',
+					style: {
+						curve: true,
+						area: true,
+						showItem: true,
+						color: '#667eea'
+					}
+				});
+
+				chart.createSeries('line', {
+					field: 'y2',
+					style: {
+						curve: true,
+						showItem: false,
+						lineType: 'dotted',
+						color: '#764ba2'
+					}
+				});
+
+				generateLineData();
+				charts.line = chart;
+			}
+
+			function generateLineData() {
+				const data = [];
+				for(let i = 0; i < 12; i++) {
+					data.push({
+						x: i,
+						y1: Math.random() * 100 + 50,
+						y2: Math.random() * 80 + 20
+					});
+				}
+				charts.line.data = data;
+				charts.line.refresh();
+			}
+
+			function initBarChart() {
+				if(charts.bar) {
+					charts.bar.destroy();
+				}
+
+				const chart = new jmChart('barChart', {
+					width: document.getElementById('barChart').offsetWidth,
+					height: 400,
+					xField: 'x',
+					baseY: 0,
+					enableAnimate: true,
+					autoRefresh: true,
+					style: {
+						margin: { left: 60, top: 30, right: 30, bottom: 40 }
+					}
+				});
+
+				chart.createSeries('bar', {
+					field: 'y1',
+					style: {
+						perWidth: 0.6,
+						label: { show: true }
+					}
+				});
+
+				generateBarData();
+				charts.bar = chart;
+			}
+
+			function generateBarData() {
+				const data = [];
+				for(let i = 0; i < 8; i++) {
+					data.push({
+						x: i,
+						y1: Math.random() * 200 + 50
+					});
+				}
+				charts.bar.data = data;
+				charts.bar.refresh();
+			}
+
+			function initPieChart() {
+				if(charts.pie) {
+					charts.pie.destroy();
+				}
+
+				const chart = new jmChart('pieChart', {
+					width: document.getElementById('pieChart').offsetWidth,
+					height: 400,
+					enableAnimate: true,
+					autoRefresh: true,
+					style: {
+						markLine: false,
+						margin: { left: 50, top: 30, right: 50, bottom: 30 }
+					}
+				});
+
+				chart.createSeries('pie', {
+					field: 'value',
+					style: {
+						isHollow: true,
+						arcWidth: 40,
+						marginAngle: 0.05
+					}
+				});
+
+				generatePieData();
+				charts.pie = chart;
+			}
+
+			function generatePieData() {
+				const data = [
+					{ x: 0, name: '产品A', value: 30 },
+					{ x: 1, name: '产品B', value: 25 },
+					{ x: 2, name: '产品C', value: 20 },
+					{ x: 3, name: '产品D', value: 15 },
+					{ x: 4, name: '产品E', value: 10 }
+				];
+				charts.pie.data = data;
+				charts.pie.refresh();
+			}
+
+			function initRadarChart() {
+				if(charts.radar) {
+					charts.radar.destroy();
+				}
+
+				const chart = new jmChart('radarChart', {
+					width: document.getElementById('radarChart').offsetWidth,
+					height: 400,
+					enableAnimate: true,
+					autoRefresh: true,
+					style: {
+						markLine: false,
+						chartArea: { stroke: 'transparent' },
+						margin: { left: 50, top: 30, right: 50, bottom: 30 }
+					}
+				});
+
+				chart.createSeries('radar', {
+					fields: ['y1', 'y2', 'y3', 'y4', 'y5', 'y6'],
+					style: {
+						fill: 'rgba(102, 126, 234, 0.2)'
+					}
+				});
+
+				generateRadarData();
+				charts.radar = chart;
+			}
+
+			function generateRadarData() {
+				const data = [
+					{ x: '能力A', y1: 80, y2: 70, y3: 90, y4: 85, y5: 75, y6: 80 },
+					{ x: '能力B', y1: 75, y2: 85, y3: 80, y4: 70, y5: 85, y6: 75 },
+					{ x: '能力C', y1: 85, y2: 75, y3: 70, y4: 80, y5: 70, y6: 85 }
+				];
+				charts.radar.data = data;
+				charts.radar.refresh();
+			}
+
+			function initCandlestickChart() {
+				if(charts.candlestick) {
+					charts.candlestick.destroy();
+				}
+
+				const chart = new jmChart('candlestickChart', {
+					width: document.getElementById('candlestickChart').offsetWidth,
+					height: 400,
+					xField: 'day',
+					enableAnimate: true,
+					autoRefresh: true,
+					style: {
+						margin: { left: 60, top: 30, right: 30, bottom: 40 }
+					}
+				});
+
+				chart.createSeries('candlestick', {
+					fields: ['open', 'close', 'max', 'min'],
+					style: {
+						masculineColor: '#ff6b6b',
+						negativeColor: '#51cf66'
+					}
+				});
+
+				generateCandlestickData();
+				charts.candlestick = chart;
+			}
+
+			function generateCandlestickData() {
+				const data = [];
+				const startDate = new Date();
+				for(let i = 0; i < 20; i++) {
+					const open = Math.random() * 50 + 100;
+					const close = Math.random() * 50 + 100;
+					const max = Math.max(open, close) + Math.random() * 20;
+					const min = Math.min(open, close) - Math.random() * 20;
+					
+					startDate.setDate(startDate.getDate() + 1);
+					data.push({
+						day: startDate.toLocaleDateString('zh-CN'),
+						open: open,
+						close: close,
+						max: max,
+						min: min
+					});
+				}
+				charts.candlestick.data = data;
+				charts.candlestick.refresh();
+			}
+
+			function initStackBarChart() {
+				if(charts.stackBar) {
+					charts.stackBar.destroy();
+				}
+
+				const chart = new jmChart('stackBarChart', {
+					width: document.getElementById('stackBarChart').offsetWidth,
+					height: 400,
+					xField: 'x',
+					baseY: 0,
+					enableAnimate: true,
+					autoRefresh: true,
+					style: {
+						margin: { left: 60, top: 30, right: 30, bottom: 40 }
+					}
+				});
+
+				chart.createSeries('stackBar', {
+					fields: ['y1', 'y2', 'y3']
+				});
+
+				generateStackBarData();
+				charts.stackBar = chart;
+			}
+
+			function generateStackBarData() {
+				const data = [];
+				for(let i = 0; i < 8; i++) {
+					data.push({
+						x: i,
+						y1: Math.random() * 50 + 20,
+						y2: Math.random() * 50 + 20,
+						y3: Math.random() * 50 + 20
+					});
+				}
+				charts.stackBar.data = data;
+				charts.stackBar.refresh();
+			}
+
+			function initStackLineChart() {
+				if(charts.stackLine) {
+					charts.stackLine.destroy();
+				}
+
+				const chart = new jmChart('stackLineChart', {
+					width: document.getElementById('stackLineChart').offsetWidth,
+					height: 400,
+					xField: 'x',
+					enableAnimate: true,
+					autoRefresh: true,
+					style: {
+						margin: { left: 60, top: 30, right: 30, bottom: 40 }
+					}
+				});
+
+				chart.createSeries('stackLine', {
+					fields: ['y1', 'y2'],
+					style: {
+						showItem: false,
+						area: {
+							fill: function(style) {
+								return this.style.color;
+							}
+						}
+					}
+				});
+
+				generateStackLineData();
+				charts.stackLine = chart;
+			}
+
+			function generateStackLineData() {
+				const data = [];
+				for(let i = 0; i < 12; i++) {
+					data.push({
+						x: i,
+						y1: Math.random() * 50 + 20,
+						y2: Math.random() * 50 + 20
+					});
+				}
+				charts.stackLine.data = data;
+				charts.stackLine.refresh();
+			}
+
+			window.refreshLineChart = generateLineData;
+			window.refreshBarChart = generateBarData;
+			window.refreshPieChart = generatePieData;
+			window.refreshRadarChart = generateRadarData;
+			window.refreshCandlestickChart = generateCandlestickData;
+			window.refreshStackBarChart = generateStackBarData;
+			window.refreshStackLineChart = generateStackLineData;
+
+			function initTabs() {
+				const tabs = document.querySelectorAll('.tab');
+				const contents = document.querySelectorAll('.tab-content');
+
+				tabs.forEach(tab => {
+					tab.addEventListener('click', () => {
+						const targetTab = tab.dataset.tab;
+
+						tabs.forEach(t => t.classList.remove('active'));
+						contents.forEach(c => c.classList.remove('active'));
+
+						tab.classList.add('active');
+						document.getElementById(targetTab).classList.add('active');
+
+						switch(targetTab) {
+							case 'line':
+								if(!charts.line) initLineChart();
+								break;
+							case 'bar':
+								if(!charts.bar) initBarChart();
+								break;
+							case 'pie':
+								if(!charts.pie) initPieChart();
+								break;
+							case 'radar':
+								if(!charts.radar) initRadarChart();
+								break;
+							case 'candlestick':
+								if(!charts.candlestick) initCandlestickChart();
+								break;
+							case 'stackBar':
+								if(!charts.stackBar) initStackBarChart();
+								break;
+							case 'stackLine':
+								if(!charts.stackLine) initStackLineChart();
+								break;
+						}
+					});
+				});
+			}
+
+			function init() {
+				initHeaderPreview();
+				initLineChart();
+				initTabs();
+			}
+
+			window.addEventListener('load', init);
+		</script>
+	</body>
+</html>

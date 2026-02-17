@@ -97,45 +97,62 @@ export default class jmLineSeries extends jmSeries {
 		return this.addShape(pointShape);
 	}
 
-	// 根据上下点生成平滑曲线
 	createCurePoints(shapePoints, p) {
 		const startPoint = shapePoints[shapePoints.length - 1];
-		if(startPoint && startPoint.y != undefined && startPoint.y != null) {
-			//如果需要画曲线，则计算贝塞尔曲线坐标				
-			const p1 = {x: startPoint.x + (p.x - startPoint.x) / 5, y: startPoint.y};
-			const p2 = {x: startPoint.x + (p.x - startPoint.x) / 2, y: p.y - (p.y - startPoint.y) / 2};
-			const p3 = {x: p.x - (p.x - startPoint.x) / 5, y: p.y};
-
-			//圆滑线条使用的贝塞尔对象
-			this.__bezier = this.__bezier || this.graph.createShape('bezier');
-			this.__bezier.cpoints = [
-				startPoint,
-				p1,
-				p2,
-				p3,
-				p
-			];//设置控制点
-
-			const bzpoints = this.__bezier.initPoints();
-			shapePoints = shapePoints.concat(bzpoints);					
+		
+		if(!startPoint || !p) return shapePoints;
+		
+		if(startPoint.x === undefined || startPoint.x === null || 
+		   startPoint.y === undefined || startPoint.y === null ||
+		   p.x === undefined || p.x === null ||
+		   p.y === undefined || p.y === null) {
+			return shapePoints;
 		}
+
+		const p1 = {x: startPoint.x + (p.x - startPoint.x) / 5, y: startPoint.y};
+		const p2 = {x: startPoint.x + (p.x - startPoint.x) / 2, y: p.y - (p.y - startPoint.y) / 2};
+		const p3 = {x: p.x - (p.x - startPoint.x) / 5, y: p.y};
+
+		this.__bezier = this.__bezier || this.graph.createShape('bezier');
+		this.__bezier.cpoints = [
+			startPoint,
+			p1,
+			p2,
+			p3,
+			p
+		];
+
+		const bzpoints = this.__bezier.initPoints();
+		if(bzpoints && bzpoints.length) {
+			shapePoints = shapePoints.concat(bzpoints);
+		}
+		
 		return shapePoints;
 	}
 
-	// 生成虚线
 	createDotLine(shapePoints, p) {
 		const startPoint = shapePoints[shapePoints.length - 1];
-		if(startPoint && startPoint.y != undefined && startPoint.y != null) {
-			//使用线条来画虚线效果
-			this.__line = this.__line || this.graph.createShape('line', {
-				style: this.style,						
-			});	
-			this.__line.start = startPoint;
-			this.__line.end = p;			
-
-			const dots = this.__line.initPoints();
-			shapePoints = shapePoints.concat(dots);					
+		
+		if(!startPoint || !p) return shapePoints;
+		
+		if(startPoint.x === undefined || startPoint.x === null || 
+		   startPoint.y === undefined || startPoint.y === null ||
+		   p.x === undefined || p.x === null ||
+		   p.y === undefined || p.y === null) {
+			return shapePoints;
 		}
+
+		this.__line = this.__line || this.graph.createShape('line', {
+			style: this.style,						
+		});	
+		this.__line.start = startPoint;
+		this.__line.end = p;			
+
+		const dots = this.__line.initPoints();
+		if(dots && dots.length) {
+			shapePoints = shapePoints.concat(dots);
+		}
+		
 		return shapePoints;
 	}
 
