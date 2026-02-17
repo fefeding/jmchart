@@ -26,7 +26,7 @@
   "bugs": {
     "url": "https://github.com/fefeding/jmchart/issues"
   },
-  "homepage": "https://github.com/fefeding/jmchart#readme",
+  "homepage": "https://surl.fit/tools/tools/jmchart",
   "dependencies": {
     "jmgraph": "^3.2.17"
   },
