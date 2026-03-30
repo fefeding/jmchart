@@ -11,7 +11,7 @@ jmchart 是一个轻量级、高性能的图表组件，支持微信小程序，
 
 - **轻量级**：代码体积小，加载速度快
 - **高性能**：优化的渲染引擎，支持大数据量
-- **多图表类型**：支持折线图、柱状图、饼图、雷达图、K线图、堆叠图等
+- **多图表类型**：支持 17+ 种图表类型
 - **动画效果**：支持流畅的入场动画
 - **响应式**：自适应容器大小
 - **跨平台**：支持浏览器和微信小程序
@@ -20,22 +20,42 @@ jmchart 是一个轻量级、高性能的图表组件，支持微信小程序，
 
 ## 支持的图表类型
 
-- **折线图** (line) - 展示数据趋势
-- **柱状图** (bar) - 对比数据大小
-- **饼图** (pie) - 展示数据占比
-- **雷达图** (radar) - 多维度数据对比
-- **K线图** (candlestick) - 金融数据展示
-- **堆叠柱状图** (stackBar) - 多系列数据堆叠
-- **范围图** (range) - 展示数据的上下限范围（如温度范围、价格波动）
-- **散点图** (scatter) - 展示两个变量之间的关系
-- **气泡图** (bubble) - 展示三个变量之间的关系
-- **热力图** (heatmap) - 展示数据密度和强度
-- **仪表盘** (gauge) - 展示单一指标的状态
-- **面积图** (area) - 展示数据趋势和累积值
-- **瀑布图** (waterfall) - 展示数据的增减变化
+### 基础图表
+| 图表类型 | 类型名 | 说明 |
+|---------|-------|------|
+| 折线图 | `line` | 展示数据趋势变化 |
+| 柱状图 | `bar` | 对比数据大小 |
+| 饼图 | `pie` | 展示数据占比 |
+| 面积图 | `area` | 展示数据趋势和累积值 |
+
+### 高级图表
+| 图表类型 | 类型名 | 说明 |
+|---------|-------|------|
+| 散点图 | `scatter` | 展示两个变量之间的关系 |
+| 气泡图 | `bubble` | 展示三个变量之间的关系 |
+| 热力图 | `heatmap` | 展示数据密度和强度 |
+| 雷达图 | `radar` | 多维度数据对比 |
+| K线图 | `candlestick` | 金融数据展示 |
+| 箱线图 | `boxPlot` | 展示数据分布情况 |
+
+### 专业图表
+| 图表类型 | 类型名 | 说明 |
+|---------|-------|------|
+| 仪表盘 | `gauge` | 展示单一指标的状态 |
+| 瀑布图 | `waterfall` | 展示数据的增减变化 |
+| 漏斗图 | `funnel` | 展示转化率分析 |
+| 环形进度图 | `ringProgress` | 展示进度完成情况 |
+| 词云图 | `wordCloud` | 展示文本词频分布 |
+| 旭日图 | `sunburst` | 展示层级数据占比 |
+| 范围图 | `range` | 展示数据的上下限范围 |
+| 堆叠柱状图 | `stackBar` | 多系列数据堆叠 |
 
 ## 在线示例
 
+### 综合示例
+- [所有图表类型](http://fefeding.github.io/jmchart/example/all-charts.html) - 包含所有图表类型的完整示例
+
+### 单独示例
 - [折线图](http://fefeding.github.io/jmchart/example/line.html)
 - [柱状图](http://fefeding.github.io/jmchart/example/bar.html)
 - [饼图](http://fefeding.github.io/jmchart/example/pie.html)
@@ -183,14 +203,19 @@ const options = {
     // 样式配置
     style: {
         margin: { left: 40, top: 20, right: 20, bottom: 40 },
-        layout: 'normal'
+        layout: 'normal',
+        // 坐标轴显示控制
+        axis: {
+            x: true,
+            y: true
+        }
     }
 };
 ```
 
 ### 图表类型配置
 
-#### 折线图 (line)
+#### 折线图
 
 ```javascript
 chart.createSeries('line', {
@@ -213,7 +238,7 @@ chart.createSeries('line', {
 });
 ```
 
-#### 柱状图 (bar)
+#### 柱状图
 
 ```javascript
 chart.createSeries('bar', {
@@ -226,7 +251,7 @@ chart.createSeries('bar', {
 });
 ```
 
-#### 饼图 (pie)
+#### 饼图
 
 ```javascript
 chart.createSeries('pie', {
@@ -240,20 +265,24 @@ chart.createSeries('pie', {
 });
 ```
 
-#### 雷达图 (radar)
+#### 雷达图
 
 ```javascript
 chart.createSeries('radar', {
-    field: ['value1', 'value2', 'value3'],
-    xField: 'name',
+    fields: ['语文', '数学', '英语', '物理', '化学'],
     style: {
         lineWidth: 2,
         fill: 'rgba(0,0,0,0.2)'
     }
 });
+// 数据格式
+chart.data = [
+    { x: '学生A', 语文: 80, 数学: 90, 英语: 75, 物理: 85, 化学: 70 },
+    { x: '学生B', 语文: 90, 数学: 85, 英语: 80, 物理: 70, 化学: 95 }
+];
 ```
 
-#### 散点图 (scatter)
+#### 散点图
 
 ```javascript
 chart.createSeries('scatter', {
@@ -264,9 +293,15 @@ chart.createSeries('scatter', {
         showItem: true      // 是否显示点
     }
 });
+// 数据格式
+chart.data = [
+    { x: 10, y: 20 },
+    { x: 20, y: 30 },
+    { x: 30, y: 10 }
+];
 ```
 
-#### 气泡图 (bubble)
+#### 气泡图
 
 ```javascript
 chart.createSeries('bubble', {
@@ -286,7 +321,7 @@ chart.data = [
 ];
 ```
 
-#### 热力图 (heatmap)
+#### 热力图
 
 ```javascript
 chart.createSeries('heatmap', {
@@ -311,7 +346,7 @@ chart.data = [
 ];
 ```
 
-#### 仪表盘 (gauge)
+#### 仪表盘
 
 ```javascript
 chart.createSeries('gauge', {
@@ -329,7 +364,7 @@ chart.createSeries('gauge', {
 chart.data = [{ value: 75 }];
 ```
 
-#### 面积图 (area)
+#### 面积图
 
 ```javascript
 chart.createSeries('area', {
@@ -346,17 +381,17 @@ chart.createSeries('area', {
 });
 ```
 
-#### 瀑布图 (waterfall)
+#### 瀑布图
 
 ```javascript
 chart.createSeries('waterfall', {
     field: 'value',
     xField: 'name',
     style: {
-        perWidth: 0.5,      // 柱子宽度占比
+        perWidth: 0.5,           // 柱子宽度占比
         increaseColor: '#52c41a', // 增长颜色
         decreaseColor: '#f5222d', // 减少颜色
-        connectorColor: '#999'     // 连接线颜色
+        connectorColor: '#999'    // 连接线颜色
     }
 });
 // 数据格式
@@ -365,11 +400,11 @@ chart.data = [
     { name: '增加', value: 50 },
     { name: '减少', value: -30 },
     { name: '增加', value: 20 },
-    { name: '最终值', value: 0 } // 最终值会自动计算
+    { name: '最终值', value: 0 }
 ];
 ```
 
-#### 范围图 (range)
+#### 范围图
 
 ```javascript
 chart.createSeries('range', {
@@ -389,16 +424,138 @@ chart.createSeries('range', {
 chart.data = [
     { date: '1月1日', min: 10, max: 20 },
     { date: '1月2日', min: 12, max: 22 },
-    { date: '1月3日', min: 8, max: 18 },
-    { date: '1月4日', min: 15, max: 25 }
+    { date: '1月3日', min: 8, max: 18 }
 ];
 ```
 
-**应用场景：**
-- 温度范围：显示每天的最高温和最低温
-- 价格波动：显示股票的最高价和最低价
-- 误差范围：显示测量值的误差范围
-- 置信区间：显示统计数据的置信区间
+#### 漏斗图
+
+```javascript
+chart.createSeries('funnel', {
+    field: 'value',
+    xField: 'name',
+    style: {
+        align: 'center',     // 对齐方式: 'center' | 'left' | 'right'
+        gap: 2,              // 层之间的间隔
+        stroke: '#fff',      // 边框颜色
+        label: {
+            show: true,      // 是否显示标签
+            fill: '#fff',    // 标签颜色
+            font: '12px Arial'
+        }
+    }
+});
+// 数据格式
+chart.data = [
+    { name: '访问量', value: 10000 },
+    { name: '咨询量', value: 5000 },
+    { name: '意向客户', value: 2000 },
+    { name: '成交客户', value: 500 }
+];
+```
+
+#### 环形进度图
+
+```javascript
+chart.createSeries('ringProgress', {
+    field: 'value',
+    style: {
+        lineWidth: 20,       // 环形宽度
+        max: 100,            // 最大值
+        startAngle: -90,     // 起始角度（12点钟方向）
+        ringGap: 10,         // 多环之间的间隔
+        backgroundColor: '#e0e0e0', // 背景色
+        showLabel: true      // 是否显示标签
+    }
+});
+// 数据格式
+chart.data = [
+    { name: '完成度', value: 75 },
+    { name: '目标', value: 60 }
+];
+```
+
+#### 箱线图
+
+```javascript
+chart.createSeries('boxPlot', {
+    field: ['min', 'q1', 'median', 'q3', 'max'], // 五个数值字段
+    xField: 'category',
+    style: {
+        boxWidth: null,          // 箱体宽度，null 自动计算
+        whiskerWidth: 1,         // 须线宽度
+        whiskerLength: 20,       // 须线帽长度
+        boxFill: 'transparent',  // 箱体填充
+        label: {
+            show: true,
+            fill: '#333',
+            font: '12px Arial'
+        }
+    }
+});
+// 数据格式
+chart.data = [
+    { category: '产品A', min: 10, q1: 20, median: 35, q3: 50, max: 70 },
+    { category: '产品B', min: 15, q1: 30, median: 45, q3: 60, max: 80 },
+    { category: '产品C', min: 5, q1: 15, median: 25, q3: 40, max: 55 }
+];
+```
+
+#### 词云图
+
+```javascript
+chart.createSeries('wordCloud', {
+    field: 'weight',
+    xField: 'word',
+    style: {
+        minFontSize: 12,     // 最小字体
+        maxFontSize: 60,     // 最大字体
+        spiral: true,        // 使用螺旋布局
+        colors: ['#249FDA', '#EA3B7C', '#8EBC00'] // 自定义颜色
+    }
+});
+// 数据格式
+chart.data = [
+    { word: '数据分析', weight: 100 },
+    { word: '可视化', weight: 80 },
+    { word: '图表', weight: 90 },
+    { word: 'JavaScript', weight: 95 }
+];
+```
+
+#### 旭日图
+
+```javascript
+chart.createSeries('sunburst', {
+    data: sunburstData,      // 树形结构数据
+    style: {
+        innerRadius: 30,     // 内圆半径
+        showLabels: true,    // 是否显示标签
+        stroke: '#fff',      // 边框颜色
+        labelColor: '#fff'   // 标签颜色
+    }
+});
+// 数据格式（树形结构）
+const sunburstData = [{
+    name: '根节点',
+    children: [
+        {
+            name: '分类A',
+            children: [
+                { name: 'A1', value: 30 },
+                { name: 'A2', value: 20 }
+            ]
+        },
+        {
+            name: '分类B',
+            children: [
+                { name: 'B1', value: 25 },
+                { name: 'B2', value: 35 }
+            ]
+        }
+    ]
+}];
+```
 
 ## API 文档
 
@@ -406,21 +563,25 @@ chart.data = [
 
 #### 方法
 
-- `createSeries(type, options)` - 创建图表序列
-- `createXAxis(options)` - 创建X轴
-- `createYAxis(options)` - 创建Y轴
-- `reset()` - 重置图表
-- `refresh()` - 刷新图表
-- `destroy()` - 销毁图表
-- `getColor(index)` - 获取颜色
+| 方法 | 说明 | 参数 |
+|-----|------|-----|
+| `createSeries(type, options)` | 创建图表序列 | type: 图表类型, options: 配置选项 |
+| `createXAxis(options)` | 创建X轴 | options: 轴配置 |
+| `createYAxis(options)` | 创建Y轴 | options: 轴配置 |
+| `reset()` | 重置图表 | - |
+| `refresh()` | 刷新图表 | - |
+| `destroy()` | 销毁图表 | - |
+| `getColor(index)` | 获取颜色 | index: 颜色索引 |
 
 #### 事件
 
-- `touchPointChange` - 数据点变化事件
-- `marklinelongtapstart` - 标线长按开始
-- `marklinestartmove` - 标线开始移动
-- `marklinemove` - 标线移动中
-- `marklineendmove` - 标线移动结束
+| 事件 | 说明 |
+|-----|------|
+| `touchPointChange` | 数据点变化事件 |
+| `marklinelongtapstart` | 标线长按开始 |
+| `marklinestartmove` | 标线开始移动 |
+| `marklinemove` | 标线移动中 |
+| `marklineendmove` | 标线移动结束 |
 
 ## 性能优化
 
@@ -473,13 +634,19 @@ MIT
 ## 更新日志
 
 ### v1.3.0
-- 新增图表类型：散点图 (scatter)、气泡图 (bubble)、热力图 (heatmap)、仪表盘 (gauge)、面积图 (area)、瀑布图 (waterfall)
+- 新增图表类型：漏斗图、环形进度图、箱线图、词云图、旭日图
+- 新增综合示例页面 (all-charts.html)
+- 优化图表数据处理逻辑，支持无坐标轴图表
+- 完善文档和代码注释
+
+### v1.2.0
+- 新增图表类型：散点图、气泡图、热力图、仪表盘、面积图、瀑布图
 - 增强数据标签功能，支持top、bottom、left、right、inside等位置选项
 - 添加图表点击事件支持
 - 优化热力图颜色映射算法
 - 完善文档和代码注释
 
-### v1.2.10
+### v1.1.0
 - 优化代码性能
 - 添加缓存机制
 - 改进动画控制
