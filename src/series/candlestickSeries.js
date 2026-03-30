@@ -1,8 +1,23 @@
-
 import jmSeries from './series.js';
 
 /**
- * K线图
+ * K线图（蜡烛图）
+ * 
+ * K线图是金融领域常用的图表类型，用于显示股票、期货等金融产品的价格走势。
+ * 每根K线包含四个价格：开盘价、收盘价、最高价、最低价。
+ * 
+ * 数据格式要求：
+ * - fields: ['open', 'close', 'high', 'low']
+ * - open: 开盘价
+ * - close: 收盘价
+ * - high: 最高价
+ * - low: 最低价
+ * 
+ * 样式配置：
+ * - masculineColor: 阳线颜色（收盘价 > 开盘价），默认红色
+ * - negativeColor: 阴线颜色（收盘价 < 开盘价），默认绿色
+ * - barWidth: K线宽度（像素）
+ * - perWidth: K线宽度占比（0-1），默认0.4
  *
  * @class jmCandlestickSeries
  * @module jmChart
@@ -11,15 +26,20 @@ import jmSeries from './series.js';
  * @param {style} style 样式
  */
 
-//构造函数
 export default class jmCandlestickSeries extends jmSeries {
 	constructor(options) {
 		options.style = options.style || options.graph.style.line;
 		super(options);
-
-		//this.on('beginDraw', this[PreDrawKey]);
 	}
 
+	/**
+	 * 初始化K线图
+	 * 
+	 * 绘制逻辑：
+	 * 1. 遍历所有数据点
+	 * 2. 判断阳线或阴线
+	 * 3. 绘制K线实体和上下影线
+	 */
 	init() {
 		const { points } = this.initDataPoint();	
 
@@ -63,6 +83,7 @@ export default class jmCandlestickSeries extends jmSeries {
 
 			let tm = p.points[1];
 			let bm = p.points[0];
+			
 			p.style.stroke = p.style.fill = p.style.masculineColor || 'red';
 
 			if(p.points[0].yValue > p.points[1].yValue) {
@@ -80,10 +101,12 @@ export default class jmCandlestickSeries extends jmSeries {
 		}
 	}
 
-	// 计算实心体宽度
+	/**
+	 * 计算K线宽度
+	 * 
+	 * @param {number} count 数据点数量
+	 */
 	initWidth(count) {
-		//计算每个柱子占宽
-		//每项柱子占宽除以柱子个数,默认最大宽度为30
 		const maxWidth = this.xAxis.width / count;
 
 		if(this.style.barWidth > 0) {

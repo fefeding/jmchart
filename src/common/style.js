@@ -184,6 +184,31 @@ export default {
 		// 默认不填充，需要填满请配置{fill:'',stroke:''}
 		area: false	
 	},
+	range: {
+		normal: {
+			lineWidth: 1,
+			zIndex: 18,
+			cursor: 'default'
+		},
+		hover: {
+			lineWidth:4,
+			cursor: 'pointer'
+		},
+		lineWidth:1,
+		zIndex: 18,
+		cursor: 'default',
+		radius: 3,
+		fill: null,	
+		showItem: true,
+		item: {
+			fill: '#fff',
+			zIndex: 19
+		},
+		area: {
+			fill: null,
+			opacity: 0.3
+		}
+	},
 	bar : {
 		normal: {
 			lineWidth: 1,
@@ -282,5 +307,175 @@ export default {
 		// 阳线颜色
 		masculineColor: 'red',
 		lineWidth: 1
+	},
+	scatter: {
+		normal: {
+			lineWidth: 1,
+			zIndex: 18,
+			cursor: 'default'
+		},
+		hover: {
+			//zIndex: 100,
+			cursor: 'pointer'
+		},
+		radius: 5,
+		lineWidth: 1,
+		zIndex: 18,
+		cursor: 'default',
+		item: {
+			fill: '#fff',
+			zIndex: 19
+		}
+	},
+	bubble: {
+		normal: {
+			lineWidth: 1,
+			zIndex: 18,
+			cursor: 'default'
+		},
+		hover: {
+			//zIndex: 100,
+			cursor: 'pointer'
+		},
+		radius: 5,
+		radiusScale: 1,
+		opacity: 0.6,
+		lineWidth: 1,
+		zIndex: 18,
+		cursor: 'default',
+		item: {
+			fill: '#fff',
+			zIndex: 19
+		}
+	},
+	heatmap: {
+		normal: {
+			lineWidth: 1,
+			zIndex: 18,
+			cursor: 'default'
+		},
+		hover: {
+			//zIndex: 100,
+			cursor: 'pointer'
+		},
+		cellWidth: 20,
+		cellHeight: 20,
+		lineWidth: 1,
+		zIndex: 18,
+		cursor: 'default',
+		defaultColor: '#ccc',
+		colorGradient: [
+			'#313695', // 蓝色（最小值）
+			'#4575b4',
+			'#74add1',
+			'#abd9e9',
+			'#e0f3f8',
+			'#ffffbf',
+			'#fee090',
+			'#fdae61',
+			'#f46d43',
+			'#d73027',
+			'#a50026'  // 红色（最大值）
+		],
+		item: {
+			fill: '#fff',
+			zIndex: 19
+		}
+	},
+	gauge: {
+		normal: {
+			lineWidth: 1,
+			zIndex: 11,
+			cursor: 'default'
+		},
+		hover: {
+			//zIndex: 100,
+			cursor: 'pointer'
+		},
+		min: 0,
+		max: 100,
+		startAngle: -150,
+		endAngle: 150,
+		radiusScale: 0.8,
+		lineWidth: 15,
+		backgroundStroke: '#e0e0e0',
+		backgroundFill: 'transparent',
+		backgroundLineWidth: 20,
+		gradient: true,
+		gradientColors: [
+			{ offset: 0, color: '#52c41a' }, // 绿色
+			{ offset: 0.7, color: '#faad14' }, // 黄色
+			{ offset: 1, color: '#f5222d' }  // 红色
+		],
+		tickCount: 10,
+		tickColor: '#666',
+		tickLabelColor: '#333',
+		pointerColor: '#333',
+		pointerWidth: 3,
+		centerColor: '#333',
+		centerRadius: 8,
+		valueColor: '#333',
+		valueFont: '24px Arial',
+		unit: '',
+		unitColor: '#666',
+		unitFont: '14px Arial',
+		zIndex: 11,
+		cursor: 'default'
+	},
+	area: {
+		normal: {
+			lineWidth: 1,
+			zIndex: 18,
+			cursor: 'default'
+		},
+		hover: {
+			lineWidth:4,
+			//zIndex: 100,
+			cursor: 'pointer'
+		},
+		lineWidth:1,
+		zIndex: 18,
+		cursor: 'default',
+		radius: 3,
+		fill: null,
+		showItem: false,    // 是否展示圆点
+		item: {
+			fill: '#fff',
+			zIndex: 19
+		},
+		// 默认填充，使用渐变色
+		area: {
+			stroke: 'transparent',
+			fill: null
+		}
+	},
+	waterfall: {
+		normal: {
+			lineWidth: 1,
+			zIndex: 17,
+			cursor: 'default',
+			opacity: 0.8
+		},
+		hover: {
+			lineWidth:4,
+			//zIndex: 100,
+			opacity: 1,
+			cursor: 'pointer'
+		},
+		lineWidth: 1,
+		// 柱子宽占比，决定了柱子相对于总宽度
+		perWidth: 0.5,
+		zIndex: 17,
+		cursor: 'default',
+		increaseColor: '#52c41a', // 增长颜色
+		decreaseColor: '#f5222d', // 减少颜色
+		connectorColor: '#999',   // 连接线颜色
+		close : true,
+		shadow: {
+			x: 1,
+			y: 1,
+			blur: 2,
+			color: '#000'
+		}
 	}
 }

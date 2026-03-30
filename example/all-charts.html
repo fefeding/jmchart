@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>jmchart 所有图表类型测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .chart-container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        h2 {
+            color: #555;
+            margin-top: 0;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 10px;
+        }
+        .chart {
+            width: 100%;
+            height: 400px;
+        }
+        .tab-container {
+            display: flex;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+        }
+        .tab.active {
+            border-bottom-color: #2196f3;
+            color: #2196f3;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>jmchart 所有图表类型测试</h1>
+        
+        <div class="tab-container">
+            <div class="tab active" data-tab="line">折线图</div>
+            <div class="tab" data-tab="bar">柱状图</div>
+            <div class="tab" data-tab="pie">饼图</div>
+            <div class="tab" data-tab="radar">雷达图</div>
+            <div class="tab" data-tab="candlestick">K线图</div>
+            <div class="tab" data-tab="scatter">散点图</div>
+            <div class="tab" data-tab="bubble">气泡图</div>
+            <div class="tab" data-tab="heatmap">热力图</div>
+            <div class="tab" data-tab="gauge">仪表盘</div>
+            <div class="tab" data-tab="area">面积图</div>
+            <div class="tab" data-tab="waterfall">瀑布图</div>
+            <div class="tab" data-tab="range">范围图</div>
+        </div>
+
+        <!-- 折线图 -->
+        <div class="tab-content active" id="line">
+            <div class="chart-container">
+                <h2>折线图 (Line Chart)</h2>
+                <canvas class="chart" id="lineChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 柱状图 -->
+        <div class="tab-content" id="bar">
+            <div class="chart-container">
+                <h2>柱状图 (Bar Chart)</h2>
+                <canvas class="chart" id="barChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 饼图 -->
+        <div class="tab-content" id="pie">
+            <div class="chart-container">
+                <h2>饼图 (Pie Chart)</h2>
+                <canvas class="chart" id="pieChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 雷达图 -->
+        <div class="tab-content" id="radar">
+            <div class="chart-container">
+                <h2>雷达图 (Radar Chart)</h2>
+                <canvas class="chart" id="radarChart"></canvas>
+            </div>
+        </div>
+
+        <!-- K线图 -->
+        <div class="tab-content" id="candlestick">
+            <div class="chart-container">
+                <h2>K线图 (Candlestick Chart)</h2>
+                <canvas class="chart" id="candlestickChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 散点图 -->
+        <div class="tab-content" id="scatter">
+            <div class="chart-container">
+                <h2>散点图 (Scatter Chart)</h2>
+                <canvas class="chart" id="scatterChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 气泡图 -->
+        <div class="tab-content" id="bubble">
+            <div class="chart-container">
+                <h2>气泡图 (Bubble Chart)</h2>
+                <canvas class="chart" id="bubbleChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 热力图 -->
+        <div class="tab-content" id="heatmap">
+            <div class="chart-container">
+                <h2>热力图 (Heatmap Chart)</h2>
+                <canvas class="chart" id="heatmapChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 仪表盘 -->
+        <div class="tab-content" id="gauge">
+            <div class="chart-container">
+                <h2>仪表盘 (Gauge Chart)</h2>
+                <canvas class="chart" id="gaugeChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 面积图 -->
+        <div class="tab-content" id="area">
+            <div class="chart-container">
+                <h2>面积图 (Area Chart)</h2>
+                <canvas class="chart" id="areaChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 瀑布图 -->
+        <div class="tab-content" id="waterfall">
+            <div class="chart-container">
+                <h2>瀑布图 (Waterfall Chart)</h2>
+                <canvas class="chart" id="waterfallChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 范围图 -->
+        <div class="tab-content" id="range">
+            <div class="chart-container">
+                <h2>范围图 (Range Chart)</h2>
+                <canvas class="chart" id="rangeChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { jmChart } from '../dist/jmchart.esm.js';
+        
+        window.jmChart = jmChart;
+
+        // 标签切换功能
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                tab.classList.add('active');
+                const tabId = tab.getAttribute('data-tab');
+                document.getElementById(tabId).classList.add('active');
+                
+                initChart(tabId);
+            });
+        });
+
+        // 图表数据
+        const chartData = {
+            line: [
+                { name: '一月', value: 100 },
+                { name: '二月', value: 200 },
+                { name: '三月', value: 150 },
+                { name: '四月', value: 300 },
+                { name: '五月', value: 250 },
+                { name: '六月', value: 350 }
+            ],
+            bar: [
+                { name: '苹果', value: 120 },
+                { name: '香蕉', value: 180 },
+                { name: '橙子', value: 90 },
+                { name: '葡萄', value: 200 },
+                { name: '梨', value: 150 }
+            ],
+            pie: [
+                { name: '周一', value: 20 },
+                { name: '周二', value: 30 },
+                { name: '周三', value: 25 },
+                { name: '周四', value: 15 },
+                { name: '周五', value: 10 }
+            ],
+            radar: [
+                { x: '学生A', 语文: 80, 数学: 90, 英语: 75, 物理: 85, 化学: 70 },
+                { x: '学生B', 语文: 90, 数学: 85, 英语: 80, 物理: 70, 化学: 95 }
+            ],
+            candlestick: [
+                { date: '1月1日', open: 100, close: 120, high: 130, low: 90 },
+                { date: '1月2日', open: 120, close: 110, high: 125, low: 105 },
+                { date: '1月3日', open: 110, close: 130, high: 135, low: 108 },
+                { date: '1月4日', open: 130, close: 125, high: 140, low: 120 },
+                { date: '1月5日', open: 125, close: 140, high: 145, low: 122 }
+            ],
+            scatter: [
+                { x: 10, y: 20 },
+                { x: 20, y: 30 },
+                { x: 30, y: 10 },
+                { x: 40, y: 40 },
+                { x: 50, y: 25 },
+                { x: 60, y: 35 },
+                { x: 70, y: 15 },
+                { x: 80, y: 45 }
+            ],
+            bubble: [
+                { x: 10, y: 20, size: 30, color: '#ff0000' },
+                { x: 20, y: 30, size: 50, color: '#00ff00' },
+                { x: 30, y: 10, size: 20, color: '#0000ff' },
+                { x: 40, y: 40, size: 40, color: '#ff00ff' },
+                { x: 50, y: 25, size: 25, color: '#00ffff' }
+            ],
+            heatmap: [
+                { x: 1, y: 1, value: 10 },
+                { x: 2, y: 1, value: 20 },
+                { x: 3, y: 1, value: 15 },
+                { x: 4, y: 1, value: 25 },
+                { x: 1, y: 2, value: 12 },
+                { x: 2, y: 2, value: 18 },
+                { x: 3, y: 2, value: 22 },
+                { x: 4, y: 2, value: 10 },
+                { x: 1, y: 3, value: 15 },
+                { x: 2, y: 3, value: 25 },
+                { x: 3, y: 3, value: 30 },
+                { x: 4, y: 3, value: 18 }
+            ],
+            gauge: [
+                { value: 75 }
+            ],
+            area: [
+                { name: '一月', value: 100 },
+                { name: '二月', value: 200 },
+                { name: '三月', value: 150 },
+                { name: '四月', value: 300 },
+                { name: '五月', value: 250 },
+                { name: '六月', value: 350 }
+            ],
+            waterfall: [
+                { name: '初始值', value: 100 },
+                { name: '收入', value: 50 },
+                { name: '支出', value: -30 },
+                { name: '收入', value: 20 },
+                { name: '支出', value: -10 },
+                { name: '最终值', value: 0 }
+            ],
+            range: []
+        };
+
+        // 生成范围图数据
+        for(let i = 0; i < 20; i++) {
+            const baseTemp = 15 + i * 0.3;
+            chartData.range.push({
+                date: '1月' + (i + 1) + '日',
+                min: baseTemp + Math.random() * 5,
+                max: baseTemp + 10 + Math.random() * 5
+            });
+        }
+
+        // 初始化图表
+        function initChart(type) {
+            const canvas = document.getElementById(type + 'Chart');
+            if (!canvas) return;
+
+            // 销毁之前的图表
+            if (window.charts && window.charts[type]) {
+                window.charts[type].destroy();
+            }
+
+            // 创建新图表
+            const chart = new jmChart(canvas, {
+                width: canvas.offsetWidth,
+                height: canvas.offsetHeight,
+                enableAnimate: true,
+                onClick: function(point) {
+                    console.log('点击了数据点:', point);
+                }
+            });
+
+            // 设置数据
+            chart.data = chartData[type];
+
+            // 创建图表系列
+            switch(type) {
+                case 'line':
+                    chart.createSeries('line', {
+                        field: 'value',
+                        xField: 'name',
+                        style: {
+                            lineWidth: 2,
+                            showItem: true,
+                            curve: true,
+                            area: true,
+                            label: {
+                                show: true,
+                                position: 'top'
+                            }
+                        }
+                    });
+                    break;
+                case 'bar':
+                    chart.createSeries('bar', {
+                        field: 'value',
+                        xField: 'name',
+                        style: {
+                            perWidth: 0.5,
+                            label: {
+                                show: true,
+                                position: 'top'
+                            }
+                        }
+                    });
+                    break;
+                case 'pie':
+                    chart.createSeries('pie', {
+                        field: 'value',
+                        xField: 'name'
+                    });
+                    break;
+                case 'radar':
+                    chart.createSeries('radar', {
+                        fields: ['语文', '数学', '英语', '物理', '化学'],
+                        style: {
+                            label: {
+                                show: true
+                            }
+                        }
+                    });
+                    break;
+                case 'candlestick':
+                    chart.createSeries('candlestick', {
+                        field: ['open', 'close', 'high', 'low'],
+                        xField: 'date'
+                    });
+                    break;
+                case 'scatter':
+                    chart.createSeries('scatter', {
+                        field: 'y',
+                        xField: 'x',
+                        style: {
+                            radius: 5,
+                            showItem: true
+                        }
+                    });
+                    break;
+                case 'bubble':
+                    chart.createSeries('bubble', {
+                        field: 'y',
+                        xField: 'x',
+                        style: {
+                            radius: 5,
+                            radiusScale: 1,
+                            opacity: 0.6
+                        }
+                    });
+                    break;
+                case 'heatmap':
+                    chart.createSeries('heatmap', {
+                        field: 'value',
+                        xField: 'x',
+                        style: {
+                            cellWidth: 30,
+                            cellHeight: 30
+                        }
+                    });
+                    break;
+                case 'gauge':
+                    chart.createSeries('gauge', {
+                        field: 'value',
+                        style: {
+                            min: 0,
+                            max: 100,
+                            unit: '%'
+                        }
+                    });
+                    break;
+                case 'area':
+                    chart.createSeries('area', {
+                        field: 'value',
+                        xField: 'name',
+                        style: {
+                            lineWidth: 2,
+                            showItem: true,
+                            curve: true,
+                            area: {
+                                fill: 'rgba(0,128,255,0.3)'
+                            }
+                        }
+                    });
+                    break;
+                case 'waterfall':
+                    chart.createSeries('waterfall', {
+                        field: 'value',
+                        xField: 'name',
+                        style: {
+                            perWidth: 0.5
+                        }
+                    });
+                    break;
+                case 'range':
+                    chart.createSeries('range', {
+                        fields: ['min', 'max'],
+                        xField: 'date',
+                        style: {
+                            color: '#F7BB98',
+                            showItem: false,
+                            curve: true,
+                            area: {
+                                fill: '#F7BB98',
+                                opacity: 0.3
+                            }
+                        }
+                    });
+                    break;
+            }
+
+            // 刷新图表
+            chart.refresh();
+
+            // 保存图表实例
+            if (!window.charts) window.charts = {};
+            window.charts[type] = chart;
+        }
+
+        // 初始化默认图表
+        initChart('line');
+
+        // 响应式调整
+        window.addEventListener('resize', () => {
+            if (window.charts) {
+                Object.keys(window.charts).forEach(type => {
+                    const chart = window.charts[type];
+                    if (chart) {
+                        const canvas = document.getElementById(type + 'Chart');
+                        if (canvas) {
+                            chart.width = canvas.offsetWidth;
+                            chart.height = canvas.offsetHeight;
+                            chart.refresh();
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

@@ -14,11 +14,14 @@ const rollupOptions = require('./rollup.config.js');
 async function build(format = 'cjs') {
 	const bundle = await rollup.rollup(rollupOptions);
 
-	const outputOptions = Object.assign(rollupOptions.output, {
+	const outputOptions = Object.assign({}, rollupOptions.output, {
 		file: `./dist/jmchart.${format}.js`,
 		format
-	})
-	const { code, map } = await bundle.generate(rollupOptions.output);
+	});
+
+	if (format === 'iife') {
+		outputOptions.name = 'jmChart';
+	}
 
 	await bundle.write(outputOptions);
 }

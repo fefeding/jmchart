@@ -13,7 +13,14 @@ import jmPieSeries from './series/pieSeries.js';
 import jmRadarSeries from './series/radarSeries.js';
 import jmLineSeries from './series/lineSeries.js';
 import jmStackLineSeries from './series/stackLineSeries.js';
+import jmRangeSeries from './series/rangeSeries.js';
 import jmCandlestickSeries from './series/candlestickSeries.js';
+import jmScatterSeries from './series/scatterSeries.js';
+import jmBubbleSeries from './series/bubbleSeries.js';
+import jmHeatmapSeries from './series/heatmapSeries.js';
+import jmGaugeSeries from './series/gaugeSeries.js';
+import jmAreaSeries from './series/areaSeries.js';
+import jmWaterfallSeries from './series/waterfallSeries.js';
 import jmMarkLineManager from './core/markLine/manager';
 
 const ANIMATION_DATA_THRESHOLD = 100;
@@ -127,6 +134,34 @@ export default class jmChart extends jmGraph  {
 		//this.chartArea.children.add(this.tooltip);
 
 		this.createXAxis();// 生成X轴
+
+		// 绑定点击事件
+		this.on('click', (args) => {
+			if(this.option.onClick) {
+				// 找到点击位置的数据点
+				let closestPoint = null;
+				let minDistance = Infinity;
+
+				this.series.each((i, serie) => {
+					if(serie.dataPoints) {
+						serie.dataPoints.forEach(point => {
+							const distance = Math.sqrt(
+								Math.pow(args.position.x - point.x, 2) + 
+								Math.pow(args.position.y - point.y, 2)
+							);
+							if(distance < minDistance && distance < 20) { // 20px 范围内的点
+								minDistance = distance;
+								closestPoint = point;
+							}
+						});
+					}
+				});
+
+				if(closestPoint) {
+					this.option.onClick(closestPoint);
+				}
+			}
+		});
 	}
 
 	// 创建一个操作层，以免每次刷新
@@ -401,7 +436,14 @@ export default class jmChart extends jmGraph  {
 				'pie' : jmPieSeries,
 				'radar' : jmRadarSeries,
 				'stackLine' : jmStackLineSeries,
-				'candlestick': jmCandlestickSeries
+				'range' : jmRangeSeries,
+				'candlestick': jmCandlestickSeries,
+				'scatter': jmScatterSeries,
+				'bubble': jmBubbleSeries,
+				'heatmap': jmHeatmapSeries,
+				'gauge': jmGaugeSeries,
+				'area': jmAreaSeries,
+				'waterfall': jmWaterfallSeries
 			};		
 		}
 

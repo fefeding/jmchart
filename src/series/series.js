@@ -27,6 +27,9 @@ export default class jmSeries extends jmPath {
 		this._cache = new Map();
 
 		this.xAxis = this.graph.createXAxis();
+		this.xAxis.init({
+			field: options.xField
+		});
 		
 		this.yAxis = this.yAxis || this.graph.createYAxis({
 			index: this.index,
@@ -339,9 +342,39 @@ export default class jmSeries extends jmPath {
 			position: function() {
 				const offh = style.offset || 5;
 				const size = this.testSize();
-				return {
-					x: point.x - size.width / 2 - barWidth,
-					y: baseOffset>0?(point.y + offh): (point.y - size.height - offh)
+				const position = style.position || (baseOffset > 0 ? 'top' : 'bottom');
+
+				switch(position) {
+					case 'top':
+						return {
+							x: point.x - size.width / 2 - barWidth,
+							y: point.y - size.height - offh
+						};
+				case 'bottom':
+						return {
+							x: point.x - size.width / 2 - barWidth,
+							y: point.y + offh
+						};
+				case 'left':
+						return {
+							x: point.x - size.width - offh - barWidth,
+							y: point.y - size.height / 2
+						};
+				case 'right':
+						return {
+							x: point.x + offh - barWidth,
+							y: point.y - size.height / 2
+						};
+				case 'inside':
+						return {
+							x: point.x - size.width / 2 - barWidth,
+							y: point.y + (baseOffset > 0 ? -size.height / 2 : size.height / 2)
+						};
+				default:
+						return {
+							x: point.x - size.width / 2 - barWidth,
+							y: baseOffset>0?(point.y - size.height - offh): (point.y + offh)
+						};
 				}
 			}
 		});

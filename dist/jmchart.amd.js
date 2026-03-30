@@ -2937,6 +2937,10 @@ define(['exports'], (function (exports) { 'use strict';
       // 多边切割, 得到三角形顶点
       // polygonIndices 顶点索引，
       earCutPointsToTriangles(points) {
+          this.earCutCache = this.earCutCache || (this.earCutCache = {});
+          const key = JSON.stringify(points);
+          if (this.earCutCache[key]) return this.earCutCache[key];
+
           const ps = this.earCutPoints(points);// 切割得到3角色顶点索引，
           const triangles = [];
           // 用顶点索引再组合成坐标数组
@@ -2947,6 +2951,8 @@ define(['exports'], (function (exports) { 'use strict';
 
               triangles.push([p1, p2, p3]);// 每三个顶点构成一个三角
           }
+          
+          this.earCutCache[key] = triangles;
           return triangles;
       }
 
@@ -3405,9 +3411,9 @@ define(['exports'], (function (exports) { 'use strict';
       // 分割成一个个规则的三角形，不规则的多边形不全割的话纹理就会没法正确覆盖
       getTriangles(points) {
           
-          //this.trianglesCache = this.trianglesCache||(this.trianglesCache={});
-          //const key = JSON.stringify(points);
-          //if(this.trianglesCache[key]) return this.trianglesCache[key];
+          this.trianglesCache = this.trianglesCache||(this.trianglesCache={});
+          const key = JSON.stringify(points);
+          if(this.trianglesCache[key]) return this.trianglesCache[key];
 
           const res = [];
           const polygons = this.getPolygon(points);                
@@ -3418,7 +3424,7 @@ define(['exports'], (function (exports) { 'use strict';
                   res.push(...triangles);
               }   
           }
-          //this.trianglesCache[key] = res;
+          this.trianglesCache[key] = res;
           return res;
       }
 
@@ -3520,18 +3526,15 @@ define(['exports'], (function (exports) { 'use strict';
 
       // 进行多边形填充
       fillPolygons(points, isTexture = false) {   
-          //const indexBuffer = this.createUint16Buffer(triangles, this.context.ELEMENT_ARRAY_BUFFER);
-          //this.context.drawElements(this.context.TRIANGLES, triangles.length, this.context.UNSIGMED_SHORT, 0);
-          //this.deleteBuffer(indexBuffer);
-          /*if(points.length > 3 && (!regular || this.needCut)) {
-              const triangles = regular && this.needCut? this.earCutPointsToTriangles(points): this.getTriangles(points);                
+          if(points.length > 3) {
+              const triangles = this.needCut? this.earCutPointsToTriangles(points): this.getTriangles(points);                
               if(triangles.length) {   
                   for(const triangle of triangles) {
                       this.fillPolygons(triangle, isTexture);// 这里就变成了规则的图形了
                   }
               }
           }
-          else {*/
+          else {
               const buffer = this.writePoints(points);
               // 纹理坐标
               const coordBuffer = isTexture? this.writePoints(points, this.program.attrs.a_text_coord): null;
@@ -3539,7 +3542,7 @@ define(['exports'], (function (exports) { 'use strict';
               this.context.drawArrays(this.context.TRIANGLE_FAN, 0, points.length);
               this.deleteBuffer(buffer);
               coordBuffer && this.deleteBuffer(coordBuffer);    
-          //}
+          }
       }
 
       // 填充图形
@@ -4997,6 +5000,61 @@ define(['exports'], (function (exports) { 'use strict';
   	set points(v) {
   		this.needUpdate = true;
   		return this.property('points', v);
+  	}
+
+  	/**
+  	 * 转换为SVG路径
+  	 * 
+  	 * @method toSVG
+  	 * @return {string} SVG路径字符串
+  	 */
+  	toSVG() {
+  		if(!this.points || this.points.length === 0) return '';
+  		
+  		let pathData = '';
+  		const points = this.points;
+  		
+  		// 移动到起点
+  		pathData += `M ${points[0].x} ${points[0].y}`;
+  		
+  		// 绘制路径
+  		for(let i = 1; i < points.length; i++) {
+  			const p = points[i];
+  			if(p.m) {
+  				// 移动到新位置
+  				pathData += ` M ${p.x} ${p.y}`;
+  			} else {
+  				// 直线到
+  				pathData += ` L ${p.x} ${p.y}`;
+  			}
+  		}
+  		
+  		// 如果是封闭路径
+  		if(this.style && this.style.close) {
+  			pathData += ' Z';
+  		}
+  		
+  		// 构建SVG元素
+  		let svg = '<path d="' + pathData + '"';
+  		
+  		// 添加样式
+  		if(this.style) {
+  			if(this.style.fill) {
+  				svg += ' fill="' + this.style.fill + '"';
+  			}
+  			if(this.style.stroke) {
+  				svg += ' stroke="' + this.style.stroke + '"';
+  			}
+  			if(this.style.lineWidth) {
+  				svg += ' stroke-width="' + this.style.lineWidth + '"';
+  			}
+  			if(this.style.opacity) {
+  				svg += ' opacity="' + this.style.opacity + '"';
+  			}
+  		}
+  		
+  		svg += '/>';
+  		return svg;
   	}	
   	
   }
@@ -6296,28 +6354,57 @@ define(['exports'], (function (exports) { 'use strict';
 
   	/**
   	 * 测试获取文本所占大小
-  	 *
+  	 * 计算文本渲染所需的宽度和高度，支持自动换行
+  	 * 
   	 * @method testSize
-  	 * @return {object} 含文本大小的对象
+  	 * @return {object} 含文本大小的对象 {width, height}
   	 */
   	testSize() {
+  		// 使用缓存提高性能，避免重复计算
   		if(this.__size) return this.__size;
 
-  		if(this.webglControl) this.__size = this.webglControl.testSize(this.text, this.style);
+  		if(this.webglControl) {
+  			this.__size = this.webglControl.testSize(this.text, this.style);
+  		}
   		else {
   			this.context.save && this.context.save();
-  			// 修改字体，用来计算
+  			
+  			// 设置字体样式用于测量
   			this.setStyle({
   				font: this.style.font || (this.style.fontSize + 'px ' + this.style.fontFamily)
   			});
-  			//计算宽度
-  			this.__size = this.context.measureText?
-  								this.context.measureText(this.text):
-  								{width:15};
+  			
+  			// 计算文本尺寸
+  			if(this.style.maxWidth && this.text) {
+  				// 文本换行处理
+  				const lines = this.wrapText(this.text, this.style.maxWidth);
+  				let maxWidth = 0;
+  				
+  				// 找出最宽的一行
+  				for(let line of lines) {
+  					const width = this.context.measureText(line).width;
+  					if(width > maxWidth) maxWidth = width;
+  				}
+  				
+  				// 计算总高度（行数 × 行高）
+  				const lineHeight = this.style.lineHeight || this.style.fontSize * 1.2;
+  				this.__size = {
+  					width: maxWidth,
+  					height: lineHeight * lines.length
+  				};
+  			}
+  			else {
+  				// 单行文本
+  				this.__size = this.context.measureText ?
+  								this.context.measureText(this.text) :
+  								{width: 15};
+  				this.__size.height = this.style.fontSize ? this.style.fontSize : 15;
+  			}
+  			
   			this.context.restore && this.context.restore();
-  			this.__size.height = this.style.fontSize?this.style.fontSize:15;
   		}
 
+  		// 设置默认宽高
   		if(!this.width) this.width = this.__size.width;
   		if(!this.height) this.height = this.__size.height;
   		
@@ -6325,14 +6412,79 @@ define(['exports'], (function (exports) { 'use strict';
   	}
 
   	/**
+  	 * 文本换行处理
+  	 * 根据最大宽度将文本分割成多行
+  	 * 支持中英文混合文本，优先在空格处换行
+  	 * 
+  	 * @method wrapText
+  	 * @param {string} text 文本内容
+  	 * @param {number} maxWidth 最大宽度（像素）
+  	 * @return {array} 换行后的文本数组
+  	 */
+  	wrapText(text, maxWidth) {
+  		// 参数验证
+  		if(!text || !maxWidth) return [text || ''];
+  		
+  		// 检查缓存，避免重复计算
+  		const cacheKey = `${text}_${maxWidth}`;
+  		if(this.__wrapTextCache && this.__wrapTextCache.key === cacheKey) {
+  			return this.__wrapTextCache.lines;
+  		}
+  		
+  		const lines = [];
+  		
+  		// 先按换行符分割
+  		const paragraphs = text.split('\n');
+  		
+  		for(let paragraph of paragraphs) {
+  			// 如果段落为空，添加空行
+  			if(!paragraph) {
+  				lines.push('');
+  				continue;
+  			}
+  			
+  			// 按空格分割单词
+  			const words = paragraph.split(' ');
+  			let currentLine = words[0];
+  			
+  			for(let i = 1; i < words.length; i++) {
+  				const word = words[i];
+  				const testLine = currentLine + ' ' + word;
+  				const metrics = this.context.measureText(testLine);
+  				const testWidth = metrics.width;
+  				
+  				if(testWidth <= maxWidth) {
+  					// 当前行还能容纳这个单词
+  					currentLine = testLine;
+  				} else {
+  					// 当前行已满，保存当前行并开始新行
+  					if(currentLine) lines.push(currentLine);
+  					currentLine = word;
+  				}
+  			}
+  			
+  			// 添加最后一行
+  			if(currentLine) lines.push(currentLine);
+  		}
+  		
+  		// 缓存结果
+  		this.__wrapTextCache = {
+  			key: cacheKey,
+  			lines: lines
+  		};
+  		
+  		return lines;
+  	}
+
+  	/**
   	 * 根据位置偏移画字符串
   	 * 
   	 * @method draw
   	 */
-  	draw() {	
+  	draw() {
   		
   		//获取当前控件的绝对位置
-  		let bounds = this.parent && this.parent.absoluteBounds?this.parent.absoluteBounds:this.absoluteBounds;		
+  		let bounds = this.parent && this.parent.absoluteBounds?this.parent.absoluteBounds:this.absoluteBounds;
   		this.testSize();
   		let location = this.location;
   		let x = location.left + bounds.left;
@@ -6372,7 +6524,16 @@ define(['exports'], (function (exports) { 'use strict';
   			}
   			else if(this.style.fill && this.context.fillText) {
   				if(this.style.maxWidth) {
-  					this.context.fillText(txt,x,y, this.style.maxWidth);
+  					// 绘制换行文本
+  					const lines = this.wrapText(txt, this.style.maxWidth);
+  					const lineHeight = this.style.fontSize;
+  					// 调整起始Y位置以支持垂直对齐
+  					const startY = y - (lines.length - 1) * lineHeight / 2;
+  					
+  					for(let i = 0; i < lines.length; i++) {
+  						const lineY = startY + i * lineHeight;
+  						this.context.fillText(lines[i], x, lineY);
+  					}
   				}
   				else {
   					this.context.fillText(txt,x,y);
@@ -6380,7 +6541,16 @@ define(['exports'], (function (exports) { 'use strict';
   			}
   			else if(this.context.strokeText) {
   				if(this.style.maxWidth) {
-  					this.context.strokeText(txt,x,y, this.style.maxWidth);
+  					// 绘制换行文本
+  					const lines = this.wrapText(txt, this.style.maxWidth);
+  					const lineHeight = this.style.fontSize;
+  					// 调整起始Y位置以支持垂直对齐
+  					const startY = y - (lines.length - 1) * lineHeight / 2;
+  					
+  					for(let i = 0; i < lines.length; i++) {
+  						const lineY = startY + i * lineHeight;
+  						this.context.strokeText(lines[i], x, lineY);
+  					}
   				}
   				else {
   					this.context.strokeText(txt,x,y);
@@ -6411,7 +6581,7 @@ define(['exports'], (function (exports) { 'use strict';
   				}
   				
   				if(this.style.border.left) {
-  					this.context.moveTo(this.points[3].x + bounds.left,this.points[3].y + bounds.top);	
+  					this.context.moveTo(this.points[3].x + bounds.left,this.points[3].y + bounds.top);
   					this.context.lineTo(this.points[0].x + bounds.left,this.points[0].y + bounds.top);
   				}
   			}
@@ -6447,7 +6617,7 @@ define(['exports'], (function (exports) { 'use strict';
   				}
   				points.length && this.webglControl && this.webglControl.stroke(points);
   			}
-  		}	
+  		}
   	}
 
   	endDraw() {
@@ -6788,6 +6958,377 @@ define(['exports'], (function (exports) { 'use strict';
   	}
   }
 
+  /**
+   * 画椭圆
+   * 椭圆是通过缩放圆形来实现的，支持完整的椭圆和椭圆弧
+   * 可以指定起始角度和结束角度来绘制椭圆弧
+   *
+   * @class jmEllipse
+   * @extends jmArc
+   * @param {object} params 椭圆的参数
+   * @param {object} [params.center={x:0,y:0}] 椭圆中心点坐标
+   * @param {number} [params.width=100] 椭圆宽度（长轴直径）
+   * @param {number} [params.height=60] 椭圆高度（短轴直径）
+   * @param {number} [params.startAngle=0] 起始角度（弧度）
+   * @param {number} [params.endAngle=Math.PI*2] 结束角度（弧度）
+   * @param {boolean} [params.anticlockwise=false] 是否逆时针绘制
+   */
+  class jmEllipse extends jmArc {
+  	
+  	constructor(params, t='jmEllipse') {
+  		params = params || {};
+  		params.isRegular = true; // 标记为规则图形
+  		super(params, t);
+  	}
+
+  	/**
+  	 * 初始化图形点
+  	 * 为WebGL模式生成控制点，2D模式使用draw方法直接绘制
+  	 * 
+  	 * @method initPoints
+  	 * @private
+  	 * @for jmEllipse
+  	 */
+  	initPoints() {
+  		// WebGL模式使用父类的点生成方法
+  		if(this.graph.mode === 'webgl') {
+  			return super.initPoints();
+  		}
+  		
+  		// 2D模式：生成4个控制点用于边界计算
+  		// 这些点不是实际的绘制点，而是用于碰撞检测和边界计算
+  		let location = this.getLocation();
+
+  		this.points = [];
+  		this.points.push({x:location.center.x - location.width/2, y:location.center.y}); // 左
+  		this.points.push({x:location.center.x, y:location.center.y - location.height/2}); // 上
+  		this.points.push({x:location.center.x + location.width/2, y:location.center.y}); // 右
+  		this.points.push({x:location.center.x, y:location.center.y + location.height/2}); // 下
+  	}
+
+  	/**
+  	 * 重写基类画图，此处为画一个椭圆
+  	 * 使用Canvas的变换功能（平移和缩放）来绘制椭圆
+  	 * 
+  	 * @method draw
+  	 */
+  	draw() {
+  		// WebGL模式使用父类的绘制方法
+  		if(this.graph.mode === 'webgl') {
+  			return super.draw();
+  		}
+  		
+  		// 获取边界和位置信息
+  		let bounds = this.parent && this.parent.absoluteBounds ? this.parent.absoluteBounds : this.absoluteBounds;
+  		let location = this.getLocation();
+
+  		// 获取椭圆弧参数
+  		let start = this.startAngle || 0;
+  		let end = this.endAngle || Math.PI * 2;
+  		let anticlockwise = this.anticlockwise || false;
+
+  		// 椭圆绘制：通过变换圆形来实现
+  		// 1. 保存当前绘图状态
+  		this.context.save();
+  		
+  		// 2. 平移到椭圆中心
+  		this.context.translate(location.center.x + bounds.left, location.center.y + bounds.top);
+  		
+  		// 3. 缩放坐标系，使圆形变为椭圆
+  		// 将X轴缩放width/2，Y轴缩放height/2，这样单位圆就变成了椭圆
+  		this.context.scale(location.width/2, location.height/2);
+  		
+  		// 4. 绘制单位圆（会被缩放成椭圆）
+  		this.context.arc(0, 0, 1, start, end, anticlockwise);
+  		
+  		// 5. 恢复绘图状态
+  		this.context.restore();
+  	}
+  }
+
+  /**
+   * 画多边形
+   * 支持规则多边形（正多边形）和自定义多边形
+   * 规则多边形通过边数和半径自动计算顶点，自定义多边形通过顶点数组定义
+   *
+   * @class jmPolygon
+   * @extends jmPath
+   * @param {object} params 多边形的参数
+   * @param {array} [params.points] 自定义顶点数组，如果提供则忽略sides和radius
+   * @param {number} [params.sides=3] 多边形边数（3-100）
+   * @param {number} [params.radius=50] 多边形半径（像素）
+   * @param {object} [params.center={x:0,y:0}] 多边形中心点坐标
+   */
+  class jmPolygon extends jmPath {
+  	
+  	constructor(params, t='jmPolygon') {
+  		params = params || {};
+  		params.isRegular = true; // 标记为规则图形，便于优化渲染
+  		super(params, t);
+
+  		// 参数验证和初始化
+  		this.sides = params.sides || params.points?.length || 3;
+  		this.radius = params.radius || 50;
+  		this.center = params.center || {x: 0, y: 0};
+  	}
+
+  	/**
+  	 * 设定或获取多边形边数
+  	 * 边数决定了多边形的形状，最小为3（三角形）
+  	 * 
+  	 * @property sides
+  	 * @for jmPolygon
+  	 * @type {number}
+  	 */
+  	get sides() {
+  		return this.property('sides');
+  	}
+  	set sides(v) {
+  		// 参数验证：边数必须在3-100之间
+  		if(typeof v !== 'number' || isNaN(v) || v < 3) {
+  			console.warn('jmPolygon: sides must be a number >= 3');
+  			v = 3;
+  		}
+  		if(v > 100) {
+  			console.warn('jmPolygon: sides should not exceed 100 for performance reasons');
+  			v = 100;
+  		}
+  		this.needUpdate = true;
+  		return this.property('sides', Math.floor(v)); // 确保是整数
+  	}
+
+  	/**
+  	 * 设定或获取多边形半径
+  	 * 半径是从中心点到顶点的距离
+  	 * 
+  	 * @property radius
+  	 * @for jmPolygon
+  	 * @type {number}
+  	 */
+  	get radius() {
+  		return this.property('radius');
+  	}
+  	set radius(v) {
+  		// 参数验证：半径必须为正数
+  		if(typeof v !== 'number' || isNaN(v) || v <= 0) {
+  			console.warn('jmPolygon: radius must be a positive number');
+  			v = 1;
+  		}
+  		this.needUpdate = true;
+  		return this.property('radius', v);
+  	}
+
+  	/**
+  	 * 设定或获取多边形中心
+  	 * 中心点是多边形的几何中心
+  	 * 
+  	 * @property center
+  	 * @for jmPolygon
+  	 * @type {object}
+  	 */
+  	get center() {
+  		return this.property('center');
+  	}
+  	set center(v) {
+  		// 参数验证：中心点必须包含x和y属性
+  		if(!v || typeof v.x !== 'number' || typeof v.y !== 'number') {
+  			console.warn('jmPolygon: center must be an object with x and y properties');
+  			v = {x: 0, y: 0};
+  		}
+  		this.needUpdate = true;
+  		return this.property('center', v);
+  	}
+
+  	/**
+  	 * 初始化图形点
+  	 * 如果提供了自定义顶点，则使用自定义顶点
+  	 * 否则根据边数和半径自动计算规则多边形的顶点
+  	 * 
+  	 * @method initPoints
+  	 * @private
+  	 * @for jmPolygon
+  	 */
+  	initPoints() {
+  		// 如果提供了自定义顶点，直接使用
+  		if (this.points && this.points.length > 0) {
+  			return;
+  		}
+
+  		// 计算规则多边形的顶点
+  		const points = [];
+  		const sides = this.sides;
+  		const radius = this.radius;
+  		const center = this.center;
+
+  		// 从顶部开始绘制（-90度），顺时针方向
+  		for (let i = 0; i < sides; i++) {
+  			const angle = (i / sides) * Math.PI * 2 - Math.PI / 2;
+  			const x = center.x + Math.cos(angle) * radius;
+  			const y = center.y + Math.sin(angle) * radius;
+  			points.push({x, y});
+  		}
+
+  		this.points = points;
+  	}
+  }
+
+  /**
+   * 画星形
+   * 支持自定义顶点数和内外半径，创建各种星形图案
+   * 星形由交替的外半径和内半径顶点组成
+   *
+   * @class jmStar
+   * @extends jmPath
+   * @param {object} params 星形的参数
+   * @param {array} [params.points] 自定义顶点数组，如果提供则忽略其他参数
+   * @param {number} [params.points=5] 星形顶点数（角数，3-50）
+   * @param {number} [params.radius=50] 星形外半径（从中心到尖角的距离）
+   * @param {number} [params.innerRadius=25] 星形内半径（从中心到凹陷处的距离）
+   * @param {object} [params.center={x:0,y:0}] 星形中心点坐标
+   */
+  class jmStar extends jmPath {
+  	
+  	constructor(params, t='jmStar') {
+  		params = params || {};
+  		params.isRegular = true; // 标记为规则图形
+  		super(params, t);
+
+  		// 参数验证和初始化
+  		this.pointsCount = params.points || 5;
+  		this.radius = params.radius || 50;
+  		this.innerRadius = params.innerRadius || 25;
+  		this.center = params.center || {x: 0, y: 0};
+  	}
+
+  	/**
+  	 * 设定或获取星形顶点数（角数）
+  	 * 顶点数决定了星形的角数，例如5表示五角星
+  	 * 
+  	 * @property pointsCount
+  	 * @for jmStar
+  	 * @type {number}
+  	 */
+  	get pointsCount() {
+  		return this.property('pointsCount');
+  	}
+  	set pointsCount(v) {
+  		// 参数验证：顶点数必须在3-50之间
+  		if(typeof v !== 'number' || isNaN(v) || v < 3) {
+  			console.warn('jmStar: pointsCount must be a number >= 3');
+  			v = 3;
+  		}
+  		if(v > 50) {
+  			console.warn('jmStar: pointsCount should not exceed 50 for performance reasons');
+  			v = 50;
+  		}
+  		this.needUpdate = true;
+  		return this.property('pointsCount', Math.floor(v)); // 确保是整数
+  	}
+
+  	/**
+  	 * 设定或获取星形外半径
+  	 * 外半径是从中心到尖角的距离
+  	 * 
+  	 * @property radius
+  	 * @for jmStar
+  	 * @type {number}
+  	 */
+  	get radius() {
+  		return this.property('radius');
+  	}
+  	set radius(v) {
+  		// 参数验证：半径必须为正数
+  		if(typeof v !== 'number' || isNaN(v) || v <= 0) {
+  			console.warn('jmStar: radius must be a positive number');
+  			v = 1;
+  		}
+  		this.needUpdate = true;
+  		return this.property('radius', v);
+  	}
+
+  	/**
+  	 * 设定或获取星形内半径
+  	 * 内半径是从中心到凹陷处的距离
+  	 * 内半径应该小于外半径，否则会产生奇怪的形状
+  	 * 
+  	 * @property innerRadius
+  	 * @for jmStar
+  	 * @type {number}
+  	 */
+  	get innerRadius() {
+  		return this.property('innerRadius');
+  	}
+  	set innerRadius(v) {
+  		// 参数验证：内半径必须为正数
+  		if(typeof v !== 'number' || isNaN(v) || v <= 0) {
+  			console.warn('jmStar: innerRadius must be a positive number');
+  			v = 1;
+  		}
+  		// 警告：内半径不应大于外半径
+  		if(v >= this.radius) {
+  			console.warn('jmStar: innerRadius should be less than radius for proper star shape');
+  		}
+  		this.needUpdate = true;
+  		return this.property('innerRadius', v);
+  	}
+
+  	/**
+  	 * 设定或获取星形中心
+  	 * 中心点是星形的几何中心
+  	 * 
+  	 * @property center
+  	 * @for jmStar
+  	 * @type {object}
+  	 */
+  	get center() {
+  		return this.property('center');
+  	}
+  	set center(v) {
+  		// 参数验证：中心点必须包含x和y属性
+  		if(!v || typeof v.x !== 'number' || typeof v.y !== 'number') {
+  			console.warn('jmStar: center must be an object with x and y properties');
+  			v = {x: 0, y: 0};
+  		}
+  		this.needUpdate = true;
+  		return this.property('center', v);
+  	}
+
+  	/**
+  	 * 初始化图形点
+  	 * 计算星形的顶点坐标，交替使用外半径和内半径
+  	 * 
+  	 * @method initPoints
+  	 * @private
+  	 * @for jmStar
+  	 */
+  	initPoints() {
+  		// 如果提供了自定义顶点，直接使用
+  		if (this.points && this.points.length > 0) {
+  			return;
+  		}
+
+  		// 计算星形顶点
+  		const points = [];
+  		const pointsCount = this.pointsCount;
+  		const radius = this.radius;
+  		const innerRadius = this.innerRadius;
+  		const center = this.center;
+
+  		// 星形有2倍顶点数的点（外半径和内半径交替）
+  		// 从顶部开始绘制（-90度），顺时针方向
+  		for (let i = 0; i < pointsCount * 2; i++) {
+  			const angle = (i / pointsCount) * Math.PI - Math.PI / 2;
+  			// 偶数索引使用外半径，奇数索引使用内半径
+  			const r = i % 2 === 0 ? radius : innerRadius;
+  			const x = center.x + Math.cos(angle) * r;
+  			const y = center.y + Math.sin(angle) * r;
+  			points.push({x, y});
+  		}
+
+  		this.points = points;
+  	}
+  }
+
   class jmEvents {
 
   	constructor(container, target) {
@@ -7026,6 +7567,145 @@ define(['exports'], (function (exports) { 'use strict';
   }
 
   /**
+   * 图层类
+   * 用于组织和管理图形对象，支持可见性和锁定控制
+   * 图层可以包含多个图形对象，并控制它们的显示和交互
+   *
+   * @class jmLayer
+   * @extends jmControl
+   * @param {object} params 图层参数
+   * @param {string} [params.name] 图层名称，默认为 'Layer_${timestamp}'
+   * @param {boolean} [params.visible=true] 图层是否可见
+   * @param {boolean} [params.locked=false] 图层是否锁定（锁定后不可交互）
+   * @param {jmGraph} [params.graph] 所属的画布对象
+   */
+  class jmLayer extends jmControl {
+  	
+  	constructor(params, t='jmLayer') {
+  		params = params || {};
+  		params.interactive = false; // 图层本身不响应交互事件
+  		super(params, t);
+
+  		this.name = params.name || `Layer_${Date.now()}`;
+  		this.visible = params.visible !== false;
+  		this.locked = params.locked || false;
+  	}
+
+  	/**
+  	 * 图层名称
+  	 * 图层的唯一标识符，用于查找和管理图层
+  	 * 
+  	 * @property name
+  	 * @type {string}
+  	 */
+  	get name() {
+  		return this.property('name');
+  	}
+  	set name(v) {
+  		if(!v || typeof v !== 'string') {
+  			console.warn('jmLayer: name must be a non-empty string');
+  			return;
+  		}
+  		return this.property('name', v);
+  	}
+
+  	/**
+  	 * 图层是否可见
+  	 * 不可见的图层不会被渲染，但仍然存在于图层列表中
+  	 * 
+  	 * @property visible
+  	 * @type {boolean}
+  	 */
+  	get visible() {
+  		return this.property('visible');
+  	}
+  	set visible(v) {
+  		this.needUpdate = true;
+  		return this.property('visible', v);
+  	}
+
+  	/**
+  	 * 图层是否锁定
+  	 * 锁定的图层中的图形不可被选中或移动，但仍然可见
+  	 * 适用于背景图层或参考图层
+  	 * 
+  	 * @property locked
+  	 * @type {boolean}
+  	 */
+  	get locked() {
+  		return this.property('locked');
+  	}
+  	set locked(v) {
+  		return this.property('locked', v);
+  	}
+
+  	/**
+  	 * 绘制图层
+  	 * 只有可见的图层才会被绘制
+  	 * 
+  	 * @method paint
+  	 * @param {boolean} v 是否需要重绘
+  	 */
+  	paint(v) {
+  		if(this.visible !== false) {
+  			super.paint(v);
+  		}
+  	}
+
+  	/**
+  	 * 检查点是否在图层内
+  	 * 锁定的图层不会响应鼠标事件
+  	 * 
+  	 * @method checkPoint
+  	 * @param {object} p 坐标点 {x, y}
+  	 * @param {number} [pad] padding，额外的检测范围
+  	 * @return {boolean} 是否在图层内
+  	 */
+  	checkPoint(p, pad) {
+  		// 锁定的图层不响应交互
+  		if(this.locked) return false;
+  		return super.checkPoint(p, pad);
+  	}
+
+  	/**
+  	 * 清空图层
+  	 * 移除图层中的所有图形对象
+  	 * 
+  	 * @method clear
+  	 */
+  	clear() {
+  		this.children.clear();
+  		this.needUpdate = true;
+  	}
+
+  	/**
+  	 * 获取图层中的图形数量
+  	 * 
+  	 * @method getShapeCount
+  	 * @return {number} 图形数量
+  	 */
+  	getShapeCount() {
+  		return this.children.length;
+  	}
+
+  	/**
+  	 * 获取图层信息
+  	 * 返回图层的基本信息，用于调试和日志
+  	 * 
+  	 * @method getInfo
+  	 * @return {object} 图层信息对象
+  	 */
+  	getInfo() {
+  		return {
+  			name: this.name,
+  			visible: this.visible,
+  			locked: this.locked,
+  			shapeCount: this.getShapeCount()
+  		};
+  	}
+  }
+
+  /**
    * jmGraph画图类库
    * 对canvas画图api进行二次封装，使其更易调用，省去很多重复的工作。
    *
@@ -7064,6 +7744,10 @@ define(['exports'], (function (exports) { 'use strict';
   		// 模式 webgl | 2d
   		this.mode = option.mode || '2d';
 
+  		// 缩放和平移相关
+  		this.scaleFactor = 1;
+  		this.translation = {x: 0, y: 0};
+
   		//如果是小程序
   		if(typeof wx != 'undefined' && wx.canIUse && wx.canIUse('canvas')) {			
   			if(typeof canvas === 'string') canvas = wx.createSelectorQuery().select('#' + canvas);
@@ -7091,7 +7775,13 @@ define(['exports'], (function (exports) { 'use strict';
   			}
   		}	
   		this.canvas = canvas;	
-  		this.context = canvas.getContext(this.mode);
+  		// Create context with preserveDrawingBuffer for webgl to prevent flickering
+  		if(this.mode === 'webgl') {
+  			this.context = canvas.getContext(this.mode, { preserveDrawingBuffer: true });
+  		}
+  		else {
+  			this.context = canvas.getContext(this.mode);
+  		}
 
   		this.textureCanvas = option.textureCanvas || null;
   		
@@ -7131,14 +7821,24 @@ define(['exports'], (function (exports) { 'use strict';
   		 * 画控件前初始化
   		 * 为了解决一像素线条问题
   		 */
-  		this.on('beginDraw', function() {	
+  		this.on('beginDraw', function() {  
   			this.context.translate && this.context.translate(0.5, 0.5);
+  			// 应用缩放和平移变换
+  			if(this.context.translate && this.context.scale) {
+  				this.context.translate(this.translation.x, this.translation.y);
+  				this.context.scale(this.scaleFactor, this.scaleFactor);
+  			}
   		});
   		/**
   		 * 结束控件绘制 为了解决一像素线条问题
   		 */
-  		this.on('endDraw', function() {	
-  			this.context.translate && this.context.translate(-0.5, -0.5);		
+  		this.on('endDraw', function() {  
+  			this.context.translate && this.context.translate(-0.5, -0.5);
+  			// 恢复缩放和平移变换
+  			if(this.context.translate && this.context.scale) {
+  				this.context.scale(1/this.scaleFactor, 1/this.scaleFactor);
+  				this.context.translate(-this.translation.x, -this.translation.y);
+  			}
   		});
 
   		// devicePixelRatio初始化
@@ -7284,6 +7984,8 @@ define(['exports'], (function (exports) { 'use strict';
   			if(!args) args = {};
   			args.graph = this;
   			let obj = new shape(args);
+  			// 添加到活动图层
+  			this.addShapeToLayer(obj);
   			return obj;
   		}
   	}
@@ -7513,7 +8215,7 @@ define(['exports'], (function (exports) { 'use strict';
   			this.normalSize = {
   				width: this.canvas.width,
   				height: this.canvas.height
-  			};		
+  			};
   		}
   		
   		//this.context.scale && this.context.scale(dx,dy);
@@ -7527,6 +8229,312 @@ define(['exports'], (function (exports) { 'use strict';
   	}
 
   	/**
+  	 * 设置缩放因子
+  	 * 支持以指定点为中心进行缩放，保持该点在屏幕上的位置不变
+  	 * 
+  	 * @method setZoom
+  	 * @param {number} zoom 缩放因子（建议范围：0.1 - 10）
+  	 * @param {number} [x] 缩放中心X坐标（画布坐标）
+  	 * @param {number} [y] 缩放中心Y坐标（画布坐标）
+  	 * @return {jmGraph} 返回当前实例，支持链式调用
+  	 */
+  	setZoom(zoom, x, y) {
+  		// 参数验证
+  		if(typeof zoom !== 'number' || isNaN(zoom)) {
+  			console.warn('jmGraph: setZoom - 无效的缩放因子');
+  			return this;
+  		}
+  		
+  		// 限制缩放范围，防止过度缩放导致性能问题或显示异常
+  		const minZoom = 0.1;  // 最小缩放到10%
+  		const maxZoom = 10;   // 最大放大到10倍
+  		zoom = Math.max(minZoom, Math.min(maxZoom, zoom));
+  		
+  		if (x !== undefined && y !== undefined) {
+  			// 计算缩放前后的坐标偏移
+  			// 保持缩放中心点在屏幕上的位置不变
+  			const oldZoom = this.scaleFactor;
+  			const newZoom = zoom;
+  			
+  			// 调整平移量以保持缩放中心位置不变
+  			this.translation.x = x - (x - this.translation.x) * (newZoom / oldZoom);
+  			this.translation.y = y - (y - this.translation.y) * (newZoom / oldZoom);
+  		}
+  		
+  		this.scaleFactor = zoom;
+  		this.needUpdate = true;
+  		this.redraw();
+  		
+  		return this; // 支持链式调用
+  	}
+
+  	/**
+  	 * 平移画布
+  	 * 移动画布视图，改变可视区域
+  	 * 
+  	 * @method pan
+  	 * @param {number} dx X轴平移量（像素）
+  	 * @param {number} dy Y轴平移量（像素）
+  	 * @return {jmGraph} 返回当前实例，支持链式调用
+  	 */
+  	pan(dx, dy) {
+  		// 参数验证
+  		if(typeof dx !== 'number' || typeof dy !== 'number' || isNaN(dx) || isNaN(dy)) {
+  			console.warn('jmGraph: pan - 无效的平移参数');
+  			return this;
+  		}
+  		
+  		this.translation.x += dx;
+  		this.translation.y += dy;
+  		this.needUpdate = true;
+  		this.redraw();
+  		
+  		return this; // 支持链式调用
+  	}
+
+  	/**
+  	 * 重置缩放和平移
+  	 * 恢复画布到初始状态（缩放为1，平移为0）
+  	 * 
+  	 * @method resetTransform
+  	 * @return {jmGraph} 返回当前实例，支持链式调用
+  	 */
+  	resetTransform() {
+  		this.scaleFactor = 1;
+  		this.translation = {x: 0, y: 0};
+  		this.needUpdate = true;
+  		this.redraw();
+  		
+  		return this; // 支持链式调用
+  	}
+
+  	/**
+  	 * 初始化图层系统
+  	 * 创建图层管理的基础结构，包括默认图层
+  	 * 
+  	 * @method initLayers
+  	 * @private
+  	 */
+  	initLayers() {
+  		if(!this.layers) {
+  			this.layers = new jmList();
+  			// 创建默认图层
+  			const defaultLayer = this.createLayer('Default Layer');
+  			this.activeLayer = defaultLayer;
+  		}
+  	}
+
+  	/**
+  	 * 创建新图层
+  	 * 图层用于组织和管理图形对象，支持可见性和锁定控制
+  	 * 
+  	 * @method createLayer
+  	 * @param {string} name 图层名称（必须唯一）
+  	 * @param {object} [options] 图层选项
+  	 * @param {boolean} [options.visible=true] 图层是否可见
+  	 * @param {boolean} [options.locked=false] 图层是否锁定（锁定后不可交互）
+  	 * @return {jmLayer} 新创建的图层
+  	 */
+  	createLayer(name, options = {}) {
+  		// 参数验证
+  		if(!name || typeof name !== 'string') {
+  			console.warn('jmGraph: createLayer - 图层名称必须是非空字符串');
+  			name = `Layer_${Date.now()}`;
+  		}
+  		
+  		this.initLayers();
+  		
+  		// 检查图层名称是否已存在
+  		const existingLayer = this.getLayer(name);
+  		if(existingLayer) {
+  			console.warn(`jmGraph: 图层 "${name}" 已存在，将返回现有图层`);
+  			return existingLayer;
+  		}
+  		
+  		const layer = new jmLayer({
+  			name: name,
+  			graph: this,
+  			...options
+  		});
+  		
+  		this.layers.add(layer);
+  		this.children.add(layer);
+  		this.needUpdate = true;
+  		return layer;
+  	}
+
+  	/**
+  	 * 获取所有图层
+  	 * 
+  	 * @method getLayers
+  	 * @return {jmList} 图层列表
+  	 */
+  	getLayers() {
+  		this.initLayers();
+  		return this.layers;
+  	}
+
+  	/**
+  	 * 根据名称获取图层
+  	 * 
+  	 * @method getLayer
+  	 * @param {string} name 图层名称
+  	 * @return {jmLayer|null} 图层对象，如果不存在则返回null
+  	 */
+  	getLayer(name) {
+  		this.initLayers();
+  		
+  		if(!name) return null;
+  		
+  		let result = null;
+  		this.layers.each((i, layer) => {
+  			if(layer.name === name) {
+  				result = layer;
+  				return false; // 找到后停止遍历
+  			}
+  		});
+  		return result;
+  	}
+
+  	/**
+  	 * 设置活动图层
+  	 * 新创建的图形将自动添加到活动图层
+  	 * 
+  	 * @method setActiveLayer
+  	 * @param {string|jmLayer} layer 图层名称或图层对象
+  	 * @return {jmGraph} 返回当前实例，支持链式调用
+  	 */
+  	setActiveLayer(layer) {
+  		this.initLayers();
+  		
+  		// 支持传入图层名称或图层对象
+  		if(typeof layer === 'string') {
+  			layer = this.getLayer(layer);
+  		}
+  		
+  		if(!layer || !(layer instanceof jmLayer)) {
+  			console.warn('jmGraph: setActiveLayer - 无效的图层');
+  			return this;
+  		}
+  		
+  		this.activeLayer = layer;
+  		return this;
+  	}
+
+  	/**
+  	 * 获取当前活动图层
+  	 * 活动图层是新创建图形的默认容器
+  	 * 
+  	 * @method getActiveLayer
+  	 * @return {jmLayer} 当前活动图层
+  	 */
+  	getActiveLayer() {
+  		this.initLayers();
+  		return this.activeLayer;
+  	}
+
+  	/**
+  	 * 移除图层
+  	 * 删除指定图层及其包含的所有图形
+  	 * 注意：默认图层不可删除
+  	 * 
+  	 * @method removeLayer
+  	 * @param {string|jmLayer} layer 图层名称或图层对象
+  	 * @return {boolean} 是否成功删除
+  	 */
+  	removeLayer(layer) {
+  		this.initLayers();
+  		
+  		// 支持传入图层名称或图层对象
+  		if(typeof layer === 'string') {
+  			layer = this.getLayer(layer);
+  		}
+  		
+  		if(!layer) {
+  			console.warn('jmGraph: removeLayer - 图层不存在');
+  			return false;
+  		}
+  		
+  		// 禁止删除默认图层
+  		if(layer.name === 'Default Layer') {
+  			console.warn('jmGraph: 不能删除默认图层');
+  			return false;
+  		}
+  		
+  		// 如果删除的是当前活动图层，切换到默认图层
+  		if(this.activeLayer === layer) {
+  			this.activeLayer = this.getLayer('Default Layer');
+  		}
+  		
+  		this.layers.remove(layer);
+  		this.children.remove(layer);
+  		this.needUpdate = true;
+  		return true;
+  	}
+
+  	/**
+  	 * 将形状添加到指定图层
+  	 * 如果未指定图层，则添加到当前活动图层
+  	 * 
+  	 * @method addShapeToLayer
+  	 * @param {jmControl} shape 要添加的形状对象
+  	 * @param {string|jmLayer} [layer] 图层名称或图层对象，默认为当前活动图层
+  	 * @return {jmGraph} 返回当前实例，支持链式调用
+  	 */
+  	addShapeToLayer(shape, layer) {
+  		this.initLayers();
+  		
+  		// 参数验证
+  		if(!shape) {
+  			console.warn('jmGraph: addShapeToLayer - 无效的形状对象');
+  			return this;
+  		}
+  		
+  		// 确定目标图层
+  		if(!layer) {
+  			layer = this.activeLayer;
+  		} else if(typeof layer === 'string') {
+  			layer = this.getLayer(layer);
+  		}
+  		
+  		if(!layer) {
+  			console.warn('jmGraph: addShapeToLayer - 图层不存在');
+  			return this;
+  		}
+  		
+  		layer.children.add(shape);
+  		this.needUpdate = true;
+  		return this;
+  	}
+
+  	/**
+  	 * 从图层中移除形状
+  	 * 
+  	 * @method removeShapeFromLayer
+  	 * @param {jmControl} shape 要移除的形状对象
+  	 * @return {jmGraph} 返回当前实例，支持链式调用
+  	 */
+  	removeShapeFromLayer(shape) {
+  		if(!shape) {
+  			console.warn('jmGraph: removeShapeFromLayer - 无效的形状对象');
+  			return this;
+  		}
+  		
+  		// 从所有图层中查找并移除
+  		if(this.layers) {
+  			this.layers.each((i, layer) => {
+  				if(layer.children.contains(shape)) {
+  					layer.children.remove(shape);
+  					this.needUpdate = true;
+  					return false; // 找到后停止遍历
+  				}
+  			});
+  		}
+  		
+  		return this;
+  	}
+
+  	/**
   	 * 保存为base64图形数据
   	 * 
   	 * @method toDataURL
@@ -7535,6 +8543,131 @@ define(['exports'], (function (exports) { 'use strict';
   	toDataURL() {
   		let data = this.canvas.toDataURL?this.canvas.toDataURL():'';
   		return data;
+  	}
+
+  	/**
+  	 * 导出为PNG图片
+  	 * 使用Canvas的toDataURL方法导出当前画布内容
+  	 * 
+  	 * @method exportToPNG
+  	 * @param {string} [fileName='jmgraph-export'] 文件名（不含扩展名）
+  	 * @param {string} [format='image/png'] 图片格式，支持image/png和image/jpeg
+  	 * @param {number} [quality=0.9] 图片质量（0-1之间，仅对JPEG格式有效）
+  	 */
+  	exportToPNG(fileName = 'jmgraph-export', format = 'image/png', quality = 0.9) {
+  		try {
+  			// 确保画布已渲染
+  			this.redraw();
+  			
+  			const dataURL = this.canvas.toDataURL(format, quality);
+  			this.downloadFile(dataURL, fileName, 'png');
+  		} catch(error) {
+  			console.error('jmGraph: exportToPNG - 导出失败', error);
+  		}
+  	}
+
+  	/**
+  	 * 导出为JPEG图片
+  	 * 
+  	 * @method exportToJPEG
+  	 * @param {string} [fileName='jmgraph-export'] 文件名（不含扩展名）
+  	 * @param {number} [quality=0.9] 图片质量（0-1之间）
+  	 */
+  	exportToJPEG(fileName = 'jmgraph-export', quality = 0.9) {
+  		this.exportToPNG(fileName, 'image/jpeg', quality);
+  	}
+
+  	/**
+  	 * 导出为SVG文件
+  	 * 将当前画布内容转换为SVG格式
+  	 * 注意：只有实现了toSVG方法的形状才能被导出
+  	 * 
+  	 * @method exportToSVG
+  	 * @param {string} [fileName='jmgraph-export'] 文件名（不含扩展名）
+  	 */
+  	exportToSVG(fileName = 'jmgraph-export') {
+  		try {
+  			const svg = this.toSVG();
+  			const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+  			const url = URL.createObjectURL(blob);
+  			this.downloadFile(url, fileName, 'svg');
+  			
+  			// 释放URL对象，避免内存泄漏
+  			setTimeout(() => URL.revokeObjectURL(url), 100);
+  		} catch(error) {
+  			console.error('jmGraph: exportToSVG - 导出失败', error);
+  		}
+  	}
+
+  	/**
+  	 * 转换为SVG字符串
+  	 * 遍历所有图层和形状，生成SVG标记
+  	 * 
+  	 * @method toSVG
+  	 * @return {string} SVG字符串
+  	 */
+  	toSVG() {
+  		// SVG头部，包含命名空间和画布尺寸
+  		let svg = `<svg width="${this.width}" height="${this.height}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${this.width} ${this.height}">`;
+  		
+  		// 添加背景色（如果有）
+  		if(this.style && this.style.fill) {
+  			svg += `<rect width="100%" height="100%" fill="${this.style.fill}"/>`;
+  		}
+  		
+  		// 遍历所有图层
+  		if(this.layers) {
+  			this.layers.each((i, layer) => {
+  				if(layer.visible) {
+  					// 添加图层组，方便管理
+  					svg += `<g id="${layer.name}" opacity="${layer.opacity || 1}">`;
+  					
+  					// 遍历图层中的所有形状
+  					layer.children.each((j, shape) => {
+  						if(shape.toSVG) {
+  							svg += shape.toSVG();
+  						}
+  					});
+  					
+  					svg += '</g>';
+  				}
+  			});
+  		}
+  		else {
+  			// 遍历直接添加的形状（兼容没有图层系统的情况）
+  			this.children.each((i, shape) => {
+  				if(shape.toSVG) {
+  					svg += shape.toSVG();
+  				}
+  			});
+  		}
+  		
+  		svg += '</svg>';
+  		return svg;
+  	}
+
+  	/**
+  	 * 下载文件
+  	 * 创建临时链接元素触发浏览器下载
+  	 * 
+  	 * @method downloadFile
+  	 * @private
+  	 * @param {string} url 文件URL或Data URL
+  	 * @param {string} fileName 文件名（不含扩展名）
+  	 * @param {string} extension 文件扩展名
+  	 */
+  	downloadFile(url, fileName, extension) {
+  		// 创建临时链接元素
+  		const link = document.createElement('a');
+  		link.href = url;
+  		link.download = `${fileName}.${extension}`;
+  		
+  		// 添加到DOM并触发点击
+  		document.body.appendChild(link);
+  		link.click();
+  		
+  		// 清理DOM
+  		document.body.removeChild(link);
   	}
 
   	/** 
@@ -7587,7 +8720,10 @@ define(['exports'], (function (exports) { 'use strict';
       "image": jmImage,
       "img": jmImage,
       "label": jmLabel,
-      "resize": jmResize
+      "resize": jmResize,
+      "ellipse": jmEllipse,
+      "polygon": jmPolygon,
+      "star": jmStar
   };
 
   class jmGraph extends jmGraph$1 {
@@ -7823,6 +8959,31 @@ define(['exports'], (function (exports) { 'use strict';
       // 默认不填充，需要填满请配置{fill:'',stroke:''}
       area: false
     },
+    range: {
+      normal: {
+        lineWidth: 1,
+        zIndex: 18,
+        cursor: 'default'
+      },
+      hover: {
+        lineWidth: 4,
+        cursor: 'pointer'
+      },
+      lineWidth: 1,
+      zIndex: 18,
+      cursor: 'default',
+      radius: 3,
+      fill: null,
+      showItem: true,
+      item: {
+        fill: '#fff',
+        zIndex: 19
+      },
+      area: {
+        fill: null,
+        opacity: 0.3
+      }
+    },
     bar: {
       normal: {
         lineWidth: 1,
@@ -7921,6 +9082,181 @@ define(['exports'], (function (exports) { 'use strict';
       // 阳线颜色
       masculineColor: 'red',
       lineWidth: 1
+    },
+    scatter: {
+      normal: {
+        lineWidth: 1,
+        zIndex: 18,
+        cursor: 'default'
+      },
+      hover: {
+        //zIndex: 100,
+        cursor: 'pointer'
+      },
+      radius: 5,
+      lineWidth: 1,
+      zIndex: 18,
+      cursor: 'default',
+      item: {
+        fill: '#fff',
+        zIndex: 19
+      }
+    },
+    bubble: {
+      normal: {
+        lineWidth: 1,
+        zIndex: 18,
+        cursor: 'default'
+      },
+      hover: {
+        //zIndex: 100,
+        cursor: 'pointer'
+      },
+      radius: 5,
+      radiusScale: 1,
+      opacity: 0.6,
+      lineWidth: 1,
+      zIndex: 18,
+      cursor: 'default',
+      item: {
+        fill: '#fff',
+        zIndex: 19
+      }
+    },
+    heatmap: {
+      normal: {
+        lineWidth: 1,
+        zIndex: 18,
+        cursor: 'default'
+      },
+      hover: {
+        //zIndex: 100,
+        cursor: 'pointer'
+      },
+      cellWidth: 20,
+      cellHeight: 20,
+      lineWidth: 1,
+      zIndex: 18,
+      cursor: 'default',
+      defaultColor: '#ccc',
+      colorGradient: ['#313695',
+      // 蓝色（最小值）
+      '#4575b4', '#74add1', '#abd9e9', '#e0f3f8', '#ffffbf', '#fee090', '#fdae61', '#f46d43', '#d73027', '#a50026' // 红色（最大值）
+      ],
+      item: {
+        fill: '#fff',
+        zIndex: 19
+      }
+    },
+    gauge: {
+      normal: {
+        lineWidth: 1,
+        zIndex: 11,
+        cursor: 'default'
+      },
+      hover: {
+        //zIndex: 100,
+        cursor: 'pointer'
+      },
+      min: 0,
+      max: 100,
+      startAngle: -150,
+      endAngle: 150,
+      radiusScale: 0.8,
+      lineWidth: 15,
+      backgroundStroke: '#e0e0e0',
+      backgroundFill: 'transparent',
+      backgroundLineWidth: 20,
+      gradient: true,
+      gradientColors: [{
+        offset: 0,
+        color: '#52c41a'
+      },
+      // 绿色
+      {
+        offset: 0.7,
+        color: '#faad14'
+      },
+      // 黄色
+      {
+        offset: 1,
+        color: '#f5222d'
+      } // 红色
+      ],
+      tickCount: 10,
+      tickColor: '#666',
+      tickLabelColor: '#333',
+      pointerColor: '#333',
+      pointerWidth: 3,
+      centerColor: '#333',
+      centerRadius: 8,
+      valueColor: '#333',
+      valueFont: '24px Arial',
+      unit: '',
+      unitColor: '#666',
+      unitFont: '14px Arial',
+      zIndex: 11,
+      cursor: 'default'
+    },
+    area: {
+      normal: {
+        lineWidth: 1,
+        zIndex: 18,
+        cursor: 'default'
+      },
+      hover: {
+        lineWidth: 4,
+        //zIndex: 100,
+        cursor: 'pointer'
+      },
+      lineWidth: 1,
+      zIndex: 18,
+      cursor: 'default',
+      radius: 3,
+      fill: null,
+      showItem: false,
+      // 是否展示圆点
+      item: {
+        fill: '#fff',
+        zIndex: 19
+      },
+      // 默认填充，使用渐变色
+      area: {
+        stroke: 'transparent',
+        fill: null
+      }
+    },
+    waterfall: {
+      normal: {
+        lineWidth: 1,
+        zIndex: 17,
+        cursor: 'default',
+        opacity: 0.8
+      },
+      hover: {
+        lineWidth: 4,
+        //zIndex: 100,
+        opacity: 1,
+        cursor: 'pointer'
+      },
+      lineWidth: 1,
+      // 柱子宽占比，决定了柱子相对于总宽度
+      perWidth: 0.5,
+      zIndex: 17,
+      cursor: 'default',
+      increaseColor: '#52c41a',
+      // 增长颜色
+      decreaseColor: '#f5222d',
+      // 减少颜色
+      connectorColor: '#999',
+      // 连接线颜色
+      close: true,
+      shadow: {
+        x: 1,
+        y: 1,
+        blur: 2,
+        color: '#000'
+      }
     }
   };
 
@@ -8745,7 +10081,7 @@ define(['exports'], (function (exports) { 'use strict';
     }
   };
 
-  const ANIMATION_DATA_THRESHOLD$2 = 100;
+  const ANIMATION_DATA_THRESHOLD$7 = 100;
 
   /**
    * 图形基类
@@ -8800,6 +10136,9 @@ define(['exports'], (function (exports) { 'use strict';
       this.___animateCounter = 0;
       this._cache = new Map();
       this.xAxis = this.graph.createXAxis();
+      this.xAxis.init({
+        field: options.xField
+      });
       this.yAxis = this.yAxis || this.graph.createYAxis({
         index: this.index,
         format: options.yLabelFormat || this.graph.option.yLabelFormat
@@ -8832,7 +10171,7 @@ define(['exports'], (function (exports) { 'use strict';
     }
     initDataPoint(...args) {
       let dataChanged = false;
-      if (this.enableAnimate && this.data && this.data.length < ANIMATION_DATA_THRESHOLD$2) {
+      if (this.enableAnimate && this.data && this.data.length < ANIMATION_DATA_THRESHOLD$7) {
         this.lastPoints = this.graph.utils.clone(this.dataPoints, null, true, obj => {
           if (obj instanceof jmControl) return obj;
         });
@@ -9039,10 +10378,39 @@ define(['exports'], (function (exports) { 'use strict';
         position: function () {
           const offh = style.offset || 5;
           const size = this.testSize();
-          return {
-            x: point.x - size.width / 2 - barWidth,
-            y: baseOffset > 0 ? point.y + offh : point.y - size.height - offh
-          };
+          const position = style.position || (baseOffset > 0 ? 'top' : 'bottom');
+          switch (position) {
+            case 'top':
+              return {
+                x: point.x - size.width / 2 - barWidth,
+                y: point.y - size.height - offh
+              };
+            case 'bottom':
+              return {
+                x: point.x - size.width / 2 - barWidth,
+                y: point.y + offh
+              };
+            case 'left':
+              return {
+                x: point.x - size.width - offh - barWidth,
+                y: point.y - size.height / 2
+              };
+            case 'right':
+              return {
+                x: point.x + offh - barWidth,
+                y: point.y - size.height / 2
+              };
+            case 'inside':
+              return {
+                x: point.x - size.width / 2 - barWidth,
+                y: point.y + (baseOffset > 0 ? -size.height / 2 : size.height / 2)
+              };
+            default:
+              return {
+                x: point.x - size.width / 2 - barWidth,
+                y: baseOffset > 0 ? point.y - size.height - offh : point.y + offh
+              };
+          }
         }
       });
       this.addShape(label);
@@ -9082,8 +10450,8 @@ define(['exports'], (function (exports) { 'use strict';
     }
   }
 
-  const ANIMATION_DATA_THRESHOLD$1 = 100;
-  const DEFAULT_ANIMATION_COUNT$1 = 10;
+  const ANIMATION_DATA_THRESHOLD$6 = 100;
+  const DEFAULT_ANIMATION_COUNT$6 = 10;
 
   /**
    * 柱图
@@ -9114,9 +10482,9 @@ define(['exports'], (function (exports) { 'use strict';
       const len = points.length;
       if (!len) return;
       this.initWidth(len);
-      const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0) && len < ANIMATION_DATA_THRESHOLD$1;
+      const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0) && len < ANIMATION_DATA_THRESHOLD$6;
       let aniIsEnd = true;
-      const aniCount = this.style.aniCount || DEFAULT_ANIMATION_COUNT$1;
+      const aniCount = this.style.aniCount || DEFAULT_ANIMATION_COUNT$6;
       for (let i = 0; i < len; i++) {
         const point = points[i];
         if (typeof point.y === 'undefined' || point.y === null) {
@@ -9201,39 +10569,57 @@ define(['exports'], (function (exports) { 'use strict';
   }
 
   /**
-   * 柱图
+   * 堆叠柱状图
+   * 
+   * 堆叠柱状图用于显示多个数据系列的累积效果。
+   * 每个柱子由多个部分堆叠而成，每个部分代表一个数据系列。
+   * 
+   * 数据格式要求：
+   * - field: ['value1', 'value2', 'value3'] - 多个数据字段
+   * - xField: 'category' - X轴字段
+   * 
+   * 样式配置：
+   * - barWidth: 柱子宽度（像素）
+   * - perWidth: 柱子宽度占比（0-1），默认0.5
+   * - color: 颜色函数，可以根据索引返回不同颜色
+   * 
+   * 特点：
+   * - 支持正负值堆叠
+   * - 正值从基线向上堆叠
+   * - 负值从基线向下堆叠
+   * - 支持动画效果
    *
-   * @class jmBarSeries
+   * @class jmStackBarSeries
    * @module jmChart
+   * @extends jmBarSeries
    * @param {jmChart} chart 当前图表
    * @param {array} mappings 图形字段映射
    * @param {style} style 样式
    */
 
-  //构造函数
   class jmStackBarSeries extends jmBarSeries {
     constructor(options) {
       super(options);
     }
+
     /**
-     * 绘制当前图形
-     *
-     * @method beginDraw
-     * @for jmBarSeries
+     * 初始化堆叠柱状图
+     * 
+     * 绘制逻辑：
+     * 1. 遍历所有数据点
+     * 2. 对每个数据点的多个字段进行堆叠
+     * 3. 正值向上堆叠，负值向下堆叠
+     * 4. 支持动画效果
      */
     init() {
-      //生成描点位
       const {
         points,
         dataChanged
       } = this.initDataPoint();
       const len = points.length;
       this.initWidth(len);
-
-      // 是否正在动画中
-      // 如果数据点多于100 个，暂时不启用动画，太慢了
       const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0) && len < 100;
-      let aniIsEnd = true; // 当次是否结束动画
+      let aniIsEnd = true;
       const aniCount = this.style.aniCount || 10;
       for (let i = 0; i < len; i++) {
         const point = points[i];
@@ -9253,8 +10639,6 @@ define(['exports'], (function (exports) { 'use strict';
           const sp = this.addShape(this.graph.createPath(null, style));
           let startY = topStartY;
           if (p.yValue < this.baseYValue) startY = bottomStartY;
-
-          //首先确定p1和p4,因为他们是底脚。会固定
           const p1 = {
             x: p.x - this.barTotalWidth / 2,
             y: startY
@@ -9271,50 +10655,45 @@ define(['exports'], (function (exports) { 'use strict';
             x: p4.x,
             y: p1.y
           };
-
-          // 如果要动画。则动态改变高度
           if (isRunningAni) {
             const step = p.height / aniCount;
-            const offHeight = step * this.___animateCounter; // 动态计算当前高度
-            p2.y = startY - offHeight; // 计算高度
-
-            // 当次动画完成
+            const offHeight = step * this.___animateCounter;
+            p2.y = startY - offHeight;
             if (step >= 0 && offHeight >= p.height || step < 0 && offHeight <= p.height) {
               p2.y = startY - p.height;
             } else {
-              aniIsEnd = false; // 只要有一个没完成，就还没有完成动画
+              aniIsEnd = false;
             }
             p.y = p3.y = p2.y;
           } else {
             p2.y = startY - p.height;
             p.y = p3.y = p2.y;
           }
-          if (p.yValue < this.baseYValue) bottomStartY = p2.y; // 下一个又从它顶部开始画
-          else topStartY = p2.y;
+          if (p.yValue < this.baseYValue) bottomStartY = p2.y;else topStartY = p2.y;
           sp.points.push(p1);
           sp.points.push(p2);
           sp.points.push(p3);
           sp.points.push(p4);
         }
-
-        // 生成标点的回调
         this.emit('onPointCreated', point);
       }
       if (aniIsEnd) {
         this.___animateCounter = 0;
       } else {
         this.___animateCounter++;
-        // next tick 再次刷新
         this.graph.utils.requestAnimationFrame(() => {
-          this.needUpdate = true; //需要刷新
+          this.needUpdate = true;
         });
       }
     }
 
-    // 计算最大值和最小值，一般图形直接采用最大最小值即可，有些需要多值叠加
+    /**
+     * 计算最大值和最小值
+     * 
+     * 对于堆叠柱状图，需要计算所有字段的累加值
+     * 正值累加得到最大值，负值累加得到最小值
+     */
     initAxisValue() {
-      // 计算最大最小值
-      // 当前需要先更新axis的边界值，轴好画图
       const fields = Array.isArray(this.field) ? this.field : [this.field];
       for (const row of this.data) {
         let max, min;
@@ -9935,8 +11314,8 @@ define(['exports'], (function (exports) { 'use strict';
     });
   };
 
-  const ANIMATION_DATA_THRESHOLD = 100;
-  const DEFAULT_ANIMATION_COUNT = 10;
+  const ANIMATION_DATA_THRESHOLD$5 = 100;
+  const DEFAULT_ANIMATION_COUNT$5 = 10;
 
   /**
    * 线图
@@ -9969,9 +11348,9 @@ define(['exports'], (function (exports) { 'use strict';
       if (!len) return;
       this.style.stroke = this.style.color;
       this.style.item.stroke = this.style.color;
-      const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0) && len < ANIMATION_DATA_THRESHOLD;
+      const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0) && len < ANIMATION_DATA_THRESHOLD$5;
       let shapePoints = [];
-      const aniCount = this.style.aniCount || DEFAULT_ANIMATION_COUNT;
+      const aniCount = this.style.aniCount || DEFAULT_ANIMATION_COUNT$5;
       const aniStep = Math.floor(len / aniCount) || 1;
       for (let i = 0; i < len; i++) {
         const p = points[i];
@@ -10145,54 +11524,62 @@ define(['exports'], (function (exports) { 'use strict';
   }
 
   /**
-   * 二条线组成的区域图表
+   * 范围图（带状图）
+   * 
+   * 范围图用于显示数据的上下限范围，比如温度范围、价格波动范围等。
+   * 它由两条线组成，两条线之间的区域用颜色填充，形成带状效果。
+   * 
+   * 数据格式要求：
+   * - fields: ['min', 'max'] - 两个字段，分别表示下限和上限
+   * - xField: 'category' - X轴字段
+   * 
+   * 样式配置：
+   * - color: 线条和填充颜色
+   * - showItem: 是否显示数据点
+   * - curve: 是否使用平滑曲线
+   * - area: 填充样式配置
+   * 
+   * 应用场景：
+   * - 温度范围：显示每天的最高温和最低温
+   * - 价格波动：显示股票的最高价和最低价
+   * - 误差范围：显示测量值的误差范围
+   * - 置信区间：显示统计数据的置信区间
    *
-   * @class jmStackLineSeries
+   * @class jmRangeSeries
    * @module jmChart
+   * @extends jmLineSeries
    * @param {jmChart} chart 当前图表
    * @param {array} mappings 图形字段映射
    * @param {style} style 样式
    */
 
-  //构造函数
-  class jmStackLineSeries extends jmLineSeries {
+  class jmRangeSeries extends jmLineSeries {
     constructor(options) {
-      options.style = options.style || options.graph.style.stackLine;
+      options.style = options.style || options.graph.style.range || options.graph.style.stackLine;
       super(options);
     }
 
     /**
-     * 绘制图形前 初始化线条
-     *
-     * @method preDraw
-     * @for jmLineSeries
+     * 初始化范围图
+     * 
+     * 绘制逻辑：
+     * 1. 遍历所有数据点
+     * 2. 绘制两条线（上限线和下限线）
+     * 3. 在两条线之间创建填充区域
      */
     init() {
-      //生成描点位
       const {
         points,
         dataChanged
       } = this.initDataPoint();
-
-      //去除多余的线条
-      //当数据源线条数比现有的少时，删除多余的线条
       const len = points.length;
-
-      //设定其填充颜色
-      //if(!this.style.fill) this.style.fill = jmUtils.toColor(this.style.stroke,null,null,20);	
       this.style.stroke = this.style.color;
-      //是否启用动画效果
-      //var ani = typeof this.enableAnimate === 'undefined'? this.graph.enableAnimate: this.enableAnimate;
       this.style.item.stroke = this.style.color;
-
-      // 是否正在动画中
-      // 如果数据点多于100 个，暂时不启用动画，太慢了
       const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0);
-      let startShapePoints = []; // 计算出来的曲线点集合	
-      let endShapePoints = []; // 计算出来的曲线点集合
+      let startShapePoints = [];
+      let endShapePoints = [];
       const aniCount = this.style.aniCount || 10;
-      const aniStep = Math.floor(len / aniCount) || 1; // 每次动画播放点个数
-
+      const aniStep = Math.floor(len / aniCount) || 1;
       for (let i = 0; i < len; i++) {
         const p = points[i];
         if (isRunningAni) {
@@ -10200,42 +11587,31 @@ define(['exports'], (function (exports) { 'use strict';
             break;
           }
         }
-
-        // 是否显示数值点圆
         if (this.style.showItem) {
           this.createPointItem(p.points[0]);
           this.createPointItem(p.points[1]);
         }
-        // 平滑曲线
         if (this.style.curve) {
           startShapePoints = this.createCurePoints(startShapePoints, p.points[0]);
           endShapePoints = this.createCurePoints(endShapePoints, p.points[1]);
-        }
-        // 如果是虚线
-        else if (this.style.lineType === 'dotted') {
+        } else if (this.style.lineType === 'dotted') {
           startShapePoints = this.createDotLine(startShapePoints, p.points[0]);
           endShapePoints = this.createDotLine(endShapePoints, p.points[1]);
         }
         startShapePoints.push(p.points[0]);
         endShapePoints.push(p.points[1]);
-
-        // 生成标点的回调
         this.emit('onPointCreated', p);
       }
-
-      // 如果所有都已经结束，则重置成初始化状态
       if (this.___animateCounter >= len - 1) {
         this.___animateCounter = 0;
       } else if (isRunningAni) {
         this.___animateCounter += aniStep;
-        // next tick 再次刷新
         this.graph.utils.requestAnimationFrame(() => {
-          this.needUpdate = true; //需要刷新
+          this.needUpdate = true;
         });
       }
-      if (endShapePoints.length) endShapePoints[0].m = true; // 第二条线重新开始画
+      if (endShapePoints.length) endShapePoints[0].m = true;
       this.points = startShapePoints.concat(endShapePoints);
-      // 仓建区域效果  这里的endShapePoints要倒过来画，才能形成一个封闭区域
       const areaPoints = startShapePoints.concat(endShapePoints.reverse());
       const areaEnd = areaPoints[areaPoints.length - 1] = this.graph.utils.clone(areaPoints[areaPoints.length - 1]);
       areaEnd.m = false;
@@ -10244,11 +11620,8 @@ define(['exports'], (function (exports) { 'use strict';
 
     /**
      * 生成图例
-     *
-     * @method createLegend	 
      */
     createLegend() {
-      //生成图例前的图标
       var style = this.graph.utils.clone(this.style);
       style.stroke = style.color;
       var shape = this.graph.createShape('path', {
@@ -10272,8 +11645,7 @@ define(['exports'], (function (exports) { 'use strict';
           y: 0
         };
         this.__bezier = this.__bezier || this.graph.createShape('bezier');
-        this.__bezier.cpoints = [p1, p2, p3, p4]; //设置控制点		
-
+        this.__bezier.cpoints = [p1, p2, p3, p4];
         shape.points = this.__bezier.initPoints();
       } else {
         shape.points = [{
@@ -10289,7 +11661,39 @@ define(['exports'], (function (exports) { 'use strict';
   }
 
   /**
-   * K线图
+   * 堆叠折线图（已废弃，请使用范围图）
+   * 
+   * @deprecated 此类已废弃，请使用 jmRangeSeries（范围图）代替
+   * @class jmStackLineSeries
+   * @module jmChart
+   * @extends jmRangeSeries
+   */
+
+  class jmStackLineSeries extends jmRangeSeries {
+    constructor(options) {
+      console.warn('jmStackLineSeries 已废弃，请使用 jmRangeSeries（范围图）代替');
+      super(options);
+    }
+  }
+
+  /**
+   * K线图（蜡烛图）
+   * 
+   * K线图是金融领域常用的图表类型，用于显示股票、期货等金融产品的价格走势。
+   * 每根K线包含四个价格：开盘价、收盘价、最高价、最低价。
+   * 
+   * 数据格式要求：
+   * - fields: ['open', 'close', 'high', 'low']
+   * - open: 开盘价
+   * - close: 收盘价
+   * - high: 最高价
+   * - low: 最低价
+   * 
+   * 样式配置：
+   * - masculineColor: 阳线颜色（收盘价 > 开盘价），默认红色
+   * - negativeColor: 阴线颜色（收盘价 < 开盘价），默认绿色
+   * - barWidth: K线宽度（像素）
+   * - perWidth: K线宽度占比（0-1），默认0.4
    *
    * @class jmCandlestickSeries
    * @module jmChart
@@ -10298,14 +11702,20 @@ define(['exports'], (function (exports) { 'use strict';
    * @param {style} style 样式
    */
 
-  //构造函数
   class jmCandlestickSeries extends jmSeries {
     constructor(options) {
       options.style = options.style || options.graph.style.line;
       super(options);
-
-      //this.on('beginDraw', this[PreDrawKey]);
     }
+
+    /**
+     * 初始化K线图
+     * 
+     * 绘制逻辑：
+     * 1. 遍历所有数据点
+     * 2. 判断阳线或阴线
+     * 3. 绘制K线实体和上下影线
+     */
     init() {
       const {
         points
@@ -10355,10 +11765,12 @@ define(['exports'], (function (exports) { 'use strict';
       }
     }
 
-    // 计算实心体宽度
+    /**
+     * 计算K线宽度
+     * 
+     * @param {number} count 数据点数量
+     */
     initWidth(count) {
-      //计算每个柱子占宽
-      //每项柱子占宽除以柱子个数,默认最大宽度为30
       const maxWidth = this.xAxis.width / count;
       if (this.style.barWidth > 0) {
         this.barWidth = Number(this.style.barWidth);
@@ -10369,6 +11781,1039 @@ define(['exports'], (function (exports) { 'use strict';
         this.barWidth = maxWidth;
         this.barTotalWidth = maxWidth * count;
       }
+    }
+  }
+
+  const ANIMATION_DATA_THRESHOLD$4 = 100;
+  const DEFAULT_ANIMATION_COUNT$4 = 10;
+
+  /**
+   * 散点图
+   *
+   * @class jmScatterSeries
+   * @module jmChart
+   * @param {jmChart} chart 当前图表
+   * @param {array} mappings 图形字段映射
+   * @param {style} style 样式
+   */
+
+  class jmScatterSeries extends jmSeries {
+    constructor(options) {
+      options.style = options.style || options.graph.style.scatter;
+      super(options);
+    }
+
+    /**
+     * 初始化散点图
+     *
+     * @method init
+     * @for jmScatterSeries
+     */
+    init() {
+      const {
+        points,
+        dataChanged
+      } = this.initDataPoint();
+      const len = points.length;
+      if (!len) return;
+      this.style.stroke = this.style.color;
+      this.style.item.stroke = this.style.color;
+      const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0) && len < ANIMATION_DATA_THRESHOLD$4;
+      const aniCount = this.style.aniCount || DEFAULT_ANIMATION_COUNT$4;
+      const aniStep = Math.floor(len / aniCount) || 1;
+      for (let i = 0; i < len; i++) {
+        const p = points[i];
+        if (typeof p.y === 'undefined' || p.y === null) {
+          continue;
+        }
+        if (isRunningAni && i > this.___animateCounter) {
+          break;
+        }
+        this.createPointItem(p);
+        this.createItemLabel(p);
+        this.emit('onPointCreated', p);
+      }
+      if (this.___animateCounter >= len - 1) {
+        this.___animateCounter = 0;
+      } else if (isRunningAni) {
+        this.___animateCounter += aniStep;
+        this.graph.utils.requestAnimationFrame(() => {
+          this.needUpdate = true;
+        });
+      }
+    }
+
+    /**
+     * 生成散点
+     *
+     * @method createPointItem
+     * @for jmScatterSeries
+     * @param {object} p 数据点
+     */
+    createPointItem(p) {
+      // 获取点的大小，可以从数据中指定或使用默认值
+      const radius = typeof p.size === 'number' ? p.size : this.style.radius || 5;
+
+      // 获取点的颜色，可以从数据中指定或使用系列颜色
+      const color = p.color || this.style.color;
+      const pointStyle = this.graph.utils.clone(this.style.item, {
+        stroke: color,
+        fill: color
+      });
+      const pointShape = this.graph.createShape('circle', {
+        style: pointStyle,
+        center: p,
+        radius: radius
+      });
+      pointShape.zIndex = (pointShape.style.zIndex || 1) + 1;
+      return this.addShape(pointShape);
+    }
+
+    /**
+     * 生成图例
+     *
+     * @method createLegend
+     * @for jmScatterSeries
+     */
+    createLegend() {
+      // 生成图例前的图标
+      var style = this.graph.utils.clone(this.style);
+      style.stroke = style.color;
+      style.fill = style.color;
+      var shape = this.graph.createShape('circle', {
+        style: style,
+        center: {
+          x: this.graph.style.legend.item.shape.width / 2,
+          y: this.graph.style.legend.item.shape.height / 2
+        },
+        radius: this.style.radius || 5
+      });
+      this.graph.legend.append(this, shape);
+    }
+  }
+
+  const ANIMATION_DATA_THRESHOLD$3 = 100;
+  const DEFAULT_ANIMATION_COUNT$3 = 10;
+
+  /**
+   * 气泡图
+   *
+   * @class jmBubbleSeries
+   * @module jmChart
+   * @param {jmChart} chart 当前图表
+   * @param {array} mappings 图形字段映射
+   * @param {style} style 样式
+   */
+
+  class jmBubbleSeries extends jmSeries {
+    constructor(options) {
+      options.style = options.style || options.graph.style.bubble;
+      super(options);
+    }
+
+    /**
+     * 初始化气泡图
+     *
+     * @method init
+     * @for jmBubbleSeries
+     */
+    init() {
+      const {
+        points,
+        dataChanged
+      } = this.initDataPoint();
+      const len = points.length;
+      if (!len) return;
+      this.style.stroke = this.style.color;
+      this.style.item.stroke = this.style.color;
+      const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0) && len < ANIMATION_DATA_THRESHOLD$3;
+      const aniCount = this.style.aniCount || DEFAULT_ANIMATION_COUNT$3;
+      const aniStep = Math.floor(len / aniCount) || 1;
+      for (let i = 0; i < len; i++) {
+        const p = points[i];
+        if (typeof p.y === 'undefined' || p.y === null) {
+          continue;
+        }
+        if (isRunningAni && i > this.___animateCounter) {
+          break;
+        }
+        this.createBubbleItem(p);
+        this.createItemLabel(p);
+        this.emit('onPointCreated', p);
+      }
+      if (this.___animateCounter >= len - 1) {
+        this.___animateCounter = 0;
+      } else if (isRunningAni) {
+        this.___animateCounter += aniStep;
+        this.graph.utils.requestAnimationFrame(() => {
+          this.needUpdate = true;
+        });
+      }
+    }
+
+    /**
+     * 生成气泡
+     *
+     * @method createBubbleItem
+     * @for jmBubbleSeries
+     * @param {object} p 数据点
+     */
+    createBubbleItem(p) {
+      // 获取气泡的大小，从数据中指定
+      const size = typeof p.size === 'number' ? p.size : 10;
+      const radius = Math.sqrt(size) * (this.style.radiusScale || 1);
+
+      // 获取气泡的颜色，可以从数据中指定或使用系列颜色
+      const color = p.color || this.style.color;
+
+      // 获取气泡的透明度，可以从数据中指定或使用默认值
+      const opacity = typeof p.opacity === 'number' ? p.opacity : this.style.opacity || 0.6;
+      const bubbleStyle = this.graph.utils.clone(this.style.item, {
+        stroke: color,
+        fill: color,
+        opacity: opacity
+      });
+      const bubbleShape = this.graph.createShape('circle', {
+        style: bubbleStyle,
+        center: p,
+        radius: radius
+      });
+      bubbleShape.zIndex = (bubbleShape.style.zIndex || 1) + 1;
+      return this.addShape(bubbleShape);
+    }
+
+    /**
+     * 生成图例
+     *
+     * @method createLegend
+     * @for jmBubbleSeries
+     */
+    createLegend() {
+      // 生成图例前的图标
+      var style = this.graph.utils.clone(this.style);
+      style.stroke = style.color;
+      style.fill = style.color;
+      style.opacity = style.opacity || 0.6;
+      var shape = this.graph.createShape('circle', {
+        style: style,
+        center: {
+          x: this.graph.style.legend.item.shape.width / 2,
+          y: this.graph.style.legend.item.shape.height / 2
+        },
+        radius: this.style.radius || 5
+      });
+      this.graph.legend.append(this, shape);
+    }
+  }
+
+  const ANIMATION_DATA_THRESHOLD$2 = 100;
+  const DEFAULT_ANIMATION_COUNT$2 = 10;
+
+  /**
+   * 热力图
+   *
+   * @class jmHeatmapSeries
+   * @module jmChart
+   * @param {jmChart} chart 当前图表
+   * @param {array} mappings 图形字段映射
+   * @param {style} style 样式
+   */
+
+  class jmHeatmapSeries extends jmSeries {
+    constructor(options) {
+      options.style = options.style || options.graph.style.heatmap;
+      super(options);
+    }
+
+    /**
+     * 初始化热力图
+     *
+     * @method init
+     * @for jmHeatmapSeries
+     */
+    init() {
+      const {
+        points,
+        dataChanged
+      } = this.initDataPoint();
+      const len = points.length;
+      if (!len) return;
+
+      // 计算数据的最大值和最小值，用于颜色映射
+      let minValue = Infinity;
+      let maxValue = -Infinity;
+      for (let i = 0; i < len; i++) {
+        const p = points[i];
+        if (typeof p.value === 'number') {
+          minValue = Math.min(minValue, p.value);
+          maxValue = Math.max(maxValue, p.value);
+        }
+      }
+      this.minValue = minValue;
+      this.maxValue = maxValue;
+      const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0) && len < ANIMATION_DATA_THRESHOLD$2;
+      const aniCount = this.style.aniCount || DEFAULT_ANIMATION_COUNT$2;
+      const aniStep = Math.floor(len / aniCount) || 1;
+      for (let i = 0; i < len; i++) {
+        const p = points[i];
+        if (typeof p.y === 'undefined' || p.y === null) {
+          continue;
+        }
+        if (isRunningAni && i > this.___animateCounter) {
+          break;
+        }
+        this.createHeatmapCell(p, minValue, maxValue);
+        this.createItemLabel(p);
+        this.emit('onPointCreated', p);
+      }
+      if (this.___animateCounter >= len - 1) {
+        this.___animateCounter = 0;
+      } else if (isRunningAni) {
+        this.___animateCounter += aniStep;
+        this.graph.utils.requestAnimationFrame(() => {
+          this.needUpdate = true;
+        });
+      }
+    }
+
+    /**
+     * 生成热力图单元格
+     *
+     * @method createHeatmapCell
+     * @for jmHeatmapSeries
+     * @param {object} p 数据点
+     * @param {number} minValue 最小值
+     * @param {number} maxValue 最大值
+     */
+    createHeatmapCell(p, minValue, maxValue) {
+      // 计算单元格大小
+      const cellWidth = this.style.cellWidth || 20;
+      const cellHeight = this.style.cellHeight || 20;
+
+      // 计算颜色
+      const color = this.getHeatmapColor(p.value, minValue, maxValue);
+
+      // 创建矩形单元格
+      const cellStyle = this.graph.utils.clone(this.style.item, {
+        stroke: color,
+        fill: color
+      });
+      const cellShape = this.graph.createShape('rect', {
+        style: cellStyle,
+        position: {
+          x: p.x - cellWidth / 2,
+          y: p.y - cellHeight / 2
+        },
+        width: cellWidth,
+        height: cellHeight
+      });
+      cellShape.zIndex = (cellShape.style.zIndex || 1) + 1;
+      return this.addShape(cellShape);
+    }
+
+    /**
+     * 获取热力图颜色
+     *
+     * @method getHeatmapColor
+     * @for jmHeatmapSeries
+     * @param {number} value 当前值
+     * @param {number} minValue 最小值
+     * @param {number} maxValue 最大值
+     * @return {string} 颜色值
+     */
+    getHeatmapColor(value, minValue, maxValue) {
+      if (typeof value !== 'number') {
+        return this.style.defaultColor || '#ccc';
+      }
+
+      // 计算值的比例
+      const ratio = (value - minValue) / (maxValue - minValue);
+
+      // 使用默认的颜色梯度
+      const colors = this.style.colorGradient || ['#313695',
+      // 蓝色（最小值）
+      '#4575b4', '#74add1', '#abd9e9', '#e0f3f8', '#ffffbf', '#fee090', '#fdae61', '#f46d43', '#d73027', '#a50026' // 红色（最大值）
+      ];
+
+      // 根据比例获取颜色
+      const index = Math.min(Math.floor(ratio * (colors.length - 1)), colors.length - 1);
+      return colors[index];
+    }
+
+    /**
+     * 生成图例
+     *
+     * @method createLegend
+     * @for jmHeatmapSeries
+     */
+    createLegend() {
+      // 生成图例前的图标
+      var style = this.graph.utils.clone(this.style);
+      style.stroke = style.color;
+      style.fill = style.color;
+      var shape = this.graph.createShape('rect', {
+        style: style,
+        position: {
+          x: 0,
+          y: 0
+        },
+        width: this.graph.style.legend.item.shape.width,
+        height: this.graph.style.legend.item.shape.height
+      });
+      this.graph.legend.append(this, shape);
+    }
+  }
+
+  /**
+   * 仪表盘
+   *
+   * @class jmGaugeSeries
+   * @module jmChart
+   * @param {jmChart} chart 当前图表
+   * @param {array} mappings 图形字段映射
+   * @param {style} style 样式
+   */
+
+  class jmGaugeSeries extends jmSeries {
+    constructor(options) {
+      options.style = options.style || options.graph.style.gauge;
+      super(options);
+    }
+
+    /**
+     * 初始化仪表盘
+     */
+    init() {
+      const {
+        points,
+        dataChanged
+      } = this.initDataPoint();
+      const len = points.length;
+      if (!len) return;
+      const p = points[0];
+      const value = typeof p.yValue === 'number' ? p.yValue : 0;
+      const min = this.style.min || 0;
+      const max = this.style.max || 100;
+      const startAngle = this.style.startAngle || -150;
+      const endAngle = this.style.endAngle || 150;
+      const angleRange = endAngle - startAngle;
+      const normalizedValue = Math.max(min, Math.min(max, value));
+      const ratio = (normalizedValue - min) / (max - min);
+      const currentAngle = startAngle + ratio * angleRange;
+      const centerX = this.graph.chartArea.width / 2;
+      const centerY = this.graph.chartArea.height / 2;
+      const radius = Math.min(centerX, centerY) * (this.style.radiusScale || 0.8);
+      this.createGaugeBackground(centerX, centerY, radius, startAngle, endAngle);
+      this.createGaugeTicks(centerX, centerY, radius, startAngle, endAngle, min, max);
+      this.createGaugePointer(centerX, centerY, radius, currentAngle);
+      this.createGaugeCenter(centerX, centerY, radius);
+      this.createGaugeValueLabel(centerX, centerY, radius, value);
+      this.emit('onPointCreated', p);
+    }
+
+    /**
+     * 创建仪表盘背景
+     */
+    createGaugeBackground(centerX, centerY, radius, startAngle, endAngle) {
+      const backgroundStyle = {
+        stroke: this.style.backgroundStroke || '#e0e0e0',
+        fill: this.style.backgroundFill || 'transparent',
+        lineWidth: this.style.backgroundLineWidth || 20,
+        zIndex: 1
+      };
+      const backgroundArc = this.graph.createShape('arc', {
+        style: backgroundStyle,
+        center: {
+          x: centerX,
+          y: centerY
+        },
+        radius: radius,
+        startAngle: startAngle,
+        endAngle: endAngle
+      });
+      this.addShape(backgroundArc);
+      if (this.style.gradient) {
+        const gradientColors = this.style.gradientColors || [{
+          offset: 0,
+          color: '#52c41a'
+        }, {
+          offset: 0.7,
+          color: '#faad14'
+        }, {
+          offset: 1,
+          color: '#f5222d'
+        }];
+        const step = (endAngle - startAngle) / (gradientColors.length - 1);
+        for (let i = 0; i < gradientColors.length - 1; i++) {
+          const start = startAngle + step * i;
+          const end = startAngle + step * (i + 1);
+          const gradientArc = this.graph.createShape('arc', {
+            style: {
+              stroke: gradientColors[i].color,
+              fill: 'transparent',
+              lineWidth: this.style.lineWidth || 15,
+              zIndex: 2
+            },
+            center: {
+              x: centerX,
+              y: centerY
+            },
+            radius: radius - (this.style.backgroundLineWidth || 20) / 2,
+            startAngle: start,
+            endAngle: end
+          });
+          this.addShape(gradientArc);
+        }
+      }
+    }
+
+    /**
+     * 创建仪表盘刻度
+     */
+    createGaugeTicks(centerX, centerY, radius, startAngle, endAngle, min, max) {
+      const tickCount = this.style.tickCount || 10;
+      const angleStep = (endAngle - startAngle) / (tickCount - 1);
+      for (let i = 0; i < tickCount; i++) {
+        const angle = startAngle + angleStep * i;
+        const value = min + (max - min) / (tickCount - 1) * i;
+        const tickStartX = centerX + Math.cos(angle * Math.PI / 180) * (radius - 30);
+        const tickStartY = centerY + Math.sin(angle * Math.PI / 180) * (radius - 30);
+        const tickEndX = centerX + Math.cos(angle * Math.PI / 180) * (radius - 10);
+        const tickEndY = centerY + Math.sin(angle * Math.PI / 180) * (radius - 10);
+        const tickLine = this.graph.createShape('line', {
+          style: {
+            stroke: this.style.tickColor || '#666',
+            lineWidth: 2,
+            zIndex: 3
+          },
+          start: {
+            x: tickStartX,
+            y: tickStartY
+          },
+          end: {
+            x: tickEndX,
+            y: tickEndY
+          }
+        });
+        this.addShape(tickLine);
+        const labelX = centerX + Math.cos(angle * Math.PI / 180) * (radius - 45);
+        const labelY = centerY + Math.sin(angle * Math.PI / 180) * (radius - 45);
+        const tickLabel = this.graph.createShape('label', {
+          style: {
+            fill: this.style.tickLabelColor || '#333',
+            font: '12px Arial',
+            textAlign: 'center',
+            textBaseline: 'middle',
+            zIndex: 4
+          },
+          position: {
+            x: labelX,
+            y: labelY
+          },
+          text: value.toString()
+        });
+        this.addShape(tickLabel);
+      }
+    }
+
+    /**
+     * 创建仪表盘指针
+     */
+    createGaugePointer(centerX, centerY, radius, angle) {
+      const pointerLength = radius * 0.7;
+      const pointerX = centerX + Math.cos(angle * Math.PI / 180) * pointerLength;
+      const pointerY = centerY + Math.sin(angle * Math.PI / 180) * pointerLength;
+      const pointerLine = this.graph.createShape('line', {
+        style: {
+          stroke: this.style.pointerColor || '#333',
+          lineWidth: this.style.pointerWidth || 3,
+          zIndex: 5
+        },
+        start: {
+          x: centerX,
+          y: centerY
+        },
+        end: {
+          x: pointerX,
+          y: pointerY
+        }
+      });
+      this.addShape(pointerLine);
+    }
+
+    /**
+     * 创建仪表盘中心
+     */
+    createGaugeCenter(centerX, centerY, radius) {
+      const centerCircle = this.graph.createShape('circle', {
+        style: {
+          fill: this.style.centerColor || '#333',
+          stroke: 'transparent',
+          zIndex: 6
+        },
+        center: {
+          x: centerX,
+          y: centerY
+        },
+        radius: this.style.centerRadius || 8
+      });
+      this.addShape(centerCircle);
+    }
+
+    /**
+     * 创建仪表盘值标签
+     */
+    createGaugeValueLabel(centerX, centerY, radius, value) {
+      const valueLabel = this.graph.createShape('label', {
+        style: {
+          fill: this.style.valueColor || '#333',
+          font: this.style.valueFont || '24px Arial',
+          textAlign: 'center',
+          textBaseline: 'middle',
+          zIndex: 7
+        },
+        position: {
+          x: centerX,
+          y: centerY + radius * 0.3
+        },
+        text: value.toString()
+      });
+      this.addShape(valueLabel);
+      if (this.style.unit) {
+        const unitLabel = this.graph.createShape('label', {
+          style: {
+            fill: this.style.unitColor || '#666',
+            font: this.style.unitFont || '14px Arial',
+            textAlign: 'center',
+            textBaseline: 'middle',
+            zIndex: 8
+          },
+          position: {
+            x: centerX,
+            y: centerY + radius * 0.5
+          },
+          text: this.style.unit
+        });
+        this.addShape(unitLabel);
+      }
+    }
+
+    /**
+     * 生成图例
+     */
+    createLegend() {
+      var style = this.graph.utils.clone(this.style);
+      style.stroke = style.color;
+      style.fill = style.color;
+      var shape = this.graph.createShape('arc', {
+        style: style,
+        center: {
+          x: this.graph.style.legend.item.shape.width / 2,
+          y: this.graph.style.legend.item.shape.height / 2
+        },
+        radius: this.graph.style.legend.item.shape.height / 2,
+        startAngle: -150,
+        endAngle: 150
+      });
+      this.graph.legend.append(this, shape);
+    }
+  }
+
+  const ANIMATION_DATA_THRESHOLD$1 = 100;
+  const DEFAULT_ANIMATION_COUNT$1 = 10;
+
+  /**
+   * 面积图
+   *
+   * @class jmAreaSeries
+   * @module jmChart
+   * @param {jmChart} chart 当前图表
+   * @param {array} mappings 图形字段映射
+   * @param {style} style 样式
+   */
+
+  class jmAreaSeries extends jmSeries {
+    constructor(options) {
+      options.style = options.style || options.graph.style.area;
+      super(options);
+      // 面积图默认显示面积填充
+      this.style.area = true;
+    }
+
+    /**
+     * 初始化面积图
+     *
+     * @method init
+     * @for jmAreaSeries
+     */
+    init() {
+      const {
+        points,
+        dataChanged
+      } = this.initDataPoint();
+      const len = points.length;
+      if (!len) return;
+      this.style.stroke = this.style.color;
+      this.style.item.stroke = this.style.color;
+      const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0) && len < ANIMATION_DATA_THRESHOLD$1;
+      let shapePoints = [];
+      const aniCount = this.style.aniCount || DEFAULT_ANIMATION_COUNT$1;
+      const aniStep = Math.floor(len / aniCount) || 1;
+      for (let i = 0; i < len; i++) {
+        const p = points[i];
+        if (typeof p.y === 'undefined' || p.y === null) {
+          continue;
+        }
+        if (isRunningAni && i > this.___animateCounter) {
+          break;
+        }
+        if (this.style.showItem) {
+          this.createPointItem(p);
+        }
+        if (this.style.curve) {
+          shapePoints = this.createCurePoints(shapePoints, p);
+        } else if (this.style.lineType === 'dotted') {
+          shapePoints = this.createDotLine(shapePoints, p);
+        }
+        shapePoints.push(p);
+        this.createItemLabel(p);
+        this.emit('onPointCreated', p);
+      }
+      if (this.___animateCounter >= len - 1) {
+        this.___animateCounter = 0;
+      } else if (isRunningAni) {
+        this.___animateCounter += aniStep;
+        this.graph.utils.requestAnimationFrame(() => {
+          this.needUpdate = true;
+        });
+      }
+      this.points = shapePoints;
+      this.createArea(shapePoints);
+    }
+
+    /**
+     * 生成点的小圆圈
+     *
+     * @method createPointItem
+     * @for jmAreaSeries
+     * @param {object} p 数据点
+     */
+    createPointItem(p) {
+      const pointShape = this.graph.createShape('circle', {
+        style: this.style.item,
+        center: p,
+        radius: this.style.radius || 3
+      });
+      pointShape.zIndex = (pointShape.style.zIndex || 1) + 1;
+      return this.addShape(pointShape);
+    }
+
+    /**
+     * 创建曲线点
+     *
+     * @method createCurePoints
+     * @for jmAreaSeries
+     * @param {array} shapePoints 形状点数组
+     * @param {object} p 当前点
+     * @return {array} 新的形状点数组
+     */
+    createCurePoints(shapePoints, p) {
+      const startPoint = shapePoints[shapePoints.length - 1];
+      if (!startPoint || !p) return shapePoints;
+      if (startPoint.x === undefined || startPoint.x === null || startPoint.y === undefined || startPoint.y === null || p.x === undefined || p.x === null || p.y === undefined || p.y === null) {
+        return shapePoints;
+      }
+      const p1 = {
+        x: startPoint.x + (p.x - startPoint.x) / 5,
+        y: startPoint.y
+      };
+      const p2 = {
+        x: startPoint.x + (p.x - startPoint.x) / 2,
+        y: p.y - (p.y - startPoint.y) / 2
+      };
+      const p3 = {
+        x: p.x - (p.x - startPoint.x) / 5,
+        y: p.y
+      };
+      this.__bezier = this.__bezier || this.graph.createShape('bezier');
+      this.__bezier.cpoints = [startPoint, p1, p2, p3, p];
+      const bzpoints = this.__bezier.initPoints();
+      if (bzpoints && bzpoints.length) {
+        shapePoints = shapePoints.concat(bzpoints);
+      }
+      return shapePoints;
+    }
+
+    /**
+     * 创建虚线点
+     *
+     * @method createDotLine
+     * @for jmAreaSeries
+     * @param {array} shapePoints 形状点数组
+     * @param {object} p 当前点
+     * @return {array} 新的形状点数组
+     */
+    createDotLine(shapePoints, p) {
+      const startPoint = shapePoints[shapePoints.length - 1];
+      if (!startPoint || !p) return shapePoints;
+      if (startPoint.x === undefined || startPoint.x === null || startPoint.y === undefined || startPoint.y === null || p.x === undefined || p.x === null || p.y === undefined || p.y === null) {
+        return shapePoints;
+      }
+      this.__line = this.__line || this.graph.createShape('line', {
+        style: this.style
+      });
+      this.__line.start = startPoint;
+      this.__line.end = p;
+      const dots = this.__line.initPoints();
+      if (dots && dots.length) {
+        shapePoints = shapePoints.concat(dots);
+      }
+      return shapePoints;
+    }
+
+    /**
+     * 生成面积效果
+     *
+     * @method createArea
+     * @for jmAreaSeries
+     * @param {array} points 数据点数组
+     * @param {boolean} needClosePoint 是否需要闭合点
+     */
+    createArea(points, needClosePoint = true) {
+      // 有指定绘制区域效果才展示
+      if (!this.style.area || points.length < 2) return;
+      const start = points[0];
+      const end = points[points.length - 1];
+      const style = this.graph.utils.clone(this.style.area, {}, true);
+      // 连框颜色如果没指定，就透明
+      style.stroke = style.stroke || 'transparent';
+      if (!style.fill) {
+        const color = this.graph.utils.hexToRGBA(this.style.stroke);
+        style.fill = `linear-gradient(50% 0 50% 100%, 
+				rgba(${color.r},${color.g},${color.b}, 0) 1,
+				rgba(${color.r},${color.g},${color.b}, 0.1) 0.7, 
+				rgba(${color.r},${color.g},${color.b}, 0.3) 0)`;
+      } else if (typeof style.fill === 'function') {
+        style.fill = style.fill.call(this, style);
+      }
+      const area = this.graph.createShape('path', {
+        points: this.graph.utils.clone(points, true),
+        style,
+        width: this.graph.chartArea.width,
+        height: this.graph.chartArea.height
+      });
+
+      // 在点集合前后加上落地到X轴的点就可以组成一个封闭的图形area
+      if (needClosePoint) {
+        area.points.unshift({
+          x: start.x,
+          y: this.baseY
+        });
+        area.points.push({
+          x: end.x,
+          y: this.baseY
+        });
+      }
+      this.addShape(area);
+    }
+
+    /**
+     * 生成图例
+     *
+     * @method createLegend
+     * @for jmAreaSeries
+     */
+    createLegend() {
+      // 生成图例前的图标
+      var style = this.graph.utils.clone(this.style);
+      style.stroke = style.color;
+      var shape = this.graph.createShape('path', {
+        style: style
+      });
+      if (this.curve || this.style.curve) {
+        var p1 = {
+          x: 0,
+          y: this.graph.style.legend.item.shape.height
+        };
+        var p2 = {
+          x: this.graph.style.legend.item.shape.width / 3,
+          y: this.graph.style.legend.item.shape.height / 3
+        };
+        var p3 = {
+          x: this.graph.style.legend.item.shape.width / 3 * 2,
+          y: this.graph.style.legend.item.shape.height / 3 * 2
+        };
+        var p4 = {
+          x: this.graph.style.legend.item.shape.width,
+          y: 0
+        };
+        this.__bezier = this.__bezier || this.graph.createShape('bezier');
+        this.__bezier.cpoints = [p1, p2, p3, p4]; //设置控制点
+
+        shape.points = this.__bezier.initPoints();
+      } else {
+        shape.points = [{
+          x: 0,
+          y: this.graph.style.legend.item.shape.height / 2
+        }, {
+          x: this.graph.style.legend.item.shape.width,
+          y: this.graph.style.legend.item.shape.height / 2
+        }];
+      }
+      this.graph.legend.append(this, shape);
+    }
+  }
+
+  const ANIMATION_DATA_THRESHOLD = 100;
+  const DEFAULT_ANIMATION_COUNT = 10;
+  class jmWaterfallSeries extends jmSeries {
+    constructor(options) {
+      options.style = options.style || options.graph.style.waterfall;
+      super(options);
+    }
+    init() {
+      const {
+        points,
+        dataChanged
+      } = this.initDataPoint();
+      const len = points.length;
+      if (!len) return;
+      this.pointsLen = len;
+      this.style.stroke = this.style.color;
+      let cumulativeValue = 0;
+      const processedPoints = [];
+      for (let i = 0; i < len; i++) {
+        const p = points[i];
+        if (typeof p.y === 'undefined' || p.y === null) {
+          continue;
+        }
+        p.originalValue = p.yValue;
+        p.startValue = cumulativeValue;
+        p.endValue = cumulativeValue + p.yValue;
+        cumulativeValue = p.endValue;
+        processedPoints.push(p);
+      }
+      let minValue = Infinity;
+      let maxValue = -Infinity;
+      for (const p of processedPoints) {
+        minValue = Math.min(minValue, p.startValue, p.endValue);
+        maxValue = Math.max(maxValue, p.startValue, p.endValue);
+      }
+      if (this.yAxis) {
+        this.yAxis.min(minValue);
+        this.yAxis.max(maxValue);
+      }
+      const minY = this.yAxis ? this.yAxis.min() : 0;
+      const ystep = this.yAxis ? this.yAxis.step() : 1;
+      const chartHeight = this.graph.chartArea.height;
+      const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0) && len < ANIMATION_DATA_THRESHOLD;
+      const aniCount = this.style.aniCount || DEFAULT_ANIMATION_COUNT;
+      const aniStep = Math.floor(len / aniCount) || 1;
+      for (let i = 0; i < processedPoints.length; i++) {
+        const p = processedPoints[i];
+        if (isRunningAni && i > this.___animateCounter) {
+          break;
+        }
+        const startY = chartHeight - (p.startValue - minY) * ystep;
+        const endY = chartHeight - (p.endValue - minY) * ystep;
+        const height = Math.abs(endY - startY);
+        let barColor = this.style.color;
+        if (p.yValue > 0) {
+          barColor = this.style.increaseColor || '#52c41a';
+        } else if (p.yValue < 0) {
+          barColor = this.style.decreaseColor || '#f5222d';
+        }
+        this.createWaterfallBar(p, startY, endY, height, barColor);
+        if (i < processedPoints.length - 1) {
+          this.createConnectorLine(p, processedPoints[i + 1], chartHeight, minY, ystep);
+        }
+        this.createItemLabel(p);
+        this.emit('onPointCreated', p);
+      }
+      if (this.___animateCounter >= len - 1) {
+        this.___animateCounter = 0;
+      } else if (isRunningAni) {
+        this.___animateCounter += aniStep;
+        this.graph.utils.requestAnimationFrame(() => {
+          this.needUpdate = true;
+        });
+      }
+    }
+    createWaterfallBar(p, startY, endY, height, color) {
+      const barWidth = this.style.perWidth || 0.5;
+      const chartWidth = this.graph.chartArea.width;
+      const barX = p.x - chartWidth * barWidth / this.pointsLen / 2;
+      const barHeight = height;
+      const barStyle = {
+        stroke: color,
+        fill: color,
+        zIndex: 1
+      };
+      const barShape = this.graph.createShape('rect', {
+        style: barStyle,
+        position: {
+          x: barX,
+          y: Math.min(startY, endY)
+        },
+        width: chartWidth * barWidth / this.pointsLen,
+        height: barHeight
+      });
+      this.addShape(barShape);
+    }
+    createConnectorLine(currentPoint, nextPoint, chartHeight, minY, ystep) {
+      const startY = chartHeight - (currentPoint.endValue - minY) * ystep;
+      const chartWidth = this.graph.chartArea.width;
+      const barWidth = this.style.perWidth || 0.5;
+      const nextX = nextPoint.x - chartWidth * barWidth / this.pointsLen / 2;
+      const horizontalLine = this.graph.createShape('line', {
+        style: {
+          stroke: this.style.connectorColor || '#999',
+          lineWidth: 1,
+          lineType: 'dotted',
+          zIndex: 0
+        },
+        start: {
+          x: currentPoint.x,
+          y: startY
+        },
+        end: {
+          x: nextX,
+          y: startY
+        }
+      });
+      this.addShape(horizontalLine);
+      const nextStartY = chartHeight - (nextPoint.startValue - minY) * ystep;
+      const verticalLine = this.graph.createShape('line', {
+        style: {
+          stroke: this.style.connectorColor || '#999',
+          lineWidth: 1,
+          zIndex: 0
+        },
+        start: {
+          x: nextX,
+          y: startY
+        },
+        end: {
+          x: nextX,
+          y: nextStartY
+        }
+      });
+      this.addShape(verticalLine);
+    }
+    createLegend() {
+      const style = this.graph.utils.clone(this.style);
+      style.stroke = this.style.color;
+      style.fill = this.style.color;
+      const shape = this.graph.createShape('rect', {
+        style: style,
+        position: {
+          x: 0,
+          y: 0
+        },
+        width: this.graph.style.legend.item.shape.width,
+        height: this.graph.style.legend.item.shape.height
+      });
+      this.graph.legend.append(this, shape);
     }
   }
 
@@ -10810,6 +13255,30 @@ define(['exports'], (function (exports) { 'use strict';
       //this.chartArea.children.add(this.tooltip);
 
       this.createXAxis(); // 生成X轴
+
+      // 绑定点击事件
+      this.on('click', args => {
+        if (this.option.onClick) {
+          // 找到点击位置的数据点
+          let closestPoint = null;
+          let minDistance = Infinity;
+          this.series.each((i, serie) => {
+            if (serie.dataPoints) {
+              serie.dataPoints.forEach(point => {
+                const distance = Math.sqrt(Math.pow(args.position.x - point.x, 2) + Math.pow(args.position.y - point.y, 2));
+                if (distance < minDistance && distance < 20) {
+                  // 20px 范围内的点
+                  minDistance = distance;
+                  closestPoint = point;
+                }
+              });
+            }
+          });
+          if (closestPoint) {
+            this.option.onClick(closestPoint);
+          }
+        }
+      });
     }
 
     // 创建一个操作层，以免每次刷新
@@ -11063,7 +13532,14 @@ define(['exports'], (function (exports) { 'use strict';
           'pie': jmPieSeries,
           'radar': jmRadarSeries,
           'stackLine': jmStackLineSeries,
-          'candlestick': jmCandlestickSeries
+          'range': jmRangeSeries,
+          'candlestick': jmCandlestickSeries,
+          'scatter': jmScatterSeries,
+          'bubble': jmBubbleSeries,
+          'heatmap': jmHeatmapSeries,
+          'gauge': jmGaugeSeries,
+          'area': jmAreaSeries,
+          'waterfall': jmWaterfallSeries
         };
       }
 

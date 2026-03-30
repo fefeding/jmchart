@@ -26,7 +26,13 @@ jmchart 是一个轻量级、高性能的图表组件，支持微信小程序，
 - **雷达图** (radar) - 多维度数据对比
 - **K线图** (candlestick) - 金融数据展示
 - **堆叠柱状图** (stackBar) - 多系列数据堆叠
-- **堆叠折线图** (stackLine) - 多系列数据堆叠
+- **范围图** (range) - 展示数据的上下限范围（如温度范围、价格波动）
+- **散点图** (scatter) - 展示两个变量之间的关系
+- **气泡图** (bubble) - 展示三个变量之间的关系
+- **热力图** (heatmap) - 展示数据密度和强度
+- **仪表盘** (gauge) - 展示单一指标的状态
+- **面积图** (area) - 展示数据趋势和累积值
+- **瀑布图** (waterfall) - 展示数据的增减变化
 
 ## 在线示例
 
@@ -36,7 +42,7 @@ jmchart 是一个轻量级、高性能的图表组件，支持微信小程序，
 - [雷达图](http://fefeding.github.io/jmchart/example/radar.html)
 - [K线图](http://fefeding.github.io/jmchart/example/candlestick.html)
 - [堆叠柱状图](http://fefeding.github.io/jmchart/example/stackBar.html)
-- [堆叠折线图](http://fefeding.github.io/jmchart/example/stackLine.html)
+- [范围图](http://fefeding.github.io/jmchart/example/range.html)
 - [Vue 示例](http://fefeding.github.io/jmchart/example/vue.html)
 - [微信小程序](https://github.com/fefeding/mini-jmchart)
 
@@ -161,6 +167,19 @@ const options = {
     minYValue: 0,
     maxYValue: 100,
     
+    // 悬停提示
+    tooltip: {
+        show: true,
+        formatter: function(point) {
+            return point.xLabel + ': ' + point.yLabel;
+        }
+    },
+    
+    // 点击事件
+    onClick: function(point) {
+        console.log('点击了数据点:', point);
+    },
+    
     // 样式配置
     style: {
         margin: { left: 40, top: 20, right: 20, bottom: 40 },
@@ -182,7 +201,14 @@ chart.createSeries('line', {
         showItem: true,      // 是否显示数据点
         curve: true,         // 是否平滑曲线
         area: true,          // 是否显示区域填充
-        radius: 4            // 数据点半径
+        radius: 4,           // 数据点半径
+        label: {
+            show: true,      // 是否显示数据标签
+            position: 'top', // 标签位置: 'top' | 'bottom' | 'left' | 'right' | 'inside'
+            offset: 5,       // 标签偏移量
+            fill: '#333',    // 标签颜色
+            font: '12px Arial' // 标签字体
+        }
     }
 });
 ```
@@ -227,19 +253,152 @@ chart.createSeries('radar', {
 });
 ```
 
-#### K线图 (candlestick)
+#### 散点图 (scatter)
 
 ```javascript
-chart.createSeries('candlestick', {
-    field: ['open', 'close', 'high', 'low'],
-    xField: 'date',
+chart.createSeries('scatter', {
+    field: 'y',
+    xField: 'x',
     style: {
-        masculineColor: 'red',    // 阳线颜色
-        negativeColor: 'green',  // 阴线颜色
-        perWidth: 0.5
+        radius: 5,          // 点的半径
+        showItem: true      // 是否显示点
     }
 });
 ```
+
+#### 气泡图 (bubble)
+
+```javascript
+chart.createSeries('bubble', {
+    field: 'y',
+    xField: 'x',
+    style: {
+        radius: 5,          // 基础半径
+        radiusScale: 1,     // 半径缩放比例
+        opacity: 0.6        // 透明度
+    }
+});
+// 数据格式
+chart.data = [
+    { x: 10, y: 20, size: 30, color: '#ff0000' },
+    { x: 20, y: 30, size: 50, color: '#00ff00' },
+    { x: 30, y: 10, size: 20, color: '#0000ff' }
+];
+```
+
+#### 热力图 (heatmap)
+
+```javascript
+chart.createSeries('heatmap', {
+    field: 'value',
+    xField: 'x',
+    style: {
+        cellWidth: 20,      // 单元格宽度
+        cellHeight: 20,     // 单元格高度
+        colorGradient: [     // 颜色梯度
+            '#313695', '#4575b4', '#74add1', '#abd9e9',
+            '#e0f3f8', '#ffffbf', '#fee090', '#fdae61',
+            '#f46d43', '#d73027', '#a50026'
+        ]
+    }
+});
+// 数据格式
+chart.data = [
+    { x: 1, y: 1, value: 10 },
+    { x: 2, y: 1, value: 20 },
+    { x: 1, y: 2, value: 15 },
+    { x: 2, y: 2, value: 25 }
+];
+```
+
+#### 仪表盘 (gauge)
+
+```javascript
+chart.createSeries('gauge', {
+    field: 'value',
+    style: {
+        min: 0,             // 最小值
+        max: 100,           // 最大值
+        startAngle: -150,   // 起始角度
+        endAngle: 150,      // 结束角度
+        radiusScale: 0.8,   // 半径缩放
+        unit: '%'           // 单位
+    }
+});
+// 数据格式
+chart.data = [{ value: 75 }];
+```
+
+#### 面积图 (area)
+
+```javascript
+chart.createSeries('area', {
+    field: 'value',
+    xField: 'name',
+    style: {
+        lineWidth: 2,       // 线宽
+        showItem: true,     // 是否显示数据点
+        curve: true,        // 是否平滑曲线
+        area: {
+            fill: 'rgba(0,128,255,0.3)' // 填充颜色
+        }
+    }
+});
+```
+
+#### 瀑布图 (waterfall)
+
+```javascript
+chart.createSeries('waterfall', {
+    field: 'value',
+    xField: 'name',
+    style: {
+        perWidth: 0.5,      // 柱子宽度占比
+        increaseColor: '#52c41a', // 增长颜色
+        decreaseColor: '#f5222d', // 减少颜色
+        connectorColor: '#999'     // 连接线颜色
+    }
+});
+// 数据格式
+chart.data = [
+    { name: '初始值', value: 100 },
+    { name: '增加', value: 50 },
+    { name: '减少', value: -30 },
+    { name: '增加', value: 20 },
+    { name: '最终值', value: 0 } // 最终值会自动计算
+];
+```
+
+#### 范围图 (range)
+
+```javascript
+chart.createSeries('range', {
+    fields: ['min', 'max'],  // 下限和上限字段
+    xField: 'date',
+    style: {
+        color: '#F7BB98',    // 线条和填充颜色
+        showItem: false,     // 是否显示数据点
+        curve: true,         // 是否平滑曲线
+        area: {
+            fill: '#F7BB98', // 填充颜色
+            opacity: 0.3     // 填充透明度
+        }
+    }
+});
+// 数据格式（例如：温度范围）
+chart.data = [
+    { date: '1月1日', min: 10, max: 20 },
+    { date: '1月2日', min: 12, max: 22 },
+    { date: '1月3日', min: 8, max: 18 },
+    { date: '1月4日', min: 15, max: 25 }
+];
+```
+
+**应用场景：**
+- 温度范围：显示每天的最高温和最低温
+- 价格波动：显示股票的最高价和最低价
+- 误差范围：显示测量值的误差范围
+- 置信区间：显示统计数据的置信区间
 
 ## API 文档
 
@@ -312,6 +471,13 @@ MIT
 欢迎提交 Issue 和 Pull Request！
 
 ## 更新日志
+
+### v1.3.0
+- 新增图表类型：散点图 (scatter)、气泡图 (bubble)、热力图 (heatmap)、仪表盘 (gauge)、面积图 (area)、瀑布图 (waterfall)
+- 增强数据标签功能，支持top、bottom、left、right、inside等位置选项
+- 添加图表点击事件支持
+- 优化热力图颜色映射算法
+- 完善文档和代码注释
 
 ### v1.2.10
 - 优化代码性能

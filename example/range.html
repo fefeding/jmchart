@@ -1,0 +1,126 @@
+<!doctype html>
+<html>
+	<head>
+		<meta content="text/html; charset=UTF-8" http-equiv="content-type" />
+<meta name="viewport" content="width=device-width,initial-scale=1">
+		<style>
+		html,body {
+			margin:0;
+			padding:0;
+			width:100%;
+			height:100%;
+		}
+        #mycanvas {
+            text-align: center;
+            margin-top: 10px;
+        }
+		#mycanvas canvas, #mycanvas div{
+			background-color:#fff;
+			margin:0 auto;		
+		}
+		</style>
+		<script type="module">
+			import jmChart from '../dist/jmchart.esm.js';
+			(function load() {
+				var w = Math.max((window.innerWidth || window.document.body.clientWidth) * 0.8, 500);
+				var h = Math.min((window.innerHeight || window.document.body.clientHeight) * 0.5, 500);			
+				inichart(w,h);
+			})();
+			
+
+			function inichart(w, h) {
+
+                    const datacount = 50;
+
+					const chart = new jmChart('mycanvas', {
+						width: w,
+						height: h,
+                        xField: 'x',
+                        enableAnimate: true,
+                        legendPosition: 'top',
+                        legendVisible: false,
+						minXValue : 0,
+						maxXValue : 10,
+                        xLabelFormat: (v, item, index) => {
+                            if(index % 5 === 0) {
+                                return v;
+                            }  
+                            return '';
+                        },
+                        style: {
+							markLine: {
+								x: false,
+								y: true,
+								stroke: 'red',
+								fill: '#fff',
+								lineWidth: 1,
+							},
+                            axis: {
+								stroke: 'transparent',
+								align: 'center',
+                                grid: {
+                                    x: false,
+                                    y: true
+                                }
+                            },
+                            chartArea: {
+                                stroke: 'transparent'
+                            },
+                            margin: {
+                                top: 30,
+                                left: 50,
+                                right: 10,
+                                bottom: 30
+                            }
+                        }
+					});				
+
+					const line = chart.createSeries('range', {
+						fields: [
+							'min', 'max'
+						],
+						legendLabel: '温度范围',
+                        yLabelFormat: (v) => {
+                            return v.toFixed? (v.toFixed(0) + '°C') : v;
+                        },
+                        style: {
+							showItem: false,
+							color: '#F7BB98',													
+							area: {
+								fill: function(style) {
+									return this.style.color;
+								},
+								shadow: function() {								
+									return `0, 0, 20, #000`;
+								},	
+							}
+                        }
+					});
+					
+					
+					function animate() {
+                        chart.data = [];
+                        for(var i = 0;i<datacount;i++) {
+                            const baseTemp = 15 + i * 0.2;
+                            const d = {
+                                x : '0909' + i,
+                                min :  baseTemp + Math.random() * 5,
+                                max:  baseTemp + 10 + Math.random() * 5
+                            };
+                            
+                            chart.data.push(d);
+                        }
+						
+						chart.refresh();
+						console.log(chart.data);
+					}
+					
+					animate();
+				}
+		</script>
+	</head>
+	<body>
+		<div id="mycanvas">
+			</div>	
+	</body>
+</html>

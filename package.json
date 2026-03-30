@@ -28,7 +28,7 @@
   },
   "homepage": "https://surl.fit/tools/tools/jmchart",
   "dependencies": {
-    "jmgraph": "^3.2.19"
+    "jmgraph": "^3.2.20"
   },
   "devDependencies": {
     "@babel/core": "^7.29.0",
