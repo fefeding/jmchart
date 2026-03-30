@@ -1,48 +1,80 @@
 const express = require('express');
-
-/*
 const rollup = require('rollup');
 const rollupOptions = require('./rollup.config.js');
 
+// 配置 rollup 监视选项
+rollupOptions.watch = {
+  include: 'src/**',
+  exclude: 'node_modules/**',
+  clearScreen: false
+};
 
-
-//rollupOptions.output.format = 'esm';// 方便调用
-const esmWatcher = rollup.watch(rollupOptions);
-
-
-esmWatcher.on('event', event => {
-  // event.code 会是下面其中一个：
-  //   START        — 监听器正在启动（重启）
-  //   BUNDLE_START — 构建单个文件束
-  //   BUNDLE_END   — 完成文件束构建
-  //   END          — 完成所有文件束构建
-  //   ERROR        — 构建时遇到错误
-  //   FATAL        — 遇到无可修复的错误
-  console.log(event);
-
-  //const bundle = await rollup.rollup(inputOptions);
-  if(event && event.code == 'END') {
-    startServer();
-  }
-});
-*/
-
-// 启动server
-
+// 启动 rollup 监视
+const watcher = rollup.watch(rollupOptions);
 
 let serverInstance = null;
 const port = process.env.PORT || 8801;
 const ip = process.env.IP || '127.0.0.1';
 
-startServer();
+// 处理 rollup 监视事件
+watcher.on('event', event => {
+  switch (event.code) {
+    case 'START':
+      console.log('构建开始...');
+      break;
+    case 'BUNDLE_START':
+      console.log('开始构建文件束...');
+      break;
+    case 'BUNDLE_END':
+      console.log('构建完成！');
+      console.log(`文件: ${event.output[0]}`);
+      console.log(`耗时: ${event.duration}ms`);
+      // 确保服务器已经启动
+      if (!serverInstance) {
+        startServer();
+      }
+      break;
+    case 'END':
+      console.log('所有构建完成！');
+      break;
+    case 'ERROR':
+      console.error('构建错误:', event.error);
+      break;
+    case 'FATAL':
+      console.error('致命错误:', event.error);
+      break;
+    default:
+      break;
+  }
+});
 
+// 启动服务器
 function startServer() {
-
-  if(!serverInstance) {
+  if (!serverInstance) {
     const app = express();
     app.use(express.static("."));
-    serverInstance = app.listen(port, ip);
+    serverInstance = app.listen(port, ip, () => {
+      console.log(`\n🔥 开发服务器启动成功！`);
+      console.log(`🌐 访问地址: http://${ip}:${port}`);
+      console.log(`🔄 热更新已启用，修改代码会自动重新构建`);
+      console.log(`📁 项目根目录: ${process.cwd()}\n`);
+    });
   }
-
-  console.log(`dev server listend at ${port}`);
 }
+
+// 启动服务器
+startServer();
+
+// 处理进程终止
+process.on('SIGINT', () => {
+  console.log('\n正在关闭服务器...');
+  watcher.close();
+  if (serverInstance) {
+    serverInstance.close(() => {
+      console.log('服务器已关闭');
+      process.exit(0);
+    });
+  } else {
+    process.exit(0);
+  }
+});

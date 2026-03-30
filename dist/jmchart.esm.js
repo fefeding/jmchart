@@ -2665,10 +2665,80 @@ class WeblBase {
         this.style = {
             globalAlpha: 1
         };
+        this.stateStack = [];
+        this.transformMatrix = [1, 0, 0, 1, 0, 0]; // 2D 变换矩阵
     }
 
     get context() {
         if(this.graph) return this.graph.context;
+    }
+
+    // 保存当前状态
+    save() {
+        this.stateStack.push({
+            transformMatrix: [...this.transformMatrix],
+            style: { ...this.style }
+        });
+    }
+
+    // 恢复上一个状态
+    restore() {
+        if (this.stateStack.length > 0) {
+            const state = this.stateStack.pop();
+            this.transformMatrix = state.transformMatrix;
+            this.style = state.style;
+        }
+    }
+
+    // 平移变换
+    translate(x, y) {
+        // 更新变换矩阵
+        this.transformMatrix[4] += x * this.transformMatrix[0] + y * this.transformMatrix[2];
+        this.transformMatrix[5] += x * this.transformMatrix[1] + y * this.transformMatrix[3];
+    }
+
+    // 缩放变换
+    scale(sx, sy) {
+        // 更新变换矩阵
+        this.transformMatrix[0] *= sx;
+        this.transformMatrix[1] *= sx;
+        this.transformMatrix[2] *= sy;
+        this.transformMatrix[3] *= sy;
+    }
+
+    // 旋转变换
+    rotate(angle) {
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+        const [a, b, c, d, tx, ty] = this.transformMatrix;
+        
+        // 更新变换矩阵
+        this.transformMatrix[0] = a * cos - b * sin;
+        this.transformMatrix[1] = a * sin + b * cos;
+        this.transformMatrix[2] = c * cos - d * sin;
+        this.transformMatrix[3] = c * sin + d * cos;
+    }
+
+    // 矩阵变换
+    transform(a, b, c, d, e, f) {
+        const [currentA, currentB, currentC, currentD, currentE, currentF] = this.transformMatrix;
+        
+        // 矩阵乘法
+        this.transformMatrix[0] = a * currentA + b * currentC;
+        this.transformMatrix[1] = a * currentB + b * currentD;
+        this.transformMatrix[2] = c * currentA + d * currentC;
+        this.transformMatrix[3] = c * currentB + d * currentD;
+        this.transformMatrix[4] = e * currentA + f * currentC + currentE;
+        this.transformMatrix[5] = e * currentB + f * currentD + currentF;
+    }
+
+    // 应用变换到点
+    applyTransform(point) {
+        const [a, b, c, d, tx, ty] = this.transformMatrix;
+        return {
+            x: a * point.x + c * point.y + tx,
+            y: b * point.x + d * point.y + ty
+        };
     }
 
     // 纹理绘制canvas
@@ -2865,6 +2935,10 @@ class WeblBase {
     // 多边切割, 得到三角形顶点
     // polygonIndices 顶点索引，
     earCutPointsToTriangles(points) {
+        this.earCutCache = this.earCutCache || (this.earCutCache = {});
+        const key = JSON.stringify(points);
+        if (this.earCutCache[key]) return this.earCutCache[key];
+
         const ps = this.earCutPoints(points);// 切割得到3角色顶点索引，
         const triangles = [];
         // 用顶点索引再组合成坐标数组
@@ -2875,6 +2949,8 @@ class WeblBase {
 
             triangles.push([p1, p2, p3]);// 每三个顶点构成一个三角
         }
+        
+        this.earCutCache[key] = triangles;
         return triangles;
     }
 
@@ -3019,6 +3095,11 @@ class WebglPath extends WeblBase {
         this.points = [];
     }
 
+    // 应用变换到点
+    applyTransform(point) {
+        return super.applyTransform(point);
+    }
+
     setParentBounds(parentBounds = this.parentAbsoluteBounds) {
 
         //this.useProgram();
@@ -3082,9 +3163,11 @@ class WebglPath extends WeblBase {
        
         const fixedPoints = [];
         for(const p of points) {
+            // 应用变换矩阵
+            const transformedPoint = this.applyTransform(p);
             fixedPoints.push(
-                p.x + this.parentAbsoluteBounds.left,
-                p.y + this.parentAbsoluteBounds.top
+                transformedPoint.x + this.parentAbsoluteBounds.left,
+                transformedPoint.y + this.parentAbsoluteBounds.top
             );
         }
         const vertexBuffer = this.createFloat32Buffer(fixedPoints); 
@@ -3326,9 +3409,9 @@ class WebglPath extends WeblBase {
     // 分割成一个个规则的三角形，不规则的多边形不全割的话纹理就会没法正确覆盖
     getTriangles(points) {
         
-        //this.trianglesCache = this.trianglesCache||(this.trianglesCache={});
-        //const key = JSON.stringify(points);
-        //if(this.trianglesCache[key]) return this.trianglesCache[key];
+        this.trianglesCache = this.trianglesCache||(this.trianglesCache={});
+        const key = JSON.stringify(points);
+        if(this.trianglesCache[key]) return this.trianglesCache[key];
 
         const res = [];
         const polygons = this.getPolygon(points);                
@@ -3339,7 +3422,7 @@ class WebglPath extends WeblBase {
                 res.push(...triangles);
             }   
         }
-        //this.trianglesCache[key] = res;
+        this.trianglesCache[key] = res;
         return res;
     }
 
@@ -3441,18 +3524,15 @@ class WebglPath extends WeblBase {
 
     // 进行多边形填充
     fillPolygons(points, isTexture = false) {   
-        //const indexBuffer = this.createUint16Buffer(triangles, this.context.ELEMENT_ARRAY_BUFFER);
-        //this.context.drawElements(this.context.TRIANGLES, triangles.length, this.context.UNSIGMED_SHORT, 0);
-        //this.deleteBuffer(indexBuffer);
-        /*if(points.length > 3 && (!regular || this.needCut)) {
-            const triangles = regular && this.needCut? this.earCutPointsToTriangles(points): this.getTriangles(points);                
+        if(points.length > 3) {
+            const triangles = this.needCut? this.earCutPointsToTriangles(points): this.getTriangles(points);                
             if(triangles.length) {   
                 for(const triangle of triangles) {
                     this.fillPolygons(triangle, isTexture);// 这里就变成了规则的图形了
                 }
             }
         }
-        else {*/
+        else {
             const buffer = this.writePoints(points);
             // 纹理坐标
             const coordBuffer = isTexture? this.writePoints(points, this.program.attrs.a_text_coord): null;
@@ -3460,7 +3540,7 @@ class WebglPath extends WeblBase {
             this.context.drawArrays(this.context.TRIANGLE_FAN, 0, points.length);
             this.deleteBuffer(buffer);
             coordBuffer && this.deleteBuffer(coordBuffer);    
-        //}
+        }
     }
 
     // 填充图形
@@ -7012,7 +7092,13 @@ class jmGraph$1 extends jmControl {
 			}
 		}	
 		this.canvas = canvas;	
-		this.context = canvas.getContext(this.mode);
+		// Create context with preserveDrawingBuffer for webgl to prevent flickering
+		if(this.mode === 'webgl') {
+			this.context = canvas.getContext(this.mode, { preserveDrawingBuffer: true });
+		}
+		else {
+			this.context = canvas.getContext(this.mode);
+		}
 
 		this.textureCanvas = option.textureCanvas || null;
 		
@@ -10506,6 +10592,9 @@ class jmMarkLineManager {
         x: 0,
         y: 0
       };
+      let lastMoveTime = 0;
+      const MOVE_THROTTLE = 16; // 约60fps
+
       graph.on('mousedown touchstart', args => {
         lineTouching = 0;
         // 如果长按才启用
@@ -10539,6 +10628,12 @@ class jmMarkLineManager {
       });
       // 移动标线
       graph.on('mousemove touchmove', args => {
+        // 添加节流，减少重绘次数
+        const now = Date.now();
+        if (now - lastMoveTime < MOVE_THROTTLE) {
+          return;
+        }
+        lastMoveTime = now;
         args.offsetInfo = {
           x: 0,
           y: 0,
@@ -10605,7 +10700,7 @@ class jmMarkLineManager {
     }
     if (moved) {
       if (args.longtap === 2 && args.event) {
-        args.event.preventDefault && args.event.preventDefault(); // 阻止默认行为		
+        args.event.preventDefault && args.event.preventDefault(); // 阻止默认行为			
         args.event.stopPropagation && args.event.stopPropagation();
       }
       if (!args.cancel) this.chart.emit('marklinemove', args);

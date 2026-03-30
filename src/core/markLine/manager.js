@@ -55,6 +55,9 @@ export default class jmMarkLineManager {
 				x: 0,
 				y: 0
 			};
+			let lastMoveTime = 0;
+			const MOVE_THROTTLE = 16; // 约60fps
+
 			graph.on('mousedown touchstart', (args) => {
 				lineTouching = 0;
 				// 如果长按才启用
@@ -89,6 +92,13 @@ export default class jmMarkLineManager {
 			});
 			// 移动标线
 			graph.on('mousemove touchmove', (args) => {
+				// 添加节流，减少重绘次数
+				const now = Date.now();
+				if(now - lastMoveTime < MOVE_THROTTLE) {
+					return;
+				}
+				lastMoveTime = now;
+
 				args.offsetInfo = {
 					x: 0,
 					y: 0,
@@ -115,7 +125,7 @@ export default class jmMarkLineManager {
 					if((lineTouching === 0 && 
 						((chart.style.markLine.lock.y && Math.abs(args.offsetInfo.y) < chart.style.markLine.lock.y) ||
 						(chart.style.markLine.lock.x && Math.abs(args.offsetInfo.x) < chart.style.markLine.lock.x)))
-						 || lineTouching === 1) {
+							 || lineTouching === 1) {
 
 						lineTouching = 1;
 						args.event && args.event.preventDefault && args.event.preventDefault(); // 阻止默认行为
@@ -163,7 +173,7 @@ export default class jmMarkLineManager {
         }
         if(moved) {
 			if(args.longtap === 2 && args.event) {
-				args.event.preventDefault && args.event.preventDefault();// 阻止默认行为		
+				args.event.preventDefault && args.event.preventDefault();// 阻止默认行为			
 				args.event.stopPropagation && args.event.stopPropagation();	
 			}	
 

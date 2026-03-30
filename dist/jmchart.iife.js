@@ -2668,10 +2668,80 @@
           this.style = {
               globalAlpha: 1
           };
+          this.stateStack = [];
+          this.transformMatrix = [1, 0, 0, 1, 0, 0]; // 2D 变换矩阵
       }
 
       get context() {
           if(this.graph) return this.graph.context;
+      }
+
+      // 保存当前状态
+      save() {
+          this.stateStack.push({
+              transformMatrix: [...this.transformMatrix],
+              style: { ...this.style }
+          });
+      }
+
+      // 恢复上一个状态
+      restore() {
+          if (this.stateStack.length > 0) {
+              const state = this.stateStack.pop();
+              this.transformMatrix = state.transformMatrix;
+              this.style = state.style;
+          }
+      }
+
+      // 平移变换
+      translate(x, y) {
+          // 更新变换矩阵
+          this.transformMatrix[4] += x * this.transformMatrix[0] + y * this.transformMatrix[2];
+          this.transformMatrix[5] += x * this.transformMatrix[1] + y * this.transformMatrix[3];
+      }
+
+      // 缩放变换
+      scale(sx, sy) {
+          // 更新变换矩阵
+          this.transformMatrix[0] *= sx;
+          this.transformMatrix[1] *= sx;
+          this.transformMatrix[2] *= sy;
+          this.transformMatrix[3] *= sy;
+      }
+
+      // 旋转变换
+      rotate(angle) {
+          const cos = Math.cos(angle);
+          const sin = Math.sin(angle);
+          const [a, b, c, d, tx, ty] = this.transformMatrix;
+          
+          // 更新变换矩阵
+          this.transformMatrix[0] = a * cos - b * sin;
+          this.transformMatrix[1] = a * sin + b * cos;
+          this.transformMatrix[2] = c * cos - d * sin;
+          this.transformMatrix[3] = c * sin + d * cos;
+      }
+
+      // 矩阵变换
+      transform(a, b, c, d, e, f) {
+          const [currentA, currentB, currentC, currentD, currentE, currentF] = this.transformMatrix;
+          
+          // 矩阵乘法
+          this.transformMatrix[0] = a * currentA + b * currentC;
+          this.transformMatrix[1] = a * currentB + b * currentD;
+          this.transformMatrix[2] = c * currentA + d * currentC;
+          this.transformMatrix[3] = c * currentB + d * currentD;
+          this.transformMatrix[4] = e * currentA + f * currentC + currentE;
+          this.transformMatrix[5] = e * currentB + f * currentD + currentF;
+      }
+
+      // 应用变换到点
+      applyTransform(point) {
+          const [a, b, c, d, tx, ty] = this.transformMatrix;
+          return {
+              x: a * point.x + c * point.y + tx,
+              y: b * point.x + d * point.y + ty
+          };
       }
 
       // 纹理绘制canvas
@@ -3022,6 +3092,11 @@
           this.points = [];
       }
 
+      // 应用变换到点
+      applyTransform(point) {
+          return super.applyTransform(point);
+      }
+
       setParentBounds(parentBounds = this.parentAbsoluteBounds) {
 
           //this.useProgram();
@@ -3085,9 +3160,11 @@
          
           const fixedPoints = [];
           for(const p of points) {
+              // 应用变换矩阵
+              const transformedPoint = this.applyTransform(p);
               fixedPoints.push(
-                  p.x + this.parentAbsoluteBounds.left,
-                  p.y + this.parentAbsoluteBounds.top
+                  transformedPoint.x + this.parentAbsoluteBounds.left,
+                  transformedPoint.y + this.parentAbsoluteBounds.top
               );
           }
           const vertexBuffer = this.createFloat32Buffer(fixedPoints); 
@@ -10509,6 +10586,9 @@
           x: 0,
           y: 0
         };
+        let lastMoveTime = 0;
+        const MOVE_THROTTLE = 16; // 约60fps
+
         graph.on('mousedown touchstart', args => {
           lineTouching = 0;
           // 如果长按才启用
@@ -10542,6 +10622,12 @@
         });
         // 移动标线
         graph.on('mousemove touchmove', args => {
+          // 添加节流，减少重绘次数
+          const now = Date.now();
+          if (now - lastMoveTime < MOVE_THROTTLE) {
+            return;
+          }
+          lastMoveTime = now;
           args.offsetInfo = {
             x: 0,
             y: 0,
@@ -10608,7 +10694,7 @@
       }
       if (moved) {
         if (args.longtap === 2 && args.event) {
-          args.event.preventDefault && args.event.preventDefault(); // 阻止默认行为		
+          args.event.preventDefault && args.event.preventDefault(); // 阻止默认行为			
           args.event.stopPropagation && args.event.stopPropagation();
         }
         if (!args.cancel) this.chart.emit('marklinemove', args);
