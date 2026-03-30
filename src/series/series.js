@@ -1,19 +1,27 @@
-
 import { jmPath, jmList, jmControl } from 'jmgraph';
 import utils from '../common/utils.js';
 
 const ANIMATION_DATA_THRESHOLD = 100;
 
 /**
- * 图形基类
+ * 图表系列基类
+ * 
+ * 所有图表类型的基类，提供通用的数据点生成、坐标轴管理、动画控制和图例生成功能。
+ * 子类需要实现 init() 方法来定义具体的图表绘制逻辑。
  *
  * @class jmSeries
  * @module jmChart
- * @param {jmChart} chart 当前图表
- * @param {array} mappings 图形字段映射
- * @param {style} style 样式
+ * @extends jmPath
+ * 
+ * @example
+ * // 创建自定义图表系列
+ * class MySeries extends jmSeries {
+ *   init() {
+ *     const { points } = this.initDataPoint();
+ *     // 绘制图形...
+ *   }
+ * }
  */
-
 export default class jmSeries extends jmPath {	
 	constructor(options) {
 		super(options);
@@ -45,6 +53,7 @@ export default class jmSeries extends jmPath {
 
 	/**
 	 * 关联访问的是chart的数据源
+	 * @type {Array}
 	 */
 	get data() {
 		return this.graph.data;
@@ -53,7 +62,10 @@ export default class jmSeries extends jmPath {
 		this.graph.data = d;
 	}
 
-	//是否启用动画效果
+	/**
+	 * 是否启用动画效果
+	 * @type {boolean}
+	 */
 	get enableAnimate() {
 		if(typeof this.option.enableAnimate !== 'undefined') return !!this.option.enableAnimate;
 		else {
@@ -66,42 +78,61 @@ export default class jmSeries extends jmPath {
 
 	/**
 	 * 图例名称
-	 *
-	 * @property legendLabel
-	 * @type string
+	 * @type {string}
 	 */
 	legendLabel = '';
 
 	/**
-	 * 当前图形下的所有子图
+	 * 当前图形下的所有子图形状
+	 * @type {jmList}
 	 */
 	shapes = new jmList();
 
 	/**
-	 * 关健点集合
+	 * 关键点集合，用于交互和提示
+	 * @type {Array}
 	 */
 	keyPoints = [];
 
 	/**
 	 * 标注集合
+	 * @type {Array}
 	 */
 	labels = [];
 
-	// 图绑定的属性名
+	/**
+	 * 图表绑定的数据字段名
+	 * @type {string|string[]}
+	 */
 	field = '';
+
 	/**
 	 * Y轴的基线跟最底层的高度
+	 * @type {number}
 	 */
 	baseYHeight = 0;
+
 	/**
 	 * Y轴基线的Y坐标
+	 * @type {number}
 	 */
 	baseY = 0;
+
 	/**
 	 * 当前基线Y的值，不给basey就会默认采用当前Y轴最小值
+	 * @type {number}
 	 */
 	baseYValue = 0;
 
+	/**
+	 * 初始化数据点
+	 * 
+	 * 根据数据生成图表的数据点，支持动画效果。
+	 * 当数据量小于阈值(100)且启用动画时，会记录上一次的数据点用于动画过渡。
+	 *
+	 * @param {...any} args 传递给 createPoints 的参数
+	 * @returns {Object} 包含 points 和 dataChanged 的对象
+	 */
 	initDataPoint(...args) {
 		let dataChanged = false;
 		
@@ -133,27 +164,25 @@ export default class jmSeries extends jmPath {
 	}
 
 	/**
-	 * 根据X轴坐标，获取它最近的数据描点
-	 * 离点最近的一个描点
-	 * @param {number} x  X轴坐标
+	 * 根据X轴坐标获取最近的数据描点
+	 * 
+	 * @param {number} x X轴坐标
+	 * @returns {Object|null} 最近的数据点对象
 	 */
 	getDataPointByX(x) {
 		if(!this.dataPoints) return null;
-		// 获取最近的那个
-		let prePoint = undefined, nextPoint = undefined; // 跟上一个点和下一个点的距离，哪个近用哪个
+
+		let prePoint = undefined, nextPoint = undefined;
 		for(let i=0; i< this.dataPoints.length; i++) {
 			const p = this.dataPoints[i];
 			if(p.x == x) return p;
 
-			// 上一个点
 			if(p.x < x) {
 				if(i === this.dataPoints.length - 1) return p;
 				prePoint = p;
 			}
 
-			// 下一个点
 			if(typeof nextPoint === 'undefined' && p.x > x) {
-				// 没有上一个，只能返回这个了
 				if(prePoint && x - prePoint.x < p.x - x) return prePoint;
 				else return p
 			}
@@ -163,7 +192,9 @@ export default class jmSeries extends jmPath {
 
 	/**
 	 * 根据X轴值获取数据点
-	 * @param {number} xValue  X轴值
+	 * 
+	 * @param {any} xValue X轴值
+	 * @returns {Object|null} 数据点对象
 	 */
 	getDataPointByXValue(xValue) {
 		if(!this.dataPoints) return null;
@@ -175,7 +206,13 @@ export default class jmSeries extends jmPath {
 		return null;
 	}
 
-		
+	/**
+	 * 重置图表系列
+	 * 
+	 * 清除所有形状，重新初始化坐标轴和图例
+	 * 
+	 * @returns {Object} 包含 xAxis 和 yAxis 的信息对象
+	 */
 	reset() {
 		var shape;
 		while(shape = this.shapes.shift()) {
@@ -191,6 +228,11 @@ export default class jmSeries extends jmPath {
 		};
 	}
 
+	/**
+	 * 初始化坐标轴的值范围
+	 * 
+	 * 遍历数据，计算X轴和Y轴的最大最小值
+	 */
 	initAxisValue() {
 		if(!this.data || !this.data.length) return;
 		
@@ -219,6 +261,14 @@ export default class jmSeries extends jmPath {
 		}
 	}
 
+	/**
+	 * 创建数据点
+	 * 
+	 * 根据数据源和坐标轴配置，计算每个数据点的屏幕坐标位置
+	 * 
+	 * @param {Array} data 数据源，默认使用 this.data
+	 * @returns {Array} 数据点数组
+	 */
 	createPoints(data) {
 		data = data || this.data;		
 		if(!data || !data.length) return [];
@@ -284,7 +334,12 @@ export default class jmSeries extends jmPath {
 		return this.dataPoints;
 	}
 
-	// 生成颜色
+	/**
+	 * 生成颜色
+	 * 
+	 * @param {Object} p 数据点对象
+	 * @returns {string} 颜色值
+	 */
 	getColor(p) {
 		if(typeof this.style.color === 'function') {
 			return this.style.color.call(this, p);
@@ -296,14 +351,12 @@ export default class jmSeries extends jmPath {
 
 	/**
 	 * 生成图例
-	 *
-	 * @method createLegend
+	 * 
+	 * @returns {jmShape} 图例形状
 	 */
 	createLegend() {
-		//生成图例前的图标
 		const style = this.graph.utils.clone(this.style);
 		style.fill = this.getColor();	
-		//delete style.stroke;
 		const shape = this.graph.createShape('rect',{
 			style
 		});
@@ -311,14 +364,20 @@ export default class jmSeries extends jmPath {
 		return shape;
 	}
 
-	// 生成柱图的标注
+	/**
+	 * 生成数据项标签
+	 * 
+	 * 在数据点上方或指定位置显示数值标签
+	 * 
+	 * @param {Object} point 数据点对象
+	 * @param {string} position 标签位置 (top/bottom/left/right/inside)
+	 */
 	createItemLabel(point, position) {
 		if(!this.style.label || this.style.label.show !== true) return;
 		
 		const text = this.option.itemLabelFormat?this.option.itemLabelFormat.call(this, point): point.yValue;
 		if(!text) return;
 		
-		// v如果指定了为控件，则直接加入
 		if(text instanceof jmControl) {
 			this.addShape(text);
 			return text;
@@ -383,8 +442,10 @@ export default class jmSeries extends jmPath {
 	}
 
 	/**
-	 * 在图上加下定制图形
-	 * @param {jmShape} shape  图形
+	 * 在图表上添加形状
+	 * 
+	 * @param {jmShape} shape 图形对象
+	 * @returns {jmShape} 添加的图形对象
 	 */
 	addShape(shape) {
 		this.graph.chartArea.children.add(shape);
@@ -394,14 +455,11 @@ export default class jmSeries extends jmPath {
 
 	/**
 	 * 获取指定事件的集合
-	 * 比如mousedown,mouseup等
-	 *
-	 * @method getEvent
+	 * 
 	 * @param {string} name 事件名称
-	 * @return {list} 事件委托的集合
+	 * @returns {jmList} 事件委托的集合
 	 */
 	getEvent(name) {	
-			
 		const event = this.option? this.option[name]: null;
 		if(!event) {
 			return super.getEvent(name);

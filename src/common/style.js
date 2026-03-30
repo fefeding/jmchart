@@ -477,5 +477,104 @@ export default {
 			blur: 2,
 			color: '#000'
 		}
+	},
+	funnel: {
+		normal: {
+			lineWidth: 1,
+			zIndex: 17,
+			cursor: 'default',
+			opacity: 0.9
+		},
+		hover: {
+			opacity: 1,
+			cursor: 'pointer'
+		},
+		lineWidth: 1,
+		zIndex: 17,
+		cursor: 'default',
+		align: 'center',
+		gap: 2,
+		stroke: '#fff',
+		label: {
+			show: true,
+			fill: '#fff',
+			font: '12px Arial'
+		}
+	},
+	ringProgress: {
+		normal: {
+			zIndex: 11,
+			cursor: 'default'
+		},
+		hover: {
+			cursor: 'pointer'
+		},
+		lineWidth: 20,
+		startAngle: -90,
+		max: 100,
+		ringGap: 10,
+		backgroundColor: '#e0e0e0',
+		showLabel: true,
+		labelColor: '#333',
+		labelFont: '14px Arial',
+		zIndex: 11,
+		cursor: 'default'
+	},
+	boxPlot: {
+		normal: {
+			lineWidth: 1,
+			zIndex: 17,
+			cursor: 'default'
+		},
+		hover: {
+			cursor: 'pointer'
+		},
+		lineWidth: 1,
+		boxWidth: null,
+		whiskerWidth: 1,
+		whiskerLength: 20,
+		boxFill: 'transparent',
+		zIndex: 17,
+		cursor: 'default',
+		label: {
+			show: true,
+			fill: '#333',
+			font: '12px Arial'
+		}
+	},
+	wordCloud: {
+		normal: {
+			zIndex: 11,
+			cursor: 'default'
+		},
+		hover: {
+			cursor: 'pointer'
+		},
+		minFontSize: 12,
+		maxFontSize: 60,
+		spiral: true,
+		zIndex: 11,
+		cursor: 'default'
+	},
+	sunburst: {
+		normal: {
+			zIndex: 11,
+			cursor: 'default'
+		},
+		hover: {
+			cursor: 'pointer'
+		},
+		innerRadius: 0,
+		startAngle: 0,
+		showLabels: true,
+		showCenter: true,
+		centerFill: '#fff',
+		centerStroke: '#e0e0e0',
+		stroke: '#fff',
+		lineWidth: 1,
+		labelColor: '#fff',
+		labelFont: '12px Arial',
+		zIndex: 11,
+		cursor: 'default'
 	}
 }

@@ -75,6 +75,11 @@
             <div class="tab" data-tab="area">面积图</div>
             <div class="tab" data-tab="waterfall">瀑布图</div>
             <div class="tab" data-tab="range">范围图</div>
+            <div class="tab" data-tab="funnel">漏斗图</div>
+            <div class="tab" data-tab="ringProgress">环形进度</div>
+            <div class="tab" data-tab="boxPlot">箱线图</div>
+            <div class="tab" data-tab="wordCloud">词云图</div>
+            <div class="tab" data-tab="sunburst">旭日图</div>
         </div>
 
         <!-- 折线图 -->
@@ -172,6 +177,46 @@
                 <canvas class="chart" id="rangeChart"></canvas>
             </div>
         </div>
+
+        <!-- 漏斗图 -->
+        <div class="tab-content" id="funnel">
+            <div class="chart-container">
+                <h2>漏斗图 (Funnel Chart)</h2>
+                <canvas class="chart" id="funnelChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 环形进度图 -->
+        <div class="tab-content" id="ringProgress">
+            <div class="chart-container">
+                <h2>环形进度图 (Ring Progress Chart)</h2>
+                <canvas class="chart" id="ringProgressChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 箱线图 -->
+        <div class="tab-content" id="boxPlot">
+            <div class="chart-container">
+                <h2>箱线图 (Box Plot Chart)</h2>
+                <canvas class="chart" id="boxPlotChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 词云图 -->
+        <div class="tab-content" id="wordCloud">
+            <div class="chart-container">
+                <h2>词云图 (Word Cloud Chart)</h2>
+                <canvas class="chart" id="wordCloudChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 旭日图 -->
+        <div class="tab-content" id="sunburst">
+            <div class="chart-container">
+                <h2>旭日图 (Sunburst Chart)</h2>
+                <canvas class="chart" id="sunburstChart"></canvas>
+            </div>
+        </div>
     </div>
 
     <script type="module">
@@ -179,7 +224,6 @@
         
         window.jmChart = jmChart;
 
-        // 标签切换功能
         document.querySelectorAll('.tab').forEach(tab => {
             tab.addEventListener('click', () => {
                 document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -193,7 +237,6 @@
             });
         });
 
-        // 图表数据
         const chartData = {
             line: [
                 { name: '一月', value: 100 },
@@ -278,10 +321,68 @@
                 { name: '支出', value: -10 },
                 { name: '最终值', value: 0 }
             ],
-            range: []
+            range: [],
+            funnel: [
+                { name: '访问量', value: 10000 },
+                { name: '咨询量', value: 5000 },
+                { name: '意向客户', value: 2000 },
+                { name: '成交客户', value: 500 }
+            ],
+            ringProgress: [
+                { name: '完成度', value: 75 },
+                { name: '目标', value: 60 }
+            ],
+            boxPlot: [
+                { category: '产品A', min: 10, q1: 20, median: 35, q3: 50, max: 70 },
+                { category: '产品B', min: 15, q1: 30, median: 45, q3: 60, max: 80 },
+                { category: '产品C', min: 5, q1: 15, median: 25, q3: 40, max: 55 }
+            ],
+            wordCloud: [
+                { word: '数据分析', weight: 100 },
+                { word: '可视化', weight: 80 },
+                { word: '图表', weight: 90 },
+                { word: '交互', weight: 60 },
+                { word: '用户体验', weight: 70 },
+                { word: '前端', weight: 85 },
+                { word: 'JavaScript', weight: 95 },
+                { word: 'Canvas', weight: 75 },
+                { word: 'SVG', weight: 65 },
+                { word: '响应式', weight: 55 },
+                { word: '动画', weight: 50 },
+                { word: '性能优化', weight: 45 }
+            ],
+            sunburst: [
+                {
+                    name: '根节点',
+                    children: [
+                        {
+                            name: '分类A',
+                            children: [
+                                { name: 'A1', value: 30 },
+                                { name: 'A2', value: 20 },
+                                { name: 'A3', value: 15 }
+                            ]
+                        },
+                        {
+                            name: '分类B',
+                            children: [
+                                { name: 'B1', value: 25 },
+                                { name: 'B2', value: 35 }
+                            ]
+                        },
+                        {
+                            name: '分类C',
+                            children: [
+                                { name: 'C1', value: 40 },
+                                { name: 'C2', value: 30 },
+                                { name: 'C3', value: 20 }
+                            ]
+                        }
+                    ]
+                }
+            ]
         };
 
-        // 生成范围图数据
         for(let i = 0; i < 20; i++) {
             const baseTemp = 15 + i * 0.3;
             chartData.range.push({
@@ -291,30 +392,40 @@
             });
         }
 
-        // 初始化图表
         function initChart(type) {
             const canvas = document.getElementById(type + 'Chart');
             if (!canvas) return;
 
-            // 销毁之前的图表
             if (window.charts && window.charts[type]) {
                 window.charts[type].destroy();
             }
 
-            // 创建新图表
+            const noAxisCharts = ['pie', 'radar', 'gauge', 'funnel', 'ringProgress', 'wordCloud', 'sunburst'];
+            const showAxis = !noAxisCharts.includes(type);
+
             const chart = new jmChart(canvas, {
                 width: canvas.offsetWidth,
                 height: canvas.offsetHeight,
                 enableAnimate: true,
+                style: {
+                    axis: {
+                        x: showAxis,
+                        y: showAxis
+                    },
+                    margin: showAxis ? undefined : {
+                        left: 10,
+                        top: 10,
+                        right: 10,
+                        bottom: 10
+                    }
+                },
                 onClick: function(point) {
                     console.log('点击了数据点:', point);
                 }
             });
 
-            // 设置数据
             chart.data = chartData[type];
 
-            // 创建图表系列
             switch(type) {
                 case 'line':
                     chart.createSeries('line', {
@@ -446,20 +557,66 @@
                         }
                     });
                     break;
+                case 'funnel':
+                    chart.createSeries('funnel', {
+                        field: 'value',
+                        xField: 'name',
+                        style: {
+                            align: 'center',
+                            gap: 2
+                        }
+                    });
+                    break;
+                case 'ringProgress':
+                    chart.createSeries('ringProgress', {
+                        field: 'value',
+                        xField: 'name',
+                        style: {
+                            lineWidth: 15,
+                            max: 100,
+                            showLabel: true
+                        }
+                    });
+                    break;
+                case 'boxPlot':
+                    chart.createSeries('boxPlot', {
+                        field: ['min', 'q1', 'median', 'q3', 'max'],
+                        xField: 'category',
+                        style: {
+                            lineWidth: 1,
+                            boxFill: 'rgba(33, 150, 243, 0.3)'
+                        }
+                    });
+                    break;
+                case 'wordCloud':
+                    chart.createSeries('wordCloud', {
+                        field: 'weight',
+                        xField: 'word',
+                        style: {
+                            minFontSize: 14,
+                            maxFontSize: 48
+                        }
+                    });
+                    break;
+                case 'sunburst':
+                    chart.createSeries('sunburst', {
+                        data: chartData.sunburst,
+                        style: {
+                            innerRadius: 30,
+                            showLabels: true
+                        }
+                    });
+                    break;
             }
 
-            // 刷新图表
             chart.refresh();
 
-            // 保存图表实例
             if (!window.charts) window.charts = {};
             window.charts[type] = chart;
         }
 
-        // 初始化默认图表
         initChart('line');
 
-        // 响应式调整
         window.addEventListener('resize', () => {
             if (window.charts) {
                 Object.keys(window.charts).forEach(type => {

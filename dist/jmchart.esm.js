@@ -9255,6 +9255,105 @@ var defaultStyle = {
       blur: 2,
       color: '#000'
     }
+  },
+  funnel: {
+    normal: {
+      lineWidth: 1,
+      zIndex: 17,
+      cursor: 'default',
+      opacity: 0.9
+    },
+    hover: {
+      opacity: 1,
+      cursor: 'pointer'
+    },
+    lineWidth: 1,
+    zIndex: 17,
+    cursor: 'default',
+    align: 'center',
+    gap: 2,
+    stroke: '#fff',
+    label: {
+      show: true,
+      fill: '#fff',
+      font: '12px Arial'
+    }
+  },
+  ringProgress: {
+    normal: {
+      zIndex: 11,
+      cursor: 'default'
+    },
+    hover: {
+      cursor: 'pointer'
+    },
+    lineWidth: 20,
+    startAngle: -90,
+    max: 100,
+    ringGap: 10,
+    backgroundColor: '#e0e0e0',
+    showLabel: true,
+    labelColor: '#333',
+    labelFont: '14px Arial',
+    zIndex: 11,
+    cursor: 'default'
+  },
+  boxPlot: {
+    normal: {
+      lineWidth: 1,
+      zIndex: 17,
+      cursor: 'default'
+    },
+    hover: {
+      cursor: 'pointer'
+    },
+    lineWidth: 1,
+    boxWidth: null,
+    whiskerWidth: 1,
+    whiskerLength: 20,
+    boxFill: 'transparent',
+    zIndex: 17,
+    cursor: 'default',
+    label: {
+      show: true,
+      fill: '#333',
+      font: '12px Arial'
+    }
+  },
+  wordCloud: {
+    normal: {
+      zIndex: 11,
+      cursor: 'default'
+    },
+    hover: {
+      cursor: 'pointer'
+    },
+    minFontSize: 12,
+    maxFontSize: 60,
+    spiral: true,
+    zIndex: 11,
+    cursor: 'default'
+  },
+  sunburst: {
+    normal: {
+      zIndex: 11,
+      cursor: 'default'
+    },
+    hover: {
+      cursor: 'pointer'
+    },
+    innerRadius: 0,
+    startAngle: 0,
+    showLabels: true,
+    showCenter: true,
+    centerFill: '#fff',
+    centerStroke: '#e0e0e0',
+    stroke: '#fff',
+    lineWidth: 1,
+    labelColor: '#fff',
+    labelFont: '12px Arial',
+    zIndex: 11,
+    cursor: 'default'
   }
 };
 
@@ -10082,49 +10181,65 @@ var utils = {
 const ANIMATION_DATA_THRESHOLD$7 = 100;
 
 /**
- * 图形基类
+ * 图表系列基类
+ * 
+ * 所有图表类型的基类，提供通用的数据点生成、坐标轴管理、动画控制和图例生成功能。
+ * 子类需要实现 init() 方法来定义具体的图表绘制逻辑。
  *
  * @class jmSeries
  * @module jmChart
- * @param {jmChart} chart 当前图表
- * @param {array} mappings 图形字段映射
- * @param {style} style 样式
+ * @extends jmPath
+ * 
+ * @example
+ * // 创建自定义图表系列
+ * class MySeries extends jmSeries {
+ *   init() {
+ *     const { points } = this.initDataPoint();
+ *     // 绘制图形...
+ *   }
+ * }
  */
-
 class jmSeries extends jmPath {
   constructor(options) {
     super(options);
     /**
      * 图例名称
-     *
-     * @property legendLabel
-     * @type string
+     * @type {string}
      */
     _defineProperty(this, "legendLabel", '');
     /**
-     * 当前图形下的所有子图
+     * 当前图形下的所有子图形状
+     * @type {jmList}
      */
     _defineProperty(this, "shapes", new jmList());
     /**
-     * 关健点集合
+     * 关键点集合，用于交互和提示
+     * @type {Array}
      */
     _defineProperty(this, "keyPoints", []);
     /**
      * 标注集合
+     * @type {Array}
      */
     _defineProperty(this, "labels", []);
-    // 图绑定的属性名
+    /**
+     * 图表绑定的数据字段名
+     * @type {string|string[]}
+     */
     _defineProperty(this, "field", '');
     /**
      * Y轴的基线跟最底层的高度
+     * @type {number}
      */
     _defineProperty(this, "baseYHeight", 0);
     /**
      * Y轴基线的Y坐标
+     * @type {number}
      */
     _defineProperty(this, "baseY", 0);
     /**
      * 当前基线Y的值，不给basey就会默认采用当前Y轴最小值
+     * @type {number}
      */
     _defineProperty(this, "baseYValue", 0);
     this.option = options;
@@ -10150,6 +10265,7 @@ class jmSeries extends jmPath {
 
   /**
    * 关联访问的是chart的数据源
+   * @type {Array}
    */
   get data() {
     return this.graph.data;
@@ -10158,7 +10274,10 @@ class jmSeries extends jmPath {
     this.graph.data = d;
   }
 
-  //是否启用动画效果
+  /**
+   * 是否启用动画效果
+   * @type {boolean}
+   */
   get enableAnimate() {
     if (typeof this.option.enableAnimate !== 'undefined') return !!this.option.enableAnimate;else {
       return this.graph.enableAnimate;
@@ -10167,6 +10286,15 @@ class jmSeries extends jmPath {
   set enableAnimate(v) {
     this.option.enableAnimate = v;
   }
+  /**
+   * 初始化数据点
+   * 
+   * 根据数据生成图表的数据点，支持动画效果。
+   * 当数据量小于阈值(100)且启用动画时，会记录上一次的数据点用于动画过渡。
+   *
+   * @param {...any} args 传递给 createPoints 的参数
+   * @returns {Object} 包含 points 和 dataChanged 的对象
+   */
   initDataPoint(...args) {
     let dataChanged = false;
     if (this.enableAnimate && this.data && this.data.length < ANIMATION_DATA_THRESHOLD$7) {
@@ -10193,28 +10321,22 @@ class jmSeries extends jmPath {
   }
 
   /**
-   * 根据X轴坐标，获取它最近的数据描点
-   * 离点最近的一个描点
-   * @param {number} x  X轴坐标
+   * 根据X轴坐标获取最近的数据描点
+   * 
+   * @param {number} x X轴坐标
+   * @returns {Object|null} 最近的数据点对象
    */
   getDataPointByX(x) {
     if (!this.dataPoints) return null;
-    // 获取最近的那个
     let prePoint = undefined;
- // 跟上一个点和下一个点的距离，哪个近用哪个
     for (let i = 0; i < this.dataPoints.length; i++) {
       const p = this.dataPoints[i];
       if (p.x == x) return p;
-
-      // 上一个点
       if (p.x < x) {
         if (i === this.dataPoints.length - 1) return p;
         prePoint = p;
       }
-
-      // 下一个点
       if (p.x > x) {
-        // 没有上一个，只能返回这个了
         if (prePoint && x - prePoint.x < p.x - x) return prePoint;else return p;
       }
     }
@@ -10223,7 +10345,9 @@ class jmSeries extends jmPath {
 
   /**
    * 根据X轴值获取数据点
-   * @param {number} xValue  X轴值
+   * 
+   * @param {any} xValue X轴值
+   * @returns {Object|null} 数据点对象
    */
   getDataPointByXValue(xValue) {
     if (!this.dataPoints) return null;
@@ -10233,6 +10357,14 @@ class jmSeries extends jmPath {
     }
     return null;
   }
+
+  /**
+   * 重置图表系列
+   * 
+   * 清除所有形状，重新初始化坐标轴和图例
+   * 
+   * @returns {Object} 包含 xAxis 和 yAxis 的信息对象
+   */
   reset() {
     var shape;
     while (shape = this.shapes.shift()) {
@@ -10245,6 +10377,12 @@ class jmSeries extends jmPath {
       yAxis: this.yAxis
     };
   }
+
+  /**
+   * 初始化坐标轴的值范围
+   * 
+   * 遍历数据，计算X轴和Y轴的最大最小值
+   */
   initAxisValue() {
     if (!this.data || !this.data.length) return;
     for (var i = 0; i < this.data.length; i++) {
@@ -10270,6 +10408,15 @@ class jmSeries extends jmPath {
       }
     }
   }
+
+  /**
+   * 创建数据点
+   * 
+   * 根据数据源和坐标轴配置，计算每个数据点的屏幕坐标位置
+   * 
+   * @param {Array} data 数据源，默认使用 this.data
+   * @returns {Array} 数据点数组
+   */
   createPoints(data) {
     data = data || this.data;
     if (!data || !data.length) return [];
@@ -10323,7 +10470,12 @@ class jmSeries extends jmPath {
     return this.dataPoints;
   }
 
-  // 生成颜色
+  /**
+   * 生成颜色
+   * 
+   * @param {Object} p 数据点对象
+   * @returns {string} 颜色值
+   */
   getColor(p) {
     if (typeof this.style.color === 'function') {
       return this.style.color.call(this, p);
@@ -10334,14 +10486,12 @@ class jmSeries extends jmPath {
 
   /**
    * 生成图例
-   *
-   * @method createLegend
+   * 
+   * @returns {jmShape} 图例形状
    */
   createLegend() {
-    //生成图例前的图标
     const style = this.graph.utils.clone(this.style);
     style.fill = this.getColor();
-    //delete style.stroke;
     const shape = this.graph.createShape('rect', {
       style
     });
@@ -10349,13 +10499,18 @@ class jmSeries extends jmPath {
     return shape;
   }
 
-  // 生成柱图的标注
+  /**
+   * 生成数据项标签
+   * 
+   * 在数据点上方或指定位置显示数值标签
+   * 
+   * @param {Object} point 数据点对象
+   * @param {string} position 标签位置 (top/bottom/left/right/inside)
+   */
   createItemLabel(point, position) {
     if (!this.style.label || this.style.label.show !== true) return;
     const text = this.option.itemLabelFormat ? this.option.itemLabelFormat.call(this, point) : point.yValue;
     if (!text) return;
-
-    // v如果指定了为控件，则直接加入
     if (text instanceof jmControl) {
       this.addShape(text);
       return text;
@@ -10415,8 +10570,10 @@ class jmSeries extends jmPath {
   }
 
   /**
-   * 在图上加下定制图形
-   * @param {jmShape} shape  图形
+   * 在图表上添加形状
+   * 
+   * @param {jmShape} shape 图形对象
+   * @returns {jmShape} 添加的图形对象
    */
   addShape(shape) {
     this.graph.chartArea.children.add(shape);
@@ -10426,11 +10583,9 @@ class jmSeries extends jmPath {
 
   /**
    * 获取指定事件的集合
-   * 比如mousedown,mouseup等
-   *
-   * @method getEvent
+   * 
    * @param {string} name 事件名称
-   * @return {list} 事件委托的集合
+   * @returns {jmList} 事件委托的集合
    */
   getEvent(name) {
     const event = this.option ? this.option[name] : null;
@@ -12816,6 +12971,1065 @@ class jmWaterfallSeries extends jmSeries {
 }
 
 /**
+ * 漏斗图
+ * 
+ * 漏斗图用于展示数据在不同阶段的转化情况，常用于分析业务流程中的转化率。
+ * 每个阶段用一个梯形表示，宽度代表该阶段的数值大小。
+ * 
+ * 数据格式要求：
+ * - field: 'value' - 数值字段
+ * - xField: 'name' - 阶段名称字段
+ * 
+ * 样式配置：
+ * - align: 'center'|'left'|'right' - 对齐方式，默认 center
+ * - gap: 每层之间的间隔，默认 2
+ * - colors: 颜色数组，默认使用图表配色
+ *
+ * @class jmFunnelSeries
+ * @module jmChart
+ * @extends jmSeries
+ * 
+ * @example
+ * chart.createSeries('funnel', {
+ *   field: 'value',
+ *   xField: 'name',
+ *   style: {
+ *     align: 'center',
+ *     gap: 2
+ *   }
+ * });
+ */
+class jmFunnelSeries extends jmSeries {
+  constructor(options) {
+    options.style = options.style || options.graph.style.funnel;
+    super(options);
+  }
+
+  /**
+   * 初始化漏斗图
+   */
+  init() {
+    const data = this.data;
+    if (!data || !data.length) return;
+    const chartWidth = this.graph.chartArea.width;
+    const chartHeight = this.graph.chartArea.height;
+    const centerX = chartWidth / 2;
+    const field = this.field || 'value';
+    const xField = this.option.xField || 'name';
+    const values = data.map(item => Math.abs(item[field] || 0));
+    const maxValue = Math.max(...values);
+    if (maxValue === 0) return;
+    const align = this.style.align || 'center';
+    const gap = this.style.gap || 2;
+    const len = data.length;
+    const layerHeight = (chartHeight - gap * (len - 1)) / len;
+    let currentY = 0;
+    for (let i = 0; i < len; i++) {
+      const item = data[i];
+      const value = values[i];
+      const ratio = value / maxValue;
+      const width = chartWidth * ratio * 0.8;
+      let topLeftX, topRightX, bottomLeftX, bottomRightX;
+      const nextValue = i < len - 1 ? values[i + 1] : 0;
+      const nextRatio = nextValue / maxValue;
+      const nextWidth = chartWidth * nextRatio * 0.8;
+      switch (align) {
+        case 'left':
+          topLeftX = 0;
+          topRightX = width;
+          bottomLeftX = 0;
+          bottomRightX = nextWidth;
+          break;
+        case 'right':
+          topLeftX = chartWidth - width;
+          topRightX = chartWidth;
+          bottomLeftX = chartWidth - nextWidth;
+          bottomRightX = chartWidth;
+          break;
+        case 'center':
+        default:
+          topLeftX = centerX - width / 2;
+          topRightX = centerX + width / 2;
+          bottomLeftX = centerX - nextWidth / 2;
+          bottomRightX = centerX + nextWidth / 2;
+          break;
+      }
+      const color = this.getColor(item, i);
+      const style = {
+        fill: color,
+        stroke: this.style.stroke || '#fff',
+        lineWidth: this.style.lineWidth || 1,
+        zIndex: 1
+      };
+      const trapezoid = this.graph.createShape('path', {
+        style: style,
+        points: [{
+          x: topLeftX,
+          y: currentY
+        }, {
+          x: topRightX,
+          y: currentY
+        }, {
+          x: bottomRightX,
+          y: currentY + layerHeight
+        }, {
+          x: bottomLeftX,
+          y: currentY + layerHeight
+        }]
+      });
+      this.addShape(trapezoid);
+      if (this.style.label && this.style.label.show !== false) {
+        this.createFunnelLabel(item, topLeftX, topRightX, currentY, layerHeight, i, field, xField);
+      }
+      currentY += layerHeight + gap;
+    }
+  }
+
+  /**
+   * 创建漏斗图标签
+   */
+  createFunnelLabel(item, leftX, rightX, y, height, index, field, xField) {
+    const centerX = (leftX + rightX) / 2;
+    const text = this.option.itemLabelFormat ? this.option.itemLabelFormat.call(this, {
+      data: item,
+      xLabel: item[xField],
+      yValue: item[field]
+    }) : `${item[xField]}: ${item[field]}`;
+    if (!text) return;
+    const label = this.graph.createShape('label', {
+      style: {
+        fill: this.style.label.fill || '#fff',
+        font: this.style.label.font || '12px Arial',
+        textAlign: 'center',
+        textBaseline: 'middle',
+        zIndex: 10
+      },
+      text: text,
+      position: {
+        x: centerX,
+        y: y + height / 2
+      }
+    });
+    this.addShape(label);
+  }
+
+  /**
+   * 获取颜色
+   */
+  getColor(item, index) {
+    if (this.style.colors && this.style.colors.length > 0) {
+      return this.style.colors[index % this.style.colors.length];
+    }
+    if (typeof this.style.color === 'function') {
+      return this.style.color.call(this, item, index);
+    }
+    return this.graph.getColor(index);
+  }
+
+  /**
+   * 生成图例
+   */
+  createLegend() {
+    const style = this.graph.utils.clone(this.style);
+    style.fill = this.style.color || this.graph.getColor(0);
+    style.stroke = style.fill;
+    const shape = this.graph.createShape('path', {
+      style: style,
+      points: [{
+        x: 0,
+        y: 0
+      }, {
+        x: this.graph.style.legend.item.shape.width,
+        y: 0
+      }, {
+        x: this.graph.style.legend.item.shape.width * 0.6,
+        y: this.graph.style.legend.item.shape.height
+      }, {
+        x: this.graph.style.legend.item.shape.width * 0.4,
+        y: this.graph.style.legend.item.shape.height
+      }]
+    });
+    this.graph.legend.append(this, shape);
+  }
+}
+
+/**
+ * 环形进度图
+ * 
+ * 环形进度图用于展示单个或多个指标的完成进度或占比情况。
+ * 每个指标用一个环形表示，进度用填充的弧线表示。
+ * 
+ * 数据格式要求：
+ * - field: 'value' - 数值字段
+ * - 多个指标时使用多个数据项
+ * 
+ * 样式配置：
+ * - radius: 环形半径，默认自动计算
+ * - lineWidth: 环形线宽，默认 20
+ * - startAngle: 起始角度，默认 -90 (12点钟方向)
+ * - max: 最大值，默认 100
+ * - showLabel: 是否显示标签，默认 true
+ *
+ * @class jmRingProgressSeries
+ * @module jmChart
+ * @extends jmSeries
+ * 
+ * @example
+ * chart.createSeries('ringProgress', {
+ *   field: 'value',
+ *   style: {
+ *     lineWidth: 15,
+ *     max: 100,
+ *     showLabel: true
+ *   }
+ * });
+ */
+class jmRingProgressSeries extends jmSeries {
+  constructor(options) {
+    options.style = options.style || options.graph.style.ringProgress;
+    super(options);
+  }
+
+  /**
+   * 初始化环形进度图
+   */
+  init() {
+    const data = this.data;
+    if (!data || !data.length) return;
+    const chartWidth = this.graph.chartArea.width;
+    const chartHeight = this.graph.chartArea.height;
+    const centerX = chartWidth / 2;
+    const centerY = chartHeight / 2;
+    const maxRadius = Math.min(chartWidth, chartHeight) / 2 - 20;
+    const lineWidth = this.style.lineWidth || 20;
+    const startAngle = this.style.startAngle !== undefined ? this.style.startAngle : -90;
+    const maxValue = this.style.max || 100;
+    const field = this.field || 'value';
+    const len = data.length;
+    const ringGap = this.style.ringGap || 10;
+    const totalRingSpace = len * lineWidth + (len - 1) * ringGap;
+    const availableRadius = maxRadius - totalRingSpace / 2;
+    for (let i = 0; i < len; i++) {
+      const item = data[i];
+      const value = Math.max(0, Math.min(maxValue, item[field] || 0));
+      const ratio = value / maxValue;
+      const radius = availableRadius + (len - 1 - i) * (lineWidth + ringGap);
+      this.createRingBackground(centerX, centerY, radius, lineWidth, i);
+      this.createRingProgress(centerX, centerY, radius, lineWidth, startAngle, ratio, i);
+      if (this.style.showLabel !== false) {
+        this.createRingLabel(centerX, centerY, radius, value, maxValue, i, item);
+      }
+    }
+  }
+
+  /**
+   * 创建环形背景
+   */
+  createRingBackground(centerX, centerY, radius, lineWidth, index) {
+    const bgColor = this.style.backgroundColor || '#e0e0e0';
+    const bgArc = this.graph.createShape('arc', {
+      style: {
+        stroke: bgColor,
+        fill: 'transparent',
+        lineWidth: lineWidth,
+        zIndex: 0
+      },
+      center: {
+        x: centerX,
+        y: centerY
+      },
+      radius: radius,
+      startAngle: 0,
+      endAngle: 360
+    });
+    this.addShape(bgArc);
+  }
+
+  /**
+   * 创建环形进度
+   */
+  createRingProgress(centerX, centerY, radius, lineWidth, startAngle, ratio, index) {
+    if (ratio <= 0) return;
+    const color = this.getColor(null, index);
+    const endAngle = startAngle + ratio * 360;
+    const progressArc = this.graph.createShape('arc', {
+      style: {
+        stroke: color,
+        fill: 'transparent',
+        lineWidth: lineWidth,
+        zIndex: 1,
+        ...this.style.progressStyle
+      },
+      center: {
+        x: centerX,
+        y: centerY
+      },
+      radius: radius,
+      startAngle: startAngle,
+      endAngle: endAngle
+    });
+    this.addShape(progressArc);
+  }
+
+  /**
+   * 创建环形标签
+   */
+  createRingLabel(centerX, centerY, radius, value, maxValue, index, item) {
+    const text = this.option.itemLabelFormat ? this.option.itemLabelFormat.call(this, {
+      yValue: value,
+      index,
+      data: item
+    }) : `${Math.round(value / maxValue * 100)}%`;
+    if (!text) return;
+    const label = this.graph.createShape('label', {
+      style: {
+        fill: this.style.labelColor || '#333',
+        font: this.style.labelFont || '14px Arial',
+        textAlign: 'center',
+        textBaseline: 'middle',
+        zIndex: 10
+      },
+      text: text,
+      position: {
+        x: centerX,
+        y: centerY
+      }
+    });
+    if (index === 0) {
+      this.addShape(label);
+    }
+  }
+
+  /**
+   * 获取颜色
+   */
+  getColor(point, index) {
+    if (this.style.colors && this.style.colors.length > 0) {
+      return this.style.colors[index % this.style.colors.length];
+    }
+    if (typeof this.style.color === 'function') {
+      return this.style.color.call(this, point, index);
+    }
+    return this.graph.getColor(index);
+  }
+
+  /**
+   * 生成图例
+   */
+  createLegend() {
+    const style = this.graph.utils.clone(this.style);
+    style.fill = this.style.color || this.graph.getColor(0);
+    style.stroke = style.fill;
+    const shape = this.graph.createShape('circle', {
+      style: style,
+      center: {
+        x: this.graph.style.legend.item.shape.width / 2,
+        y: this.graph.style.legend.item.shape.height / 2
+      },
+      radius: this.graph.style.legend.item.shape.height / 2
+    });
+    this.graph.legend.append(this, shape);
+  }
+}
+
+/**
+ * 箱线图
+ * 
+ * 箱线图用于展示数据的分布情况，包括最小值、第一四分位数(Q1)、中位数(Q2)、第三四分位数(Q3)和最大值。
+ * 可以直观地显示数据的集中趋势、离散程度和异常值。
+ * 
+ * 数据格式要求：
+ * - field: ['min', 'q1', 'median', 'q3', 'max'] - 五个数值字段
+ * - xField: 'category' - 分类字段
+ * 
+ * 样式配置：
+ * - boxWidth: 箱体宽度，默认自动计算
+ * - whiskerWidth: 须线宽度，默认 1
+ * - showOutliers: 是否显示异常值，默认 false
+ *
+ * @class jmBoxPlotSeries
+ * @module jmChart
+ * @extends jmSeries
+ * 
+ * @example
+ * chart.createSeries('boxPlot', {
+ *   field: ['min', 'q1', 'median', 'q3', 'max'],
+ *   xField: 'category'
+ * });
+ */
+class jmBoxPlotSeries extends jmSeries {
+  constructor(options) {
+    options.style = options.style || options.graph.style.boxPlot;
+    super(options);
+  }
+
+  /**
+   * 初始化箱线图
+   */
+  init() {
+    const data = this.data;
+    if (!data || !data.length) return;
+    const chartWidth = this.graph.chartArea.width;
+    const chartHeight = this.graph.chartArea.height;
+    const fields = Array.isArray(this.field) ? this.field : [this.field];
+    if (fields.length < 5) {
+      console.warn('箱线图需要5个字段（min, q1, median, q3, max）');
+      return;
+    }
+    let allValues = [];
+    for (const item of data) {
+      for (const f of fields) {
+        const v = item[f];
+        if (v != null && !isNaN(v)) {
+          allValues.push(v);
+        }
+      }
+    }
+    if (allValues.length === 0) return;
+    const minValue = Math.min(...allValues);
+    const maxValue = Math.max(...allValues);
+    const valueRange = maxValue - minValue || 1;
+    const boxWidth = this.style.boxWidth || chartWidth / data.length * 0.5;
+    const whiskerWidth = this.style.whiskerWidth || 1;
+    const xField = this.option.xField || 'category';
+    const step = chartWidth / data.length;
+    for (let i = 0; i < data.length; i++) {
+      const item = data[i];
+      const min = item[fields[0]];
+      const q1 = item[fields[1]];
+      const median = item[fields[2]];
+      const q3 = item[fields[3]];
+      const max = item[fields[4]];
+      if ([min, q1, median, q3, max].some(v => v == null || isNaN(v))) {
+        continue;
+      }
+      const minYPos = chartHeight - (min - minValue) / valueRange * chartHeight;
+      const q1YPos = chartHeight - (q1 - minValue) / valueRange * chartHeight;
+      const medianYPos = chartHeight - (median - minValue) / valueRange * chartHeight;
+      const q3YPos = chartHeight - (q3 - minValue) / valueRange * chartHeight;
+      const maxYPos = chartHeight - (max - minValue) / valueRange * chartHeight;
+      const centerX = step * i + step / 2;
+      const leftX = centerX - boxWidth / 2;
+      const rightX = centerX + boxWidth / 2;
+      const color = this.getColor(item, i);
+      this.createBox(leftX, rightX, q1YPos, q3YPos, color);
+      this.createMedianLine(leftX, rightX, medianYPos, color);
+      this.createWhisker(centerX, minYPos, q1YPos, maxYPos, q3YPos, color, whiskerWidth);
+      if (this.style.label && this.style.label.show) {
+        this.createBoxLabel(item, centerX, medianYPos, xField);
+      }
+    }
+  }
+
+  /**
+   * 创建箱体
+   */
+  createBox(leftX, rightX, q1Y, q3Y, color) {
+    const box = this.graph.createShape('rect', {
+      style: {
+        fill: this.style.boxFill || 'transparent',
+        stroke: color,
+        lineWidth: this.style.lineWidth || 1,
+        zIndex: 1
+      },
+      position: {
+        x: leftX,
+        y: Math.min(q1Y, q3Y)
+      },
+      width: rightX - leftX,
+      height: Math.abs(q3Y - q1Y)
+    });
+    this.addShape(box);
+  }
+
+  /**
+   * 创建中位数线
+   */
+  createMedianLine(leftX, rightX, medianY, color) {
+    const line = this.graph.createShape('line', {
+      style: {
+        stroke: color,
+        lineWidth: (this.style.lineWidth || 1) * 2,
+        zIndex: 2
+      },
+      start: {
+        x: leftX,
+        y: medianY
+      },
+      end: {
+        x: rightX,
+        y: medianY
+      }
+    });
+    this.addShape(line);
+  }
+
+  /**
+   * 创建须线
+   */
+  createWhisker(centerX, minY, q1Y, maxY, q3Y, color, whiskerWidth) {
+    const whiskerLength = this.style.whiskerLength || 20;
+    const lowerWhisker = this.graph.createShape('line', {
+      style: {
+        stroke: color,
+        lineWidth: whiskerWidth,
+        zIndex: 0
+      },
+      start: {
+        x: centerX,
+        y: q1Y
+      },
+      end: {
+        x: centerX,
+        y: minY
+      }
+    });
+    this.addShape(lowerWhisker);
+    const lowerCap = this.graph.createShape('line', {
+      style: {
+        stroke: color,
+        lineWidth: whiskerWidth,
+        zIndex: 0
+      },
+      start: {
+        x: centerX - whiskerLength / 2,
+        y: minY
+      },
+      end: {
+        x: centerX + whiskerLength / 2,
+        y: minY
+      }
+    });
+    this.addShape(lowerCap);
+    const upperWhisker = this.graph.createShape('line', {
+      style: {
+        stroke: color,
+        lineWidth: whiskerWidth,
+        zIndex: 0
+      },
+      start: {
+        x: centerX,
+        y: q3Y
+      },
+      end: {
+        x: centerX,
+        y: maxY
+      }
+    });
+    this.addShape(upperWhisker);
+    const upperCap = this.graph.createShape('line', {
+      style: {
+        stroke: color,
+        lineWidth: whiskerWidth,
+        zIndex: 0
+      },
+      start: {
+        x: centerX - whiskerLength / 2,
+        y: maxY
+      },
+      end: {
+        x: centerX + whiskerLength / 2,
+        y: maxY
+      }
+    });
+    this.addShape(upperCap);
+  }
+
+  /**
+   * 创建箱线图标签
+   */
+  createBoxLabel(item, centerX, medianY, xField) {
+    const text = this.option.itemLabelFormat ? this.option.itemLabelFormat.call(this, {
+      data: item
+    }) : item[xField];
+    if (!text) return;
+    const label = this.graph.createShape('label', {
+      style: {
+        fill: this.style.label.fill || '#333',
+        font: this.style.label.font || '12px Arial',
+        textAlign: 'center',
+        textBaseline: 'top',
+        zIndex: 10
+      },
+      text: text,
+      position: {
+        x: centerX,
+        y: medianY + 5
+      }
+    });
+    this.addShape(label);
+  }
+
+  /**
+   * 获取颜色
+   */
+  getColor(item, index) {
+    if (typeof this.style.color === 'function') {
+      return this.style.color.call(this, item, index);
+    }
+    return this.style.color || this.graph.getColor(index);
+  }
+
+  /**
+   * 生成图例
+   */
+  createLegend() {
+    const style = this.graph.utils.clone(this.style);
+    style.fill = this.style.boxFill || 'transparent';
+    style.stroke = this.style.color || this.graph.getColor(0);
+    const shape = this.graph.createShape('rect', {
+      style: style,
+      position: {
+        x: 0,
+        y: 0
+      },
+      width: this.graph.style.legend.item.shape.width,
+      height: this.graph.style.legend.item.shape.height
+    });
+    this.graph.legend.append(this, shape);
+  }
+}
+
+/**
+ * 词云图
+ * 
+ * 词云图用于展示文本数据中词语的频率或重要性，词语大小与其权重成正比。
+ * 常用于文本分析、舆情监控等场景。
+ * 
+ * 数据格式要求：
+ * - field: 'weight' - 权重字段
+ * - xField: 'word' - 词语字段
+ * 
+ * 样式配置：
+ * - minFontSize: 最小字体大小，默认 12
+ * - maxFontSize: 最大字体大小，默认 60
+ * - colors: 颜色数组
+ * - spiral: 是否使用螺旋布局，默认 true
+ *
+ * @class jmWordCloudSeries
+ * @module jmChart
+ * @extends jmSeries
+ * 
+ * @example
+ * chart.createSeries('wordCloud', {
+ *   field: 'weight',
+ *   xField: 'word',
+ *   style: {
+ *     minFontSize: 14,
+ *     maxFontSize: 48
+ *   }
+ * });
+ */
+class jmWordCloudSeries extends jmSeries {
+  constructor(options) {
+    options.style = options.style || options.graph.style.wordCloud;
+    super(options);
+    this.placedWords = [];
+  }
+
+  /**
+   * 初始化词云图
+   */
+  init() {
+    const data = this.data;
+    if (!data || !data.length) return;
+    this.placedWords = [];
+    const chartWidth = this.graph.chartArea.width;
+    const chartHeight = this.graph.chartArea.height;
+    const centerX = chartWidth / 2;
+    const centerY = chartHeight / 2;
+    const field = this.field || 'weight';
+    const xField = this.option.xField || 'word';
+    const weights = data.map(item => Math.abs(item[field] || 0));
+    const maxWeight = Math.max(...weights);
+    const minWeight = Math.min(...weights);
+    if (maxWeight === 0) return;
+    const minFontSize = this.style.minFontSize || 12;
+    const maxFontSize = this.style.maxFontSize || 60;
+    const sortedData = [...data].sort((a, b) => (b[field] || 0) - (a[field] || 0));
+    for (let i = 0; i < sortedData.length; i++) {
+      const item = sortedData[i];
+      const weight = item[field] || 0;
+      let fontSize;
+      if (maxWeight === minWeight) {
+        fontSize = (minFontSize + maxFontSize) / 2;
+      } else {
+        fontSize = minFontSize + (weight - minWeight) / (maxWeight - minWeight) * (maxFontSize - minFontSize);
+      }
+      const color = this.getColor(item, i);
+      const text = item[xField] || '';
+      if (!text) continue;
+      const position = this.findPosition(centerX, centerY, text, fontSize, chartWidth, chartHeight);
+      if (position) {
+        this.createWordLabel(text, position.x, position.y, fontSize, color, item);
+        this.placedWords.push({
+          x: position.x,
+          y: position.y,
+          width: position.width,
+          height: position.height
+        });
+      }
+    }
+  }
+
+  /**
+   * 查找词语位置
+   */
+  findPosition(centerX, centerY, text, fontSize, chartWidth, chartHeight) {
+    const estimatedWidth = text.length * fontSize * 0.6;
+    const estimatedHeight = fontSize * 1.2;
+    if (this.style.spiral !== false) {
+      return this.findSpiralPosition(centerX, centerY, estimatedWidth, estimatedHeight, chartWidth, chartHeight);
+    } else {
+      return this.findGridPosition(centerX, centerY, estimatedWidth, estimatedHeight, chartWidth, chartHeight);
+    }
+  }
+
+  /**
+   * 螺旋布局查找位置
+   */
+  findSpiralPosition(centerX, centerY, width, height, chartWidth, chartHeight) {
+    const spiralStep = 5;
+    const maxRadius = Math.max(chartWidth, chartHeight);
+    let angle = 0;
+    let radius = 0;
+    for (let i = 0; i < 1000; i++) {
+      const x = centerX + radius * Math.cos(angle) - width / 2;
+      const y = centerY + radius * Math.sin(angle) - height / 2;
+      if (this.canPlace(x, y, width, height, chartWidth, chartHeight)) {
+        return {
+          x,
+          y,
+          width,
+          height
+        };
+      }
+      angle += 0.5;
+      radius += spiralStep * 0.02;
+      if (radius > maxRadius) break;
+    }
+    return null;
+  }
+
+  /**
+   * 网格布局查找位置
+   */
+  findGridPosition(centerX, centerY, width, height, chartWidth, chartHeight) {
+    const gridSize = 20;
+    const halfWidth = chartWidth / 2;
+    const halfHeight = chartHeight / 2;
+    for (let r = 0; r < Math.max(halfWidth, halfHeight); r += gridSize) {
+      for (let dx = -r; dx <= r; dx += gridSize) {
+        for (let dy = -r; dy <= r; dy += gridSize) {
+          if (Math.abs(dx) !== r && Math.abs(dy) !== r) continue;
+          const x = centerX + dx - width / 2;
+          const y = centerY + dy - height / 2;
+          if (this.canPlace(x, y, width, height, chartWidth, chartHeight)) {
+            return {
+              x,
+              y,
+              width,
+              height
+            };
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
+   * 检查位置是否可用
+   */
+  canPlace(x, y, width, height, chartWidth, chartHeight) {
+    if (x < 0 || y < 0 || x + width > chartWidth || y + height > chartHeight) {
+      return false;
+    }
+    for (const placed of this.placedWords) {
+      if (!(x + width < placed.x || x > placed.x + placed.width || y + height < placed.y || y > placed.y + placed.height)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * 创建词语标签
+   */
+  createWordLabel(text, x, y, fontSize, color, item) {
+    const label = this.graph.createShape('label', {
+      style: {
+        fill: color,
+        font: `${fontSize}px Arial`,
+        textAlign: 'left',
+        textBaseline: 'top',
+        zIndex: 1
+      },
+      text: text,
+      position: {
+        x,
+        y
+      },
+      data: item
+    });
+    this.addShape(label);
+  }
+
+  /**
+   * 获取颜色
+   */
+  getColor(item, index) {
+    if (this.style.colors && this.style.colors.length > 0) {
+      return this.style.colors[index % this.style.colors.length];
+    }
+    if (typeof this.style.color === 'function') {
+      return this.style.color.call(this, item, index);
+    }
+    return this.graph.getColor(index);
+  }
+
+  /**
+   * 生成图例
+   */
+  createLegend() {
+    const style = this.graph.utils.clone(this.style);
+    style.fill = this.style.color || this.graph.getColor(0);
+    style.stroke = style.fill;
+    const shape = this.graph.createShape('label', {
+      style: style,
+      text: 'Aa',
+      position: {
+        x: 0,
+        y: 0
+      }
+    });
+    this.graph.legend.append(this, shape);
+  }
+}
+
+/**
+ * 旭日图
+ * 
+ * 旭日图用于展示层级数据的占比关系，由多个同心圆环组成，每个圆环代表一个层级。
+ * 内层圆环是外层圆环的父级，扇形角度代表数据占比。
+ * 
+ * 数据格式要求：
+ * - 树形结构数据，每个节点包含 name、value 和 children
+ * 
+ * 样式配置：
+ * - innerRadius: 内圆半径，默认 0
+ * - startAngle: 起始角度，默认 0
+ * - showLabels: 是否显示标签，默认 true
+ *
+ * @class jmSunburstSeries
+ * @module jmChart
+ * @extends jmSeries
+ * 
+ * @example
+ * chart.createSeries('sunburst', {
+ *   data: [{
+ *     name: 'Root',
+ *     children: [
+ *       { name: 'A', value: 30 },
+ *       { name: 'B', value: 70 }
+ *     ]
+ *   }]
+ * });
+ */
+class jmSunburstSeries extends jmSeries {
+  constructor(options) {
+    options.style = options.style || options.graph.style.sunburst;
+    super(options);
+    this.maxDepth = 0;
+  }
+
+  /**
+   * 初始化旭日图
+   */
+  init() {
+    const data = this.option.data || this.data;
+    if (!data || !data.length) return;
+    const chartWidth = this.graph.chartArea.width;
+    const chartHeight = this.graph.chartArea.height;
+    const centerX = chartWidth / 2;
+    const centerY = chartHeight / 2;
+    const maxRadius = Math.min(chartWidth, chartHeight) / 2 - 20;
+    this.maxDepth = this.calculateMaxDepth(data);
+    if (this.maxDepth === 0) return;
+    const ringWidth = maxRadius / this.maxDepth;
+    const innerRadius = this.style.innerRadius || 0;
+    this.drawLevel(data, centerX, centerY, innerRadius, ringWidth, 0, 360, 0);
+    if (this.style.showCenter !== false && innerRadius > 0) {
+      this.drawCenter(centerX, centerY, innerRadius);
+    }
+  }
+
+  /**
+   * 计算最大深度
+   */
+  calculateMaxDepth(data, depth = 1) {
+    let maxDepth = depth;
+    for (const node of data) {
+      if (node.children && node.children.length > 0) {
+        const childDepth = this.calculateMaxDepth(node.children, depth + 1);
+        maxDepth = Math.max(maxDepth, childDepth);
+      }
+    }
+    return maxDepth;
+  }
+
+  /**
+   * 计算节点总值
+   */
+  calculateTotalValue(data) {
+    let total = 0;
+    for (const node of data) {
+      if (node.children && node.children.length > 0) {
+        total += this.calculateTotalValue(node.children);
+      } else {
+        total += node.value || 0;
+      }
+    }
+    return total;
+  }
+
+  /**
+   * 绘制层级
+   */
+  drawLevel(data, centerX, centerY, innerRadius, ringWidth, startAngle, totalAngle, level) {
+    const total = this.calculateTotalValue(data);
+    if (total === 0) return;
+    let currentAngle = startAngle;
+    const outerRadius = innerRadius + ringWidth;
+    for (const node of data) {
+      let nodeValue = 0;
+      if (node.children && node.children.length > 0) {
+        nodeValue = this.calculateTotalValue(node.children);
+      } else {
+        nodeValue = node.value || 0;
+      }
+      const angleRatio = nodeValue / total;
+      const nodeAngle = totalAngle * angleRatio;
+      const endAngle = currentAngle + nodeAngle;
+      if (nodeAngle > 0.1) {
+        const color = this.getColor(node, level);
+        this.drawArc(centerX, centerY, innerRadius, outerRadius, currentAngle, endAngle, color, node);
+        if (this.style.showLabels !== false && nodeAngle > 10) {
+          this.drawLabel(centerX, centerY, innerRadius, outerRadius, currentAngle, endAngle, node);
+        }
+        if (node.children && node.children.length > 0) {
+          this.drawLevel(node.children, centerX, centerY, outerRadius, ringWidth, currentAngle, nodeAngle, level + 1);
+        }
+      }
+      currentAngle = endAngle;
+    }
+  }
+
+  /**
+   * 绘制扇形
+   */
+  drawArc(centerX, centerY, innerRadius, outerRadius, startAngle, endAngle, color, node) {
+    const arc = this.graph.createShape('arc', {
+      style: {
+        fill: color,
+        stroke: this.style.stroke || '#fff',
+        lineWidth: this.style.lineWidth || 1,
+        zIndex: 1
+      },
+      center: {
+        x: centerX,
+        y: centerY
+      },
+      radius: outerRadius,
+      innerRadius: innerRadius,
+      startAngle: startAngle - 90,
+      endAngle: endAngle - 90
+    });
+    this.addShape(arc);
+    node.shape = arc;
+  }
+
+  /**
+   * 绘制标签
+   */
+  drawLabel(centerX, centerY, innerRadius, outerRadius, startAngle, endAngle, node) {
+    const midAngle = (startAngle + endAngle) / 2 - 90;
+    const midRadius = (innerRadius + outerRadius) / 2;
+    const x = centerX + midRadius * Math.cos(midAngle * Math.PI / 180);
+    const y = centerY + midRadius * Math.sin(midAngle * Math.PI / 180);
+    const text = node.name || '';
+    if (!text) return;
+    const label = this.graph.createShape('label', {
+      style: {
+        fill: this.style.labelColor || '#fff',
+        font: this.style.labelFont || '12px Arial',
+        textAlign: 'center',
+        textBaseline: 'middle',
+        zIndex: 10
+      },
+      text: text,
+      position: {
+        x,
+        y
+      }
+    });
+    this.addShape(label);
+  }
+
+  /**
+   * 绘制中心
+   */
+  drawCenter(centerX, centerY, innerRadius) {
+    const centerCircle = this.graph.createShape('circle', {
+      style: {
+        fill: this.style.centerFill || '#fff',
+        stroke: this.style.centerStroke || '#e0e0e0',
+        lineWidth: 1,
+        zIndex: 0
+      },
+      center: {
+        x: centerX,
+        y: centerY
+      },
+      radius: innerRadius
+    });
+    this.addShape(centerCircle);
+  }
+
+  /**
+   * 获取颜色
+   */
+  getColor(node, level) {
+    if (node.color) return node.color;
+    if (this.style.colors && this.style.colors.length > 0) {
+      return this.style.colors[level % this.style.colors.length];
+    }
+    if (typeof this.style.color === 'function') {
+      return this.style.color.call(this, node, level);
+    }
+    return this.graph.getColor(level);
+  }
+
+  /**
+   * 生成图例
+   */
+  createLegend() {
+    const style = this.graph.utils.clone(this.style);
+    style.fill = this.style.color || this.graph.getColor(0);
+    style.stroke = style.fill;
+    const shape = this.graph.createShape('circle', {
+      style: style,
+      center: {
+        x: this.graph.style.legend.item.shape.width / 2,
+        y: this.graph.style.legend.item.shape.height / 2
+      },
+      radius: this.graph.style.legend.item.shape.height / 2
+    });
+    this.graph.legend.append(this, shape);
+  }
+}
+
+/**
  * 轴
  *
  * @class jmAxis
@@ -13537,7 +14751,12 @@ class jmChart extends jmGraph {
         'heatmap': jmHeatmapSeries,
         'gauge': jmGaugeSeries,
         'area': jmAreaSeries,
-        'waterfall': jmWaterfallSeries
+        'waterfall': jmWaterfallSeries,
+        'funnel': jmFunnelSeries,
+        'ringProgress': jmRingProgressSeries,
+        'boxPlot': jmBoxPlotSeries,
+        'wordCloud': jmWordCloudSeries,
+        'sunburst': jmSunburstSeries
       };
     }
 

@@ -21,6 +21,11 @@ import jmHeatmapSeries from './series/heatmapSeries.js';
 import jmGaugeSeries from './series/gaugeSeries.js';
 import jmAreaSeries from './series/areaSeries.js';
 import jmWaterfallSeries from './series/waterfallSeries.js';
+import jmFunnelSeries from './series/funnelSeries.js';
+import jmRingProgressSeries from './series/ringProgressSeries.js';
+import jmBoxPlotSeries from './series/boxPlotSeries.js';
+import jmWordCloudSeries from './series/wordCloudSeries.js';
+import jmSunburstSeries from './series/sunburstSeries.js';
 import jmMarkLineManager from './core/markLine/manager';
 
 const ANIMATION_DATA_THRESHOLD = 100;
@@ -443,7 +448,12 @@ export default class jmChart extends jmGraph  {
 				'heatmap': jmHeatmapSeries,
 				'gauge': jmGaugeSeries,
 				'area': jmAreaSeries,
-				'waterfall': jmWaterfallSeries
+				'waterfall': jmWaterfallSeries,
+				'funnel': jmFunnelSeries,
+				'ringProgress': jmRingProgressSeries,
+				'boxPlot': jmBoxPlotSeries,
+				'wordCloud': jmWordCloudSeries,
+				'sunburst': jmSunburstSeries
 			};		
 		}
 
