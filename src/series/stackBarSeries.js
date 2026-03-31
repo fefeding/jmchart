@@ -60,18 +60,20 @@ export default class jmStackBarSeries extends jmBarSeries {
 			let topStartY = this.baseY;
 			let bottomStartY = this.baseY;
 			for(let index=0; index < point.points.length; index ++) {
-				const style = this.graph.utils.clone(this.style);
 				const p = point.points[index];
 
-				if(style.color && typeof style.color === 'function') {
-					style.fill = style.color.call(this, {
+				let fillColor;
+				if(this.style.color && typeof this.style.color === 'function') {
+					fillColor = this.style.color.call(this, {
 						index,
 						point: p
 					});
 				}
 				else {
-					style.fill = this.graph.getColor(index);
+					fillColor = this.graph.getColor(index);
 				}
+				// 使用浅拷贝而非深拷贝
+				const style = Object.assign({}, this.style, { fill: fillColor });
 				const sp = this.addShape(this.graph.createPath(null, style));				
 				
 				let startY = topStartY;

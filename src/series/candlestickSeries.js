@@ -62,8 +62,6 @@ export default class jmCandlestickSeries extends jmSeries {
 				continue;
 			}
 
-			const sp = this.addShape(this.graph.createPath([], p.style));
-
 			const bl = {
 				x: p.x - w,
 				y: p.points[0].y
@@ -84,10 +82,12 @@ export default class jmCandlestickSeries extends jmSeries {
 			let tm = p.points[1];
 			let bm = p.points[0];
 			
-			p.style.stroke = p.style.fill = p.style.masculineColor || 'red';
+			// 使用浅拷贝避免污染共享引用
+			const style = Object.assign({}, p.style);
+			style.stroke = style.fill = style.masculineColor || 'red';
 
 			if(p.points[0].yValue > p.points[1].yValue) {
-				p.style.stroke = p.style.fill = p.style.negativeColor || 'green';
+				style.stroke = style.fill = style.negativeColor || 'green';
 				bl.y = br.y = p.points[1].y;
 				tl.y = tr.y = p.points[0].y;
 
@@ -95,6 +95,7 @@ export default class jmCandlestickSeries extends jmSeries {
 				bm = p.points[1];
 			}			
 
+			const sp = this.addShape(this.graph.createPath([], style));
 			sp.points.push(p.points[2], tm, tl, bl, bm, p.points[3], bm, br, tr, tm, p.points[2]);
 
 			this.emit('onPointCreated', p);

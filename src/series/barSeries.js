@@ -1,7 +1,4 @@
-import jmSeries from './series.js';
-
-const ANIMATION_DATA_THRESHOLD = 100;
-const DEFAULT_ANIMATION_COUNT = 10;
+import jmSeries, { ANIMATION_DATA_THRESHOLD, DEFAULT_ANIMATION_COUNT } from './series.js';
 
 /**
  * 柱图
@@ -43,8 +40,8 @@ export default class jmBarSeries extends jmSeries {
 				continue;
 			}
 			
-			point.style.fill = this.getColor(point);
-			const sp = this.addShape(this.graph.createPath(null, point.style));
+			const style = Object.assign({}, point.style, { fill: this.getColor(point) });
+			const sp = this.addShape(this.graph.createPath(null, style));
 			
 			const p1 = {x: point.x - this.barTotalWidth / 2 + this.barWidth * this.barIndex, y: this.baseY };			
 			const p4 = {x: p1.x + this.barWidth, y: p1.y };

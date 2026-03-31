@@ -142,29 +142,28 @@ export default class jmChart extends jmGraph  {
 
 		// 绑定点击事件
 		this.on('click', (args) => {
-			if(this.option.onClick) {
-				// 找到点击位置的数据点
-				let closestPoint = null;
-				let minDistance = Infinity;
+			if(!this.option.onClick) return;
+			// 找到点击位置的数据点
+			let closestPoint = null;
+			let minDistance = 20; // 20px 范围，同时作为阈值，无需再比较小于阈值
 
-				this.series.each((i, serie) => {
-					if(serie.dataPoints) {
-						serie.dataPoints.forEach(point => {
-							const distance = Math.sqrt(
-								Math.pow(args.position.x - point.x, 2) + 
-								Math.pow(args.position.y - point.y, 2)
-							);
-							if(distance < minDistance && distance < 20) { // 20px 范围内的点
-								minDistance = distance;
-								closestPoint = point;
-							}
-						});
+			this.series.each((i, serie) => {
+				if(!serie.dataPoints) return;
+				const points = serie.dataPoints;
+				for(let j = 0, len = points.length; j < len; j++) {
+					const point = points[j];
+					const dx = args.position.x - point.x;
+					const dy = args.position.y - point.y;
+					const distance = dx * dx + dy * dy; // 避免开方，直接比较平方
+					if(distance < minDistance * minDistance) {
+						minDistance = distance;
+						closestPoint = point;
 					}
-				});
-
-				if(closestPoint) {
-					this.option.onClick(closestPoint);
 				}
+			});
+
+			if(closestPoint) {
+				this.option.onClick(closestPoint);
 			}
 		});
 	}
@@ -238,8 +237,9 @@ export default class jmChart extends jmGraph  {
 			delete this.xAxis;
 		}
 		if(this.yAxises) {
-			for(let i in this.yAxises) {
-				this.yAxises[i].remove();
+			const keys = Object.keys(this.yAxises);
+			for(let k = 0; k < keys.length; k++) {
+				this.yAxises[keys[k]].remove();
 			}
 			delete this.yAxises;
 		}
@@ -251,20 +251,9 @@ export default class jmChart extends jmGraph  {
 	 * @param {int} index 颜色索引
 	 */
 	getColor(index) {
-		const cacheKey = `color_${index}`;
-		if(this._cache.has(cacheKey)) {
-			return this._cache.get(cacheKey);
-		}
-		
-		let color;
-		if(index >= this.style.chartColors.length) {
-			color = this.style.chartColors[index % this.style.chartColors.length];
-		} else {
-			color = this.style.chartColors[index];
-		}
-		
-		this._cache.set(cacheKey, color);
-		return color;
+		const colors = this.style.chartColors;
+		const colorIndex = index % colors.length;
+		return colors[colorIndex];
 	}
 
 	/**
@@ -285,28 +274,29 @@ export default class jmChart extends jmGraph  {
 		}
 
 		if(this.yAxises) {
-			for(let i in this.yAxises) {
-				this.yAxises[i].clear();
+			const keys = Object.keys(this.yAxises);
+			for(let k = 0; k < keys.length; k++) {
+				this.yAxises[keys[k]].clear();
 			}
 		}
 
 		this.barSeriesCount = 0;
+		// 合并两次 series 遍历为一次，减少遍历开销
+		const seriesInited = [];
 		this.series.each((i, serie) => {
 			if(!serie.style.color) {
 				serie.style.color = serie.graph.getColor(i);
 			}
 			
-			if(serie.graph.style.layout != 'inside') {
-				if(serie instanceof jmBarSeries) {			
+			if(serie instanceof jmBarSeries) {
+				if(serie.graph.style.layout != 'inside') {
 					serie.graph.style.layout = 'inside';
 				}
-			}
-			
-			if(serie instanceof jmBarSeries) {
 				serie.barIndex = serie.graph.barSeriesCount;
 				serie.graph.barSeriesCount++;
 			}
 			serie.reset();
+			seriesInited.push(serie);
 		});	
 
 		if(this.legend) {
@@ -314,8 +304,9 @@ export default class jmChart extends jmGraph  {
 		}
 
 		if(this.yAxises) {
-			for(let i in this.yAxises) {
-				this.yAxises[i].reset();
+			const keys = Object.keys(this.yAxises);
+			for(let k = 0; k < keys.length; k++) {
+				this.yAxises[keys[k]].reset();
 			}
 		}
 		
@@ -323,9 +314,9 @@ export default class jmChart extends jmGraph  {
 			this.xAxis.reset();
 		}
 
-		this.series.each((i, serie) => {		
-			serie.init && serie.init();
-		});	
+		for(let i = 0; i < seriesInited.length; i++) {
+			seriesInited[i].init && seriesInited[i].init();
+		}
 	}
 
 	/**

@@ -29,7 +29,7 @@ export default class jmPieSeries extends jmSeries {
 		this.totalValue = 0;
 		//计算最大值和最小值
 		if(this.data) {		
-			for(const i in this.data) {
+			for(let i = 0; i < this.data.length; i++) {
 				const s = this.data[i];							
 				const vy = s[this.field];	
 				if(vy) {
@@ -138,16 +138,18 @@ export default class jmPieSeries extends jmSeries {
 					yValue: yv,
 					yLabel: yv,
 					step: Math.abs(yv / this.totalValue),// 每个数值点比
-					style: this.graph.utils.clone(this.style),
+					style: this.style, // 共享引用，仅在需要修改时才拷贝
 					anticlockwise
 				};
 				points.push(p);
 				//p.style.color = this.graph.getColor(index);
 				if(p.style.color && typeof p.style.color === 'function') {
+					p.style = this.graph.utils.clone(this.style);
 					p.style.fill = p.style.color.call(this, p);
 				}
 				else {
-					p.style.fill = this.graph.getColor(index);
+					// fill 需要独立，创建轻量样式覆盖
+					p.style = Object.assign({}, this.style, { fill: this.graph.getColor(index) });
 				}
 
 				const start = startAni;// 上一个扇形的结束角度为当前的起始角度

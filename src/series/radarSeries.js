@@ -33,11 +33,12 @@ export default class jmRadarSeries extends jmSeries {
         const rotateStep = Math.PI * 2 / yCount;
 
         // 清空除了一个默认外的所有Y轴
-        for(let index in this.graph.yAxises) {
-            const axis = this.graph.yAxises[index];
+        const yAxisKeys = Object.keys(this.graph.yAxises || {});
+        for(let k = 0; k < yAxisKeys.length; k++) {
+            const axis = this.graph.yAxises[yAxisKeys[k]];
             if(!axis || axis === this.yAxis) continue;
             axis.remove();
-            delete this.graph.yAxises[index];
+            delete this.graph.yAxises[yAxisKeys[k]];
         }
 
         for(let index=0; index < yCount; index++) {
@@ -195,23 +196,29 @@ export default class jmRadarSeries extends jmSeries {
 
 		for(var i=0;i< this.data.length;i++) {
 			const s = this.data[i];
-            const style = this.graph.utils.clone(this.style);
-			if(style.color && typeof style.color === 'function') {
-                style.stroke = style.color.call(this, {
+            let strokeColor;
+			if(this.style.color && typeof this.style.color === 'function') {
+                strokeColor = this.style.color.call(this, {
                     data: s,
                     index: i
                 });
             }
             else {
-                style.stroke = this.graph.getColor(i);
+                strokeColor = this.graph.getColor(i);
             }
-            if(typeof style.fill === 'function') {
-                style.fill = style.fill.call(this, style);
+            let fillColor;
+            if(typeof this.style.fill === 'function') {
+                fillColor = this.style.fill.call(this, { ...this.style, stroke: strokeColor });
             }
             else {
-                const color = this.graph.utils.hexToRGBA(style.stroke);
-                style.fill = `rgba(${color.r},${color.g},${color.b}, 0.2)`;
+                const color = this.graph.utils.hexToRGBA(strokeColor);
+                fillColor = `rgba(${color.r},${color.g},${color.b}, 0.2)`;
             }
+            // 使用浅拷贝而非深拷贝
+            const style = Object.assign({}, this.style, {
+                stroke: strokeColor,
+                fill: fillColor
+            });
 
             const shapePoints = [];
             for(const axis of this.axises) {

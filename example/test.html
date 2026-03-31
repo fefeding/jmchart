@@ -7,22 +7,47 @@
 
 		<style>
 		html,body {
-			margin:0;
-			padding:10px;
-			width:100%;
-			height:100%;
+			margin: 0;
+			padding: 0;
+			width: 100%;
+			height: 100%;
+			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+			background-color: #f0f2f5;
 		}
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 22px;
+            color: #fff;
+        }
+        .header .subtitle {
+            margin: 6px 0 0;
+            font-size: 13px;
+            color: rgba(255,255,255,0.8);
+        }
+        .container {
+            max-width: 1100px;
+            margin: 20px auto;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            padding: 24px;
+            overflow: hidden;
+        }
 		#mycanvas canvas, #mycanvas div{
 			background-color:#fff;
 			margin:0 auto;		
 		}
-		/*div.jm-tooltip {
-			background-color: rgba(255,255,255,0.8);
-			padding:4px;
-			border:1px solid #000;
-			box-shadow: 0 0 3px #000;
-			border-radius: 6px;
-		}*/
+		@media (max-width: 768px) {
+			.container {
+				padding: 15px;
+				margin: 10px;
+			}
+		}
 		</style>
 		<script type="module">
 			//window.devicePixelRatio = 1;
@@ -88,7 +113,13 @@
 		</script>
 	</head>
 	<body>
-		<div id="mycanvas">
+		<div class="header">
+			<h1>折线图（真实数据）</h1>
+			<p class="subtitle">基金净值走势示例 - 使用真实基金数据</p>
+		</div>
+		<div class="container">
+			<div id="mycanvas">
 			</div>	
+		</div>
 	</body>
 </html>

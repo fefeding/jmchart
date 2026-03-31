@@ -662,13 +662,16 @@ export default class jmAxis extends jmArrowLine {
 	clear() {
 		this._min = null;
 		this._max = null;
+		this._width = null; // 清除宽度缓存
 		this.children.each((i, c) => {
 			c.remove();
 		}, true);
 		// 清空栅格线
-		this.gridLines && this.gridLines.forEach((line)=>{
-			line.remove();
-		});
+		if(this.gridLines && this.gridLines.length) {
+			for(let i = 0; i < this.gridLines.length; i++) {
+				this.gridLines[i].remove();
+			}
+		}
 		this.labels && this.labels.forEach((label)=>{
 			label.remove();
 		});

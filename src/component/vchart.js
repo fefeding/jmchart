@@ -36,7 +36,7 @@ export default {
     },
 
     updated() {
-        this.initChart();
+        this.refresh();
     },
 
     destroyed() {
@@ -44,8 +44,29 @@ export default {
     },
 
     watch: {
-        chartData: function(newData, oldData) {
-            this.refresh();
+        chartData: {
+            handler: function(newData, oldData) {
+                this.refresh();
+            },
+            deep: false // 仅监听引用变化，由使用者显式替换数组时触发
+        },
+        chartOptions: {
+            handler: function(newOptions, oldOptions) {
+                // 配置变化时需要重建图表
+                if(this.chartInstance) {
+                    this.chartInstance.destroy();
+                    this.chartInstance = null;
+                }
+                this.option = Object.assign({
+                    enableAnimate: false,
+                    legendPosition: 'top',
+                    legendVisible: true,
+                    width: this.width,
+                    height: this.height        
+                }, newOptions);
+                this.$nextTick(() => this.initChart());
+            },
+            deep: false
         },
         width: function(newWidth, oldWidth) {
             if(!this.chartInstance) return;            

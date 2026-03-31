@@ -1,7 +1,9 @@
 import { jmPath, jmList, jmControl } from 'jmgraph';
 import utils from '../common/utils.js';
 
-const ANIMATION_DATA_THRESHOLD = 100;
+// 公共常量提取到基类，避免每个子类重复定义
+export const ANIMATION_DATA_THRESHOLD = 100;
+export const DEFAULT_ANIMATION_COUNT = 10;
 
 /**
  * 图表系列基类
@@ -137,14 +139,21 @@ export default class jmSeries extends jmPath {
 		let dataChanged = false;
 		
 		if(this.enableAnimate && this.data && this.data.length < ANIMATION_DATA_THRESHOLD) {
-			this.lastPoints = this.graph.utils.clone(this.dataPoints, null, true, (obj) => {
-				if(obj instanceof jmControl) return obj;
-			});
+			// 仅在数据引用变化时才做深度比较
+			if(this._lastData !== this.data) {
+				this.lastPoints = this.graph.utils.clone(this.dataPoints, null, true, (obj) => {
+					if(obj instanceof jmControl) return obj;
+				});
 
-			this.dataPoints = this.createPoints(...args);
-			dataChanged = utils.arrayIsChange(this.lastPoints, this.dataPoints, (s, t) => {
-				return s.x === t.x && s.y === t.y;
-			});
+				this.dataPoints = this.createPoints(...args);
+				dataChanged = utils.arrayIsChange(this.lastPoints, this.dataPoints, (s, t) => {
+					return s.x === t.x && s.y === t.y;
+				});
+				this._lastData = this.data;
+			}
+			else {
+				this.dataPoints = this.createPoints(...args);
+			}
 
 			if(dataChanged) {
 				this.___animateCounter = 0;
@@ -294,7 +303,7 @@ export default class jmSeries extends jmPath {
 				xValue: xv,
 				xLabel: xv,
 				points: [],
-				style: this.graph.utils.clone(this.style),
+				style: this.style, // 共享引用，避免深拷贝；子类如需修改应自行创建副本
 			};
 			
 			p.x = xstep * i + this.xAxis.labelStart;			

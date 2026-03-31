@@ -4,7 +4,7 @@
 	<head>
 		<meta content="text/html; charset=UTF-8" http-equiv="content-type" />
         <meta name="viewport" content="width=device-width,initial-scale=1">
-		<!--<script type="text/javascript" src="../src/jmchart.debug.js" id="jmgraph" ></script>-->
+        <!--<script type="text/javascript" src="../src/jmchart.debug.js" id="jmgraph" ></script>-->
         <script src="js/vconsole.js"></script>
         
 		<style>
@@ -13,6 +13,59 @@
 			padding:0;
 			width:100%;
 			height:100%;
+			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+			background-color: #f0f2f5;
+		}
+		.header {
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			padding: 20px;
+			color: #fff;
+		}
+		.header h1 {
+			margin: 0;
+			font-size: 22px;
+			font-weight: 600;
+		}
+		.header .subtitle {
+			margin: 4px 0 0;
+			font-size: 13px;
+			color: rgba(255,255,255,0.8);
+		}
+		.container {
+			max-width: 1100px;
+			margin: 20px auto;
+			border-radius: 12px;
+			box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+			padding: 24px;
+			overflow: hidden;
+			background: #fff;
+		}
+		#mycanvas1, #mycanvas2 {
+			background: #fff;
+		}
+		.log-area {
+			background: #f7f8fa;
+			border-radius: 8px;
+			padding: 12px 16px;
+			margin: 16px 0;
+			font-size: 13px;
+			color: #333;
+			word-wrap: break-word;
+		}
+		.log-area + .log-area {
+			margin-top: 8px;
+		}
+		.footer {
+			text-align: center;
+			color: #999;
+			font-size: 12px;
+			padding: 16px;
+		}
+		@media (max-width: 768px) {
+			.container {
+				padding: 15px;
+				margin: 10px;
+			}
 		}
 		</style>
 		<script type="module">
@@ -275,20 +328,22 @@
 		</script>
 	</head>
 	<body>
-		<div id="mycanvas1">
-			</div>	
-        <hr />
-        <div id="mydatalog" style="word-wrap:break-word">
-			</div>		
-        <hr />
-        <div id="mylog" style="word-wrap:break-word">
-			</div>	
-        <div id="mycanvas2">
+		<div class="header">
+			<h1>K线图（首页）</h1>
+			<p class="subtitle">K线图首页示例 - 支持滑动浏览和双指缩放</p>
+		</div>
+		<div class="container">
+			<div id="mycanvas1">
+			</div>
+			<div id="mydatalog" class="log-area">
+			</div>
+			<div id="mylog" class="log-area">
+			</div>
+			<div id="mycanvas2">
             </div>
-        <div>
-            <center>
-                粤ICP备18032333号-1
-            </center>
-        </div>	
+		</div>
+		<div class="footer">
+            粤ICP备18032333号-1
+        </div>
 	</body>
 </html>

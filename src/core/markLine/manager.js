@@ -64,12 +64,11 @@ export default class jmMarkLineManager {
 				if(chart.style.markLine.longtap) {
 					longtap = 1;
 					longtapHandler &&  graph.utils.cancelAnimationFrame(longtapHandler);
-					let tapStartTime = Date.now();
+					const tapStartTime = Date.now();
 					const reqFun = ()=>{
-						const elapsed = Date.now() - tapStartTime;
 						if(longtap === 1 || longtap === 2) {
 							// 如果还未过一定时间，则继续等待
-							if(elapsed < 500) {
+							if(Date.now() - tapStartTime < 500) {
 								longtapHandler = graph.utils.requestAnimationFrame(reqFun);
 								return;
 							}
@@ -80,9 +79,6 @@ export default class jmMarkLineManager {
 					};
 					// 如果一定时间后还没有取消，则表示长按了
 					longtapHandler = graph.utils.requestAnimationFrame(reqFun);
-
-					//args.event.stopPropagation();
-					//args.event.preventDefault();// 阻止默认行为	
 				}
 				else {
 					this.startMove(args);

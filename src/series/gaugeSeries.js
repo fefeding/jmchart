@@ -1,7 +1,4 @@
-import jmSeries from './series.js';
-
-const ANIMATION_DATA_THRESHOLD = 100;
-const DEFAULT_ANIMATION_COUNT = 10;
+import jmSeries, { ANIMATION_DATA_THRESHOLD, DEFAULT_ANIMATION_COUNT } from './series.js';
 
 /**
  * 仪表盘
