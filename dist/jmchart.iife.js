@@ -280,66 +280,75 @@ var jmChart = (function (exports) {
        * @param {function} copyHandler 复制对象回调，如果返回undefined，就走后面的逻辑，否则到这里中止
        * @return {object} 参数source的拷贝对象
        */
-      static clone(source, target, deep = false, copyHandler = null, deepIndex = 0) {
+      static clone(source, target, deep = false, copyHandler = null, deepIndex = 0, cloned = null) {
           // 如果有指定回调，则用回调处理，否则走后面的复制逻辑
           if(typeof copyHandler === 'function') {
               const obj = copyHandler(source, deep, deepIndex);
               if(obj) return obj;
           }
-          deepIndex++; // 每执行一次，需要判断最大拷贝深度        
+
+          // 首次调用时初始化克隆映射表（用于处理循环引用）
+          if(!cloned) cloned = new WeakMap();
 
           if(typeof target === 'boolean') {
               deep = target;
               target = undefined;
           }
 
-          // 超过100拷贝深度，直接返回
-          if(deepIndex > 100) {
-              return target;
+          // 非对象直接返回
+          if(!source || typeof source !== 'object') {
+              return typeof target !== 'undefined' ? target : source;
           }
 
-          if(source && typeof source === 'object') {
-              target = target || {};
+          // 如果source已经被克隆过，直接返回之前的克隆对象，打破循环引用
+          if(cloned.has(source)) return cloned.get(source);
 
+          // 数组处理
+          if(Array.isArray(source)) {
               //如果为当前泛型，则直接new
               if(this.isType(source, jmList)) {
                   return new jmList(source);
               }
-              else if(Array.isArray(source)) {
-                  //如果是深度复，则拷贝每个对象
-                  if(deep) {
-                      let dest = [];
-                      for(let i=0; i<source.length; i++) {
-                          dest.push(this.clone(source[i], target[i], deep, copyHandler, deepIndex));
-                      }
-                      return dest;
+              if(deep) {
+                  let dest = [];
+                  cloned.set(source, dest);
+                  for(let i = 0; i < source.length; i++) {
+                      dest.push(this.clone(source[i], undefined, deep, copyHandler, deepIndex + 1, cloned));
                   }
-                  return source.slice(0);
+                  return dest;
               }
-             
-              if(source.__proto__) target.__proto__ = source.__proto__;
-              
-              for(let k in source) {
-                  if(k === 'constructor') continue;
-                  const v = source[k];
-                  // 不复制页面元素和class对象
-                  if(v && (v.tagName || v.getContext)) {
-                      target[k] = v;
-                      continue;
-                  }
-
-                  // 如果不是对象和空，则采用target的属性
-                  if(typeof target[k] === 'object' || typeof target[k] === 'undefined') {                    
-                      target[k] = this.clone(v, target[k], deep, copyHandler, deepIndex);
-                  }
-              }
-              return target;
-          }
-          else if(typeof target != 'undefined') {
-              return target;
+              return source.slice(0);
           }
 
-          return source;
+          // 不复制页面元素和class对象（如jmControl实例等复杂对象保持引用）
+          if(source.tagName || source.getContext || source.emit) {
+              return source;
+          }
+
+          // 普通对象处理
+          target = target || {};
+          cloned.set(source, target);
+
+          // 保持原型链一致
+          if(source.__proto__) target.__proto__ = source.__proto__;
+          
+          // 遍历自身可枚举属性（字符串键 + Symbol键），避免触发原型链上宿主对象的getter
+          const keys = Object.keys(source).concat(Object.getOwnPropertySymbols(source));
+          for(const k of keys) {
+              if(k === 'constructor') continue;
+              const v = source[k];
+              // 不复制页面元素和class对象
+              if(v && (v.tagName || v.getContext || v.emit)) {
+                  target[k] = v;
+                  continue;
+              }
+
+              // 如果不是对象和空，则采用target的属性
+              if(typeof target[k] === 'object' || typeof target[k] === 'undefined') {                    
+                  target[k] = this.clone(v, target[k], deep, copyHandler, deepIndex + 1, cloned);
+              }
+          }
+          return target;
       }
 
       /**
@@ -1307,6 +1316,153 @@ var jmChart = (function (exports) {
   	}
   }
 
+  /**
+   * CSS滤镜效果类
+   * 支持的滤镜: blur, grayscale, sepia, brightness, contrast, saturate, hue-rotate, invert, opacity
+   *
+   * @class jmFilter
+   * @param {string|object} opt 滤镜参数
+   *   字符串格式: "blur(2px) grayscale(50%) brightness(1.2)"
+   *   对象格式: { blur: 2, grayscale: 0.5, brightness: 1.2 }
+   */
+  class jmFilter {
+  	constructor(opt) {
+  		this.filters = [];
+
+  		if(typeof opt === 'string') {
+  			this.fromString(opt);
+  		}
+  		else if(opt && typeof opt === 'object') {
+  			for(let k in opt) {
+  				if(k === 'constructor' || k === 'filters') continue;
+  				this.addFilter(k, opt[k]);
+  			}
+  		}
+  	}
+
+  	/**
+  	 * 添加单个滤镜
+  	 * @param {string} name 滤镜名称 (blur, grayscale, sepia, brightness, contrast, saturate, hue-rotate, invert, opacity)
+  	 * @param {number|string} value 滤镜值
+  	 */
+  	addFilter(name, value) {
+  		name = name.toLowerCase().trim();
+  		if(typeof value === 'string') {
+  			value = parseFloat(value);
+  		}
+  		if(isNaN(value)) return;
+
+  		// 规范化滤镜名称
+  		const normalized = {
+  			'blur': 'blur',
+  			'grayscale': 'grayscale',
+  			'greyscale': 'grayscale',
+  			'sepia': 'sepia',
+  			'brightness': 'brightness',
+  			'contrast': 'contrast',
+  			'saturate': 'saturate',
+  			'hue-rotate': 'hueRotate',
+  			'hueRotate': 'hueRotate',
+  			'invert': 'invert',
+  			'opacity': 'opacity'
+  		}[name];
+
+  		if(!normalized) return;
+
+  		// 检查是否已有同名滤镜，有则更新
+  		const existing = this.filters.find(f => f.name === normalized);
+  		if(existing) {
+  			existing.value = value;
+  		}
+  		else {
+  			this.filters.push({ name: normalized, value: value });
+  		}
+  	}
+
+  	/**
+  	 * 从字符串格式解析滤镜
+  	 * 格式: "blur(2px) grayscale(50%) brightness(1.2)"
+  	 * @param {string} s 滤镜字符串
+  	 */
+  	fromString(s) {
+  		if(!s || typeof s !== 'string') return;
+  		// 匹配 filterName(value) 模式
+  		const regex = /([a-zA-Z-]+)\s*\(\s*([^)]+)\s*\)/g;
+  		let match;
+  		while((match = regex.exec(s)) !== null) {
+  			const name = match[1];
+  			const valueStr = match[2].replace(/[a-z%]+$/i, '').trim();
+  			const value = parseFloat(valueStr);
+  			if(!isNaN(value)) {
+  				this.addFilter(name, value);
+  			}
+  		}
+  	}
+
+  	/**
+  	 * 转换为CSS filter字符串格式
+  	 * @returns {string}
+  	 */
+  	toString() {
+  		return this.filters.map(f => {
+  			switch(f.name) {
+  				case 'blur':
+  					return `blur(${f.value}px)`;
+  				case 'hueRotate':
+  					return `hue-rotate(${f.value}deg)`;
+  				default:
+  					return `${f.name}(${f.value})`;
+  			}
+  		}).join(' ');
+  	}
+
+  	/**
+  	 * 转换为Canvas context.filter可用的字符串
+  	 * @returns {string}
+  	 */
+  	toCanvasFilter() {
+  		if(this.filters.length === 0) return 'none';
+  		return this.toString();
+  	}
+
+  	/**
+  	 * 检查是否有指定名称的滤镜
+  	 * @param {string} name 滤镜名称
+  	 * @returns {boolean}
+  	 */
+  	has(name) {
+  		return this.filters.some(f => f.name === name);
+  	}
+
+  	/**
+  	 * 获取指定滤镜的值
+  	 * @param {string} name 滤镜名称
+  	 * @returns {number|undefined}
+  	 */
+  	get(name) {
+  		const f = this.filters.find(f => f.name === name);
+  		return f ? f.value : undefined;
+  	}
+
+  	/**
+  	 * 移除指定滤镜
+  	 * @param {string} name 滤镜名称
+  	 */
+  	remove(name) {
+  		const index = this.filters.findIndex(f => f.name === name);
+  		if(index > -1) {
+  			this.filters.splice(index, 1);
+  		}
+  	}
+
+  	/**
+  	 * 清空所有滤镜
+  	 */
+  	clear() {
+  		this.filters = [];
+  	}
+  }
+
   let control_id_counter = 0;
 
   class jmObject {
@@ -2182,8 +2338,14 @@ var jmChart = (function (exports) {
 
       // 转为渐变为纹理
       toImageData(control, bounds, points=null) {
-          //const key = this.key || this.toString();
-          //if(WebglGradientTextureCache[key]) return WebglGradientTextureCache[key];
+          // 缓存基于渐变参数（不含 bounds，因为同一个渐变只是位置不同时纹理相同）
+          const gradientKey = this.toString();
+          if(this.__cachedData && this.__cacheKey === gradientKey && 
+             this.__cachedData.data && this.__cachedData.data.width === Math.ceil(bounds.width) &&
+             this.__cachedData.data.data && this.__cachedData.data.data.height === Math.ceil(bounds.height)) {
+              return this.__cachedData;
+          }
+
           if(!control.textureContext) {
               return null;
           }
@@ -2201,9 +2363,16 @@ var jmChart = (function (exports) {
           
           const data = control.toFillTexture(gradient, bounds, points);
 
-          //WebglGradientTextureCache[key] = data;
+          this.__cachedData = data;
+          this.__cacheKey = gradientKey;
 
           return data;
+      }
+
+      // 当渐变参数变化时使缓存失效
+      invalidateCache() {
+          this.__cachedData = null;
+          this.__cacheKey = null;
       }
 
       // 根据绘制图形的坐标计算出对应点的颜色
@@ -2826,7 +2995,6 @@ var jmChart = (function (exports) {
 
       // 创建程序
       createProgram(vertexSrc, fragmentSrc) {        
-          this.context.lineWidth(1);
           return createProgram(this.context, vertexSrc, fragmentSrc);
       }
 
@@ -2939,7 +3107,9 @@ var jmChart = (function (exports) {
       // polygonIndices 顶点索引，
       earCutPointsToTriangles(points) {
           this.earCutCache = this.earCutCache || (this.earCutCache = {});
-          const key = JSON.stringify(points);
+          // 快速缓存 key：用长度和首尾点坐标
+          const len = points.length;
+          const key = len + '_' + points[0].x + '_' + points[0].y + '_' + points[len-1].x + '_' + points[len-1].y;
           if (this.earCutCache[key]) return this.earCutCache[key];
 
           const ps = this.earCutPoints(points);// 切割得到3角色顶点索引，
@@ -3034,31 +3204,11 @@ var jmChart = (function (exports) {
 
           this.textureContext.fillStyle = fillStyle;
 
-          this.textureContext.beginPath();
+          // 规则图形用 fillRect，比 beginPath/lineTo/fill 快
           if(!points || !points.length) {
-              points = [];
-              points.push({
-                  x: bounds.left,
-                  y: bounds.top
-              });
-              points.push({
-                  x: bounds.left + bounds.width,
-                  y: bounds.top
-              });
-              points.push({
-                  x: bounds.left + bounds.width,
-                  y: bounds.top + bounds.height
-              });
-              points.push({
-                  x: bounds.left,
-                  y: bounds.top + bounds.height
-              });
-              points.push({
-                  x: bounds.left,
-                  y: bounds.top
-              });
-          }
-          if(points && points.length) {
+              this.textureContext.fillRect(0, 0, bounds.width, bounds.height);
+          } else {
+              this.textureContext.beginPath();
               for(const p of points) {
                   //移至当前坐标
                   if(p.m) {
@@ -3067,17 +3217,10 @@ var jmChart = (function (exports) {
                   else {
                       this.textureContext.lineTo(p.x - bounds.left, p.y - bounds.top);
                   }			
-              }	
+              }
+              this.textureContext.closePath();
+              this.textureContext.fill();
           }
-          else {
-              this.textureContext.moveTo(0, 0);
-              this.textureContext.lineTo(bounds.width, 0);
-              this.textureContext.lineTo(bounds.width, bounds.height);
-              this.textureContext.lineTo(0, bounds.height);
-              this.textureContext.lineTo(0, 0);
-          }
-          this.textureContext.closePath();
-          this.textureContext.fill();
 
           const data = this.textureContext.getImageData(0, 0, canvas.width, canvas.height);
           return {
@@ -3096,6 +3239,40 @@ var jmChart = (function (exports) {
           this.needCut = option.needCut || false;
           this.control = option.control;
           this.points = [];
+          // 缓存 buffer 和纹理，避免每帧创建/销毁
+          this.__cachedBuffers = [];
+          this.__cachedTexture = null;
+          this.__cachedTextureKey = null;
+      }
+
+      // 释放缓存的 WebGL 资源
+      dispose() {
+          for(const buf of this.__cachedBuffers) {
+              this.deleteBuffer(buf);
+          }
+          this.__cachedBuffers = [];
+          if(this.__cachedTexture) {
+              this.deleteTexture(this.__cachedTexture);
+              this.__cachedTexture = null;
+              this.__cachedTextureKey = null;
+          }
+      }
+
+      // 获取或创建 buffer，优先复用缓存
+      getOrCreateBuffer(data, attr) {
+          let buffer = this.__cachedBuffers.find(b => b.attr === attr);
+          if(buffer) {
+              const gl = this.context;
+              const float32 = new Float32Array(data);
+              gl.bindBuffer(gl.ARRAY_BUFFER, buffer.buffer);
+              gl.bufferData(gl.ARRAY_BUFFER, float32, gl.DYNAMIC_DRAW);
+              buffer.data = data;
+              return buffer;
+          }
+          buffer = this.createFloat32Buffer(data);
+          buffer.attr = attr;
+          this.__cachedBuffers.push(buffer);
+          return buffer;
       }
 
       // 应用变换到点
@@ -3108,8 +3285,14 @@ var jmChart = (function (exports) {
           //this.useProgram();
 
           if(parentBounds) this.parentAbsoluteBounds = parentBounds;
-          // 写入当前canvas大小
-          this.context.uniform2f(this.program.uniforms.a_center_point.location, this.graph.width / 2, this.graph.height / 2);
+          // 缓存中心点值，只在变化时才更新 uniform
+          const cx = this.graph.width / 2;
+          const cy = this.graph.height / 2;
+          if(this.__lastCenterX !== cx || this.__lastCenterY !== cy) {
+              this.context.uniform2f(this.program.uniforms.a_center_point.location, cx, cy);
+              this.__lastCenterX = cx;
+              this.__lastCenterY = cy;
+          }
       }
 
       setFragColor(color) {
@@ -3150,6 +3333,7 @@ var jmChart = (function (exports) {
       endDraw() {
           if(this.points) delete this.points;
           if(this.pathPoints) delete this.pathPoints;
+          // 缓存的纹理保留到下次绘制（渐变可能不变）
       }
 
       // 图形封闭
@@ -3161,21 +3345,47 @@ var jmChart = (function (exports) {
           }
       }
 
-      // 绘制点数组
+      // 绘制点数组（使用 DYNAMIC_DRAW 复用 buffer，避免每帧 create/delete）
       writePoints(points, attr = this.program.attrs.a_position) {
-         
           const fixedPoints = [];
-          for(const p of points) {
-              // 应用变换矩阵
-              const transformedPoint = this.applyTransform(p);
-              fixedPoints.push(
-                  transformedPoint.x + this.parentAbsoluteBounds.left,
-                  transformedPoint.y + this.parentAbsoluteBounds.top
-              );
+          const [a, b, c, d, tx, ty] = this.transformMatrix;
+          const isIdentity = (a === 1 && b === 0 && c === 0 && d === 1 && tx === 0 && ty === 0);
+          const offsetLeft = this.parentAbsoluteBounds.left;
+          const offsetTop = this.parentAbsoluteBounds.top;
+
+          if(isIdentity) {
+              // 单位矩阵时直接加偏移，避免逐点调用 applyTransform
+              for(let i = 0; i < points.length; i++) {
+                  fixedPoints.push(points[i].x + offsetLeft, points[i].y + offsetTop);
+              }
+          } else {
+              for(const p of points) {
+                  const transformedPoint = this.applyTransform(p);
+                  fixedPoints.push(
+                      transformedPoint.x + offsetLeft,
+                      transformedPoint.y + offsetTop
+                  );
+              }
           }
-          const vertexBuffer = this.createFloat32Buffer(fixedPoints); 
+          const float32 = new Float32Array(fixedPoints);
+          const gl = this.context;
+
+          // 复用已有 buffer 或创建新的
+          if(this.__cachedBuffers.length > 0) {
+              // 找一个同 attr 的 buffer 复用
+              let buffer = this.__cachedBuffers.find(b => b.attr === attr);
+              if(buffer) {
+                  gl.bindBuffer(gl.ARRAY_BUFFER, buffer.buffer);
+                  gl.bufferData(gl.ARRAY_BUFFER, float32, gl.DYNAMIC_DRAW);
+                  buffer.data = fixedPoints;
+                  this.writeVertexAttrib(buffer, attr, 2, 0, 0);
+                  return buffer;
+              }
+          }
+          const vertexBuffer = this.createFloat32Buffer(float32, gl.ARRAY_BUFFER, gl.DYNAMIC_DRAW); 
           this.writeVertexAttrib(vertexBuffer, attr, 2, 0, 0);
           vertexBuffer.attr = attr;
+          this.__cachedBuffers.push(vertexBuffer);
           return vertexBuffer;
       }
 
@@ -3411,9 +3621,10 @@ var jmChart = (function (exports) {
 
       // 分割成一个个规则的三角形，不规则的多边形不全割的话纹理就会没法正确覆盖
       getTriangles(points) {
-          
           this.trianglesCache = this.trianglesCache||(this.trianglesCache={});
-          const key = JSON.stringify(points);
+          // 快速缓存 key：用长度和首尾点坐标（比 JSON.stringify 快几个数量级）
+          const len = points.length;
+          const key = len + '_' + points[0].x + '_' + points[0].y + '_' + points[len-1].x + '_' + points[len-1].y;
           if(this.trianglesCache[key]) return this.trianglesCache[key];
 
           const res = [];
@@ -3450,12 +3661,11 @@ var jmChart = (function (exports) {
           if(points && points.length) {
               const regular = lineWidth <= 1.2;
               points = regular? points : this.pathToPoints(points);
-              const buffer = this.writePoints(points);
+              this.writePoints(points);
               this.context.drawArrays(regular? this.context.LINE_LOOP: this.context.POINTS, 0, points.length);
-              this.deleteBuffer(buffer);
+              // buffer 由 endDraw 统一清理
           }
-          colorBuffer && this.deleteBuffer(colorBuffer);
-          colorBuffer && this.disableVertexAttribArray(colorBuffer.attr);
+          colorBuffer && this.disableVertexAttribArray(colorBuffer && colorBuffer.attr);
       }
 
       // 填充图形
@@ -3486,8 +3696,7 @@ var jmChart = (function (exports) {
 
           this.fillPolygons(points);                
 
-          colorBuffer && this.deleteBuffer(colorBuffer);
-          colorBuffer && this.disableVertexAttribArray(colorBuffer.attr);
+          colorBuffer && this.disableVertexAttribArray(colorBuffer && colorBuffer.attr);
 
       }
 
@@ -3497,8 +3706,24 @@ var jmChart = (function (exports) {
       fillImage(img, points, bounds) {
           if(!img) return;
 
-          // 设置纹理
-          const texture = img instanceof ImageData? this.createDataTexture(img) : this.createImgTexture(img);
+          // 对于 ImageData，生成缓存 key（基于渐变参数或 bounds），复用纹理
+          let texture = null;
+          if(img instanceof ImageData) {
+              const key = `${img.width}_${img.height}_${bounds.width}_${bounds.height}_${bounds.left}_${bounds.top}`;
+              if(this.__cachedTexture && this.__cachedTextureKey === key) {
+                  texture = this.__cachedTexture;
+              } else {
+                  texture = this.createDataTexture(img);
+                  // 释放旧纹理
+                  if(this.__cachedTexture) {
+                      this.deleteTexture(this.__cachedTexture);
+                  }
+                  this.__cachedTexture = texture;
+                  this.__cachedTextureKey = key;
+              }
+          } else {
+              texture = this.createImgTexture(img);
+          }
           this.context.uniform1i(this.program.uniforms.u_sample.location, 0); // 纹理单元传递给着色器
 
           // 指定纹理区域尺寸
@@ -3511,7 +3736,10 @@ var jmChart = (function (exports) {
 
           this.fillTexture(points);
           
-          this.deleteTexture(texture);
+          // 仅对非缓存纹理（非 ImageData）立即删除
+          if(!(img instanceof ImageData)) {
+              this.deleteTexture(texture);
+          }
       }
 
       fillTexture(points) {        
@@ -3527,23 +3755,67 @@ var jmChart = (function (exports) {
 
       // 进行多边形填充
       fillPolygons(points, isTexture = false) {   
-          if(points.length > 3) {
-              const triangles = this.needCut? this.earCutPointsToTriangles(points): this.getTriangles(points);                
-              if(triangles.length) {   
-                  for(const triangle of triangles) {
-                      this.fillPolygons(triangle, isTexture);// 这里就变成了规则的图形了
-                  }
+          if(points.length <= 3) {
+              // 3个点以下的三角形直接画
+              this.writePoints(points);
+              isTexture? this.writePoints(points, this.program.attrs.a_text_coord): null;
+              this.context.drawArrays(this.context.TRIANGLE_FAN, 0, points.length);
+              return;
+          }
+
+          // 规则图形（凸多边形，如圆）：直接用 TRIANGLE_FAN 一次性绘制，无需 earcut
+          if(this.isRegular) {
+              this.writePoints(points);
+              isTexture? this.writePoints(points, this.program.attrs.a_text_coord): null;
+              this.context.drawArrays(this.context.TRIANGLE_FAN, 0, points.length);
+              return;
+          }
+
+          // 不规则图形：需要 earcut 三角化后，合并为一个大的顶点缓冲区，单次 drawArrays
+          const triangles = this.needCut? this.earCutPointsToTriangles(points): this.getTriangles(points);
+          if(!triangles.length) return;
+
+          // 合并所有三角形的顶点到一个数组
+          const allVertices = [];
+          const allTexCoords = [];
+          for(const triangle of triangles) {
+              for(const p of triangle) {
+                  allVertices.push(p.x, p.y);
+                  if(isTexture) allTexCoords.push(p.x, p.y);
               }
           }
-          else {
-              const buffer = this.writePoints(points);
-              // 纹理坐标
-              const coordBuffer = isTexture? this.writePoints(points, this.program.attrs.a_text_coord): null;
 
-              this.context.drawArrays(this.context.TRIANGLE_FAN, 0, points.length);
-              this.deleteBuffer(buffer);
-              coordBuffer && this.deleteBuffer(coordBuffer);    
+          // 一次性上传所有数据并绘制
+          const vertexData = new Float32Array(allVertices);
+          const gl = this.context;
+
+          // 复用或创建 position buffer
+          let posBuffer = this.__cachedBuffers.find(b => b.attr === this.program.attrs.a_position);
+          if(!posBuffer) {
+              posBuffer = this.createFloat32Buffer(vertexData, gl.ARRAY_BUFFER, gl.DYNAMIC_DRAW);
+              posBuffer.attr = this.program.attrs.a_position;
+              this.__cachedBuffers.push(posBuffer);
+          } else {
+              gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer.buffer);
+              gl.bufferData(gl.ARRAY_BUFFER, vertexData, gl.DYNAMIC_DRAW);
           }
+          this.writeVertexAttrib(posBuffer, this.program.attrs.a_position, 2, 0, 0);
+
+          if(isTexture && allTexCoords.length) {
+              const texData = new Float32Array(allTexCoords);
+              let texBuffer = this.__cachedBuffers.find(b => b.attr === this.program.attrs.a_text_coord);
+              if(!texBuffer) {
+                  texBuffer = this.createFloat32Buffer(texData, gl.ARRAY_BUFFER, gl.DYNAMIC_DRAW);
+                  texBuffer.attr = this.program.attrs.a_text_coord;
+                  this.__cachedBuffers.push(texBuffer);
+              } else {
+                  gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer.buffer);
+                  gl.bufferData(gl.ARRAY_BUFFER, texData, gl.DYNAMIC_DRAW);
+              }
+              this.writeVertexAttrib(texBuffer, this.program.attrs.a_text_coord, 2, 0, 0);
+          }
+
+          gl.drawArrays(gl.TRIANGLES, 0, allVertices.length / 2);
       }
 
       // 填充图形
@@ -3625,7 +3897,9 @@ var jmChart = (function (exports) {
   	'shadowOffsetY' : 'shadowOffsetY',
   	'shadowColor' : 'shadowColor',
   	'lineJoin': 'lineJoin',
-  	'lineCap':'lineCap'
+  	'lineCap':'lineCap',
+  	'lineDashOffset': 'lineDashOffset',
+  	'globalCompositeOperation': 'globalCompositeOperation'
   };
 
   class jmControl extends jmProperty {
@@ -3836,7 +4110,9 @@ var jmChart = (function (exports) {
   	} 
 
   	setStyle(style) {
-  		style = style || jmUtils.clone(this.style, true);
+  		if(!style) {
+  			style = this.style;
+  		}
   		if(!style) return;
 
   		const __setStyle = (style, name, mpkey) => {
@@ -3920,6 +4196,120 @@ var jmChart = (function (exports) {
   							this.cursor = styleValue;
   							break;
   						}
+  						// ===== 新增样式特性 =====
+
+  						// 虚线样式：支持自定义lineDash模式 (如 [5, 3, 2] 或 "5,3,2")
+  						case 'lineDash' : {
+  							if(!this.context.setLineDash) break;
+  							let dash;
+  							if(typeof styleValue === 'string') {
+  								dash = styleValue.split(',').map(v => parseFloat(v.trim())).filter(v => !isNaN(v));
+  							}
+  							else if(Array.isArray(styleValue)) {
+  								dash = styleValue.map(v => parseFloat(v)).filter(v => !isNaN(v));
+  							}
+  							if(dash && dash.length) {
+  								this.context.setLineDash(dash);
+  							}
+  							else {
+  								this.context.setLineDash([]);
+  							}
+  							break;
+  						}
+  						// 虚线偏移量
+  						case 'lineDashOffset' : {
+  							if(!this.context.setLineDash) break;
+  							this.context.lineDashOffset = Number(styleValue) || 0;
+  							break;
+  						}
+  						// CSS滤镜效果 (blur, grayscale, sepia, brightness, contrast, saturate, hue-rotate, invert, opacity)
+  						case 'filter' : {
+  							if(this.context.filter === undefined) break;
+  							if(styleValue instanceof jmFilter) {
+  								this.context.filter = styleValue.toCanvasFilter();
+  							}
+  							else if(typeof styleValue === 'string') {
+  								this.context.filter = styleValue || 'none';
+  							}
+  							else if(typeof styleValue === 'object') {
+  								this.context.filter = (new jmFilter(styleValue)).toCanvasFilter();
+  							}
+  							break;
+  						}
+  						// 混合模式 (source-over, multiply, screen, overlay, darken, lighten, etc.)
+  						case 'globalCompositeOperation' : {
+  							if(!this.context.globalCompositeOperation) break;
+  							this.context.globalCompositeOperation = styleValue;
+  							break;
+  						}
+  						// 裁剪路径：通过canvas clip实现
+  						case 'clipPath' : {
+  							if(!this.context.clip) break;
+  							// clipPath可以是一个图形控件实例
+  							if(styleValue && styleValue.points && styleValue.points.length > 0) {
+  								const bounds = this.parent && this.parent.absoluteBounds ? this.parent.absoluteBounds : this.absoluteBounds;
+  								this.context.beginPath();
+  								this.context.moveTo(styleValue.points[0].x + (bounds ? bounds.left : 0), styleValue.points[0].y + (bounds ? bounds.top : 0));
+  								for(let i = 1; i < styleValue.points.length; i++) {
+  									if(styleValue.points[i].m) {
+  										this.context.moveTo(styleValue.points[i].x + (bounds ? bounds.left : 0), styleValue.points[i].y + (bounds ? bounds.top : 0));
+  									}
+  									else {
+  										this.context.lineTo(styleValue.points[i].x + (bounds ? bounds.left : 0), styleValue.points[i].y + (bounds ? bounds.top : 0));
+  									}
+  								}
+  								if(styleValue.style && styleValue.style.close) {
+  									this.context.closePath();
+  								}
+  								this.context.clip();
+  							}
+  							break;
+  						}
+  						// 遮罩效果：通过globalCompositeOperation + destination-in实现
+  						case 'mask' : {
+  							if(!this.context.globalCompositeOperation) break;
+  							// mask是一个图形控件实例，在绘制前需要先应用mask
+  							// 这里只是标记，实际绘制在paint流程中处理
+  							this.__mask = styleValue;
+  							break;
+  						}
+  						// 图片阴影描边阴影（WebGL纹理canvas用）
+  						case 'shadowColor' : {
+  							if(this.webglControl) {
+  								this.webglControl.setStyle('shadowColor', styleValue);
+  							}
+  							else {
+  								this.context.shadowColor = jmUtils.toColor(styleValue);
+  							}
+  							break;
+  						}
+  						case 'shadowBlur' : {
+  							if(this.webglControl) {
+  								this.webglControl.setStyle('shadowBlur', styleValue);
+  							}
+  							else {
+  								this.context.shadowBlur = Number(styleValue) || 0;
+  							}
+  							break;
+  						}
+  						case 'shadowOffsetX' : {
+  							if(this.webglControl) {
+  								this.webglControl.setStyle('shadowOffsetX', styleValue);
+  							}
+  							else {
+  								this.context.shadowOffsetX = Number(styleValue) || 0;
+  							}
+  							break;
+  						}
+  						case 'shadowOffsetY' : {
+  							if(this.webglControl) {
+  								this.webglControl.setStyle('shadowOffsetY', styleValue);
+  							}
+  							else {
+  								this.context.shadowOffsetY = Number(styleValue) || 0;
+  							}
+  							break;
+  						}
   					}
   				}
   			}
@@ -3939,6 +4329,9 @@ var jmChart = (function (exports) {
   			}
   			else if(t == 'string' && k == 'shadow') {
   				style[k] = new jmShadow(style[k]);
+  			}
+  			else if(t == 'string' && k == 'filter') {
+  				style[k] = new jmFilter(style[k]);
   			}
   			__setStyle(style[k], k);
   		}
@@ -4084,25 +4477,30 @@ var jmChart = (function (exports) {
   	 * @method getLocation
   	 * @return {object} 当前控件位置参数，包括中心点坐标，右上角坐标，宽高
   	 */
-  	getLocation(clone=true) {
+  	getLocation() {
   		//如果已经计算过则直接返回
   		//在开画之前会清空此对象
   		//if(reset !== true && this.location) return this.location;
 
   		let local = this.location = {left: 0,top: 0,width: 0,height: 0};
-  		local.position = typeof this.position == 'function'? this.position(): jmUtils.clone(this.position);	
-  		local.center = this.center && typeof this.center === 'function'?this.center(): jmUtils.clone(this.center);//中心
-  		local.start = this.start && typeof this.start === 'function'?this.start(): jmUtils.clone(this.start);//起点
-  		local.end = this.end && typeof this.end === 'function'?this.end(): jmUtils.clone(this.end);//起点
+
+  		// 检查是否有百分比参数需要解析，没有则直接引用避免克隆开销
+  		const needResolve = this.parent && (jmUtils.checkPercent(this.width) || jmUtils.checkPercent(this.height) ||
+  			(this.position && jmUtils.checkPercent(this.position.x)) || (this.position && jmUtils.checkPercent(this.position.y)));
+  		local.position = typeof this.position == 'function'? this.position(): (needResolve? jmUtils.clone(this.position) : this.position);	
+  		local.center = this.center && typeof this.center === 'function'?this.center(): (needResolve? jmUtils.clone(this.center) : this.center);//中心
+  		local.start = this.start && typeof this.start === 'function'?this.start(): (needResolve? jmUtils.clone(this.start) : this.start);//起点
+  		local.end = this.end && typeof this.end === 'function'?this.end(): (needResolve? jmUtils.clone(this.end) : this.end);//起点
   		local.radius = this.radius;//半径
   		local.width = this.width;
   		local.height = this.height;
 
-  		const margin = jmUtils.clone(this.style.margin, {});
-  		margin.left = (margin.left || 0);
-  		margin.top = (margin.top || 0);
-  		margin.right = (margin.right || 0);
-  		margin.bottom = (margin.bottom || 0);
+  		const margin = this.style.margin;
+  		const marginObj = needResolve && margin ? jmUtils.clone(margin, {}) : (margin || {});
+  		marginObj.left = (marginObj.left || 0);
+  		marginObj.top = (marginObj.top || 0);
+  		marginObj.right = (marginObj.right || 0);
+  		marginObj.bottom = (marginObj.bottom || 0);
   		
   		//如果没有指定位置，但指定了margin。则位置取margin偏移量
   		if(local.position) {
@@ -4110,8 +4508,8 @@ var jmChart = (function (exports) {
   			local.top = local.position.y;
   		}
   		else {
-  			local.left = margin.left;
-  			local.top = margin.top;
+  			local.left = marginObj.left;
+  			local.top = marginObj.top;
   		}
 
   		if(this.parent) {
@@ -4373,21 +4771,30 @@ var jmChart = (function (exports) {
   			if(this.webglControl) this.webglControl.closePath();
   			this.context.closePath && this.context.closePath();
   		}
-  		
-  		const fill = this.style['fill'] || this.style['fillStyle'];
-  		if(fill) {
-  			if(this.webglControl) {
+
+  		// 根据渲染模式选择不同的绘制路径
+  		if(this.webglControl) {
+  			// WebGL 模式：使用 WebGL 绘制
+  			const fill = this.style['fill'] || this.style['fillStyle'];
+  			if(fill) {
   				const bounds = this.getBounds();
   				this.webglControl.fill(bounds);
   			}
-  			this.context.fill && this.context.fill();
+  			if(this.style['stroke'] || (!fill && !this.is('jmGraph'))) {
+  				this.webglControl.stroke();
+  			}
+  			if(this.webglControl.endDraw) this.webglControl.endDraw();
   		}
-  		if(this.style['stroke'] || (!fill && !this.is('jmGraph'))) {
-  			if(this.webglControl) this.webglControl.stroke();
-  			this.context.stroke && this.context.stroke();
+  		else {
+  			// 2D 模式：使用 Canvas 2D API 绘制
+  			const fill = this.style['fill'] || this.style['fillStyle'];
+  			if(fill) {
+  				this.context.fill && this.context.fill();
+  			}
+  			if(this.style['stroke'] || (!fill && !this.is('jmGraph'))) {
+  				this.context.stroke && this.context.stroke();
+  			}
   		}
-
-  		if(this.webglControl && this.webglControl.endDraw) this.webglControl.endDraw();
 
   		this.needUpdate = false;
   	}
@@ -4404,9 +4811,7 @@ var jmChart = (function (exports) {
   			const bounds = this.parent && this.parent.absoluteBounds?this.parent.absoluteBounds:this.absoluteBounds;
   			if(this.webglControl) {
   				this.webglControl.setParentBounds(bounds);
-  				this.webglControl.draw([
-  					...this.points
-  				]);
+  				this.webglControl.draw(this.points);
   			}
   			else if(this.context && this.context.moveTo) {
   				this.context.moveTo(this.points[0].x + bounds.left,this.points[0].y + bounds.top);
@@ -4451,9 +4856,44 @@ var jmChart = (function (exports) {
   			
   			this.setStyle();//设定样式
 
-  			if(needDraw && this.beginDraw) this.beginDraw();
-  			if(needDraw && this.draw) this.draw();	
-  			if(needDraw && this.endDraw) this.endDraw();
+  			// 应用mask遮罩效果：在mask区域内绘制当前控件
+  			// 使用 destination-in 合成模式，只保留mask区域内的内容
+  			const maskStyle = this.style.mask || this.__mask;
+  			if(maskStyle && maskStyle.points && this.context.globalCompositeOperation) {
+  				// 先绘制当前控件
+  				if(needDraw && this.beginDraw) this.beginDraw();
+  				if(needDraw && this.draw) this.draw();	
+  				if(needDraw && this.endDraw) this.endDraw();
+
+  				// 再应用mask裁剪
+  				this.context.globalCompositeOperation = 'destination-in';
+  				if(maskStyle.initPoints) maskStyle.initPoints();
+  				const mBounds = maskStyle.parent && maskStyle.parent.absoluteBounds ? maskStyle.parent.absoluteBounds : this.absoluteBounds;
+  				this.context.beginPath();
+  				if(maskStyle.points && maskStyle.points.length > 0) {
+  					this.context.moveTo(maskStyle.points[0].x + (mBounds ? mBounds.left : 0), maskStyle.points[0].y + (mBounds ? mBounds.top : 0));
+  					for(let i = 1; i < maskStyle.points.length; i++) {
+  						if(maskStyle.points[i].m) {
+  							this.context.moveTo(maskStyle.points[i].x + (mBounds ? mBounds.left : 0), maskStyle.points[i].y + (mBounds ? mBounds.top : 0));
+  						}
+  						else {
+  							this.context.lineTo(maskStyle.points[i].x + (mBounds ? mBounds.left : 0), maskStyle.points[i].y + (mBounds ? mBounds.top : 0));
+  						}
+  					}
+  					if(maskStyle.style && maskStyle.style.close) {
+  						this.context.closePath();
+  					}
+  				}
+  				this.context.fillStyle = '#ffffff';
+  				this.context.fill();
+  				// 恢复合成模式
+  				this.context.globalCompositeOperation = 'source-over';
+  			}
+  			else {
+  				if(needDraw && this.beginDraw) this.beginDraw();
+  				if(needDraw && this.draw) this.draw();	
+  				if(needDraw && this.endDraw) this.endDraw();
+  			}
 
   			if(this.children) {
   				this.children.each(function(i,item) {
@@ -4543,7 +4983,15 @@ var jmChart = (function (exports) {
   	 * @param {array} args 事件参数数组
   	 */
   	emit(...args) {			
-  		this.runEventHandle(args[0], args.slice(1));
+  		// 避免每帧 args.slice(1) 分配临时数组
+  		// runEventHandle 内部会把非数组参数包装成数组
+  		if(args.length > 2) {
+  			this.runEventHandle(args[0], args.slice(1));
+  		} else if(args.length === 2) {
+  			this.runEventHandle(args[0], [args[1]]);
+  		} else {
+  			this.runEventHandle(args[0], []);
+  		}
   		return this;
   	}
 
@@ -5183,7 +5631,6 @@ var jmChart = (function (exports) {
   		if((mw == 0 && mh == 0) || start == end) return;
 
   		let anticlockwise = this.anticlockwise;
-  		this.points = [];
   		let step = 1 / Math.max(mw, mh);
 
   		//如果是逆时针绘制，则角度为负数，并且结束角为2Math.PI-end
@@ -5194,18 +5641,33 @@ var jmChart = (function (exports) {
   		}
   		if(start > end) step = -step;
 
-  		if(this.isFan) this.points.push(location.center);// 如果是扇形，则从中心开始画
+  		// 预计算需要的点数量
+  		let pointCount = Math.ceil(Math.abs(end - start) / Math.abs(step)) + 1;
+  		if(this.isFan) pointCount++;
+
+  		// 复用已有数组，避免每帧分配；大小变化时才重建
+  		if(!this.points || this.points.length !== pointCount) {
+  			this.points = new Array(pointCount);
+  			for(let i = 0; i < pointCount; i++) {
+  				this.points[i] = { x: 0, y: 0 };
+  			}
+  		}
+
+  		let idx = 0;
+  		if(this.isFan) {
+  			this.points[idx].x = location.center.x;
+  			this.points[idx].y = location.center.y;
+  			idx++;
+  		}
   		
   		//椭圆方程x=a*cos(r) ,y=b*sin(r)	
   		for(let r=start;;r += step) {	
   			if(step > 0 && r > end) r = end;
   			else if(step < 0 && r < end) r = end;
 
-  			const p = {
-  				x : Math.cos(r) * mw + cx,
-  				y : Math.sin(r) * mh + cy
-  			};
-  			this.points.push(p);
+  			this.points[idx].x = Math.cos(r) * mw + cx;
+  			this.points[idx].y = Math.sin(r) * mh + cy;
+  			idx++;
 
   			if(r == end) break;
   		}
@@ -5804,6 +6266,7 @@ var jmChart = (function (exports) {
    * @class jmRect
    * @extends jmPath
    * @param {object} params 参数 position=矩形左上角顶点坐标,width=宽，height=高,radius=边角弧度
+   *   radius支持数字(四角相同)或对象 { topLeft, topRight, bottomRight, bottomLeft }
    */ 
   class jmRect extends jmPath {		
 
@@ -5813,12 +6276,24 @@ var jmChart = (function (exports) {
   		super(params, t);
 
   		this.style.close = true;
-  		this.radius = params.radius || this.style.radius || 0;
+  		const r = params.radius || this.style.radius || this.style.borderRadius || 0;
+  		if(typeof r === 'object' && r !== null) {
+  			// 四角独立圆角
+  			this.radius = {
+  				topLeft: Number(r.topLeft) || 0,
+  				topRight: Number(r.topRight) || 0,
+  				bottomRight: Number(r.bottomRight) || 0,
+  				bottomLeft: Number(r.bottomLeft) || 0
+  			};
+  		}
+  		else {
+  			this.radius = r;
+  		}
   	}
   	/**
-  	 * 圆角半径
+  	 * 圆角半径，支持数字或四角独立对象
   	 * @property radius
-  	 * @type {number}
+  	 * @type {number|object}
   	 */
   	get radius() {
   		return this.property('radius');
@@ -5826,6 +6301,36 @@ var jmChart = (function (exports) {
   	set radius(v) {
   		this.needUpdate = true;
   		return this.property('radius', v);
+  	}
+
+  	/**
+  	 * 获取规范化的圆角值（四角独立）
+  	 * @returns {object} { topLeft, topRight, bottomRight, bottomLeft }
+  	 */
+  	getNormalizedRadius() {
+  		const r = this.radius;
+  		if(typeof r === 'number') {
+  			const v = Math.max(0, r);
+  			return { topLeft: v, topRight: v, bottomRight: v, bottomLeft: v };
+  		}
+  		if(typeof r === 'object' && r !== null) {
+  			return {
+  				topLeft: Math.max(0, Number(r.topLeft) || 0),
+  				topRight: Math.max(0, Number(r.topRight) || 0),
+  				bottomRight: Math.max(0, Number(r.bottomRight) || 0),
+  				bottomLeft: Math.max(0, Number(r.bottomLeft) || 0)
+  			};
+  		}
+  		return { topLeft: 0, topRight: 0, bottomRight: 0, bottomLeft: 0 };
+  	}
+
+  	/**
+  	 * 检查是否有圆角
+  	 * @returns {boolean}
+  	 */
+  	hasRadius() {
+  		const nr = this.getNormalizedRadius();
+  		return nr.topLeft > 0 || nr.topRight > 0 || nr.bottomRight > 0 || nr.bottomLeft > 0;
   	}	
 
   	/**
@@ -5888,7 +6393,7 @@ var jmChart = (function (exports) {
 
   	/**
   	 * 初始化图形点
-  	 * 如果有边角弧度则类型圆绝计算其描点
+  	 * 支持四角独立圆角，借助圆弧对象计算描点
   	 * 
   	 * @method initPoints
   	 * @private
@@ -5905,32 +6410,67 @@ var jmChart = (function (exports) {
   			this.dottedLine = this.graph.createShape(jmLine, {style: this.style});
   		}
   		
-  		//如果有边界弧度则借助圆弧对象计算描点
-  		if(location.radius && location.radius < location.width/2 && location.radius < location.height/2) {
+  		const nr = this.getNormalizedRadius();
+  		const hasRadius = this.hasRadius();
+
+  		// 如果有圆角（支持四角独立），借助圆弧对象计算描点
+  		if(hasRadius) {
   			let q = Math.PI / 2;
-  			let arc = this.graph.createShape(jmArc,{radius:location.radius,anticlockwise:false});
-  			arc.center = {x:location.left + location.radius,y:location.top+location.radius};
-  			arc.startAngle = Math.PI;
-  			arc.endAngle = Math.PI + q;
-  			let ps1 = arc.initPoints();
-  			
-  			arc = this.graph.createShape(jmArc,{radius:location.radius,anticlockwise:false});
-  			arc.center = {x:p2.x - location.radius,y:p2.y + location.radius};
-  			arc.startAngle = Math.PI + q;
-  			arc.endAngle = Math.PI * 2;
-  			let ps2 = arc.initPoints();
-  			
-  			arc = this.graph.createShape(jmArc,{radius:location.radius,anticlockwise:false});
-  			arc.center = {x:p3.x - location.radius,y:p3.y - location.radius};
-  			arc.startAngle = 0;
-  			arc.endAngle = q;
-  			let ps3 = arc.initPoints();
-  			
-  			arc = this.graph.createShape(jmArc,{radius:location.radius,anticlockwise:false});
-  			arc.center = {x:p4.x + location.radius,y:p4.y - location.radius};
-  			arc.startAngle = q;
-  			arc.endAngle = Math.PI;
-  			let ps4 = arc.initPoints();
+
+  			// 限制圆角不超过短边的一半
+  			const maxR = Math.min(location.width / 2, location.height / 2);
+  			const rtl = Math.min(nr.topLeft, maxR);
+  			const rtr = Math.min(nr.topRight, maxR);
+  			const rbr = Math.min(nr.bottomRight, maxR);
+  			const rbl = Math.min(nr.bottomLeft, maxR);
+
+  			// 左上角圆弧
+  			if(rtl > 0) {
+  				let arc = this.graph.createShape(jmArc,{radius:rtl,anticlockwise:false});
+  				arc.center = {x:location.left + rtl, y:location.top + rtl};
+  				arc.startAngle = Math.PI;
+  				arc.endAngle = Math.PI + q;
+  				var ps1 = arc.initPoints();
+  			}
+  			else {
+  				var ps1 = [p1];
+  			}
+
+  			// 右上角圆弧
+  			if(rtr > 0) {
+  				let arc = this.graph.createShape(jmArc,{radius:rtr,anticlockwise:false});
+  				arc.center = {x:p2.x - rtr, y:p2.y + rtr};
+  				arc.startAngle = Math.PI + q;
+  				arc.endAngle = Math.PI * 2;
+  				var ps2 = arc.initPoints();
+  			}
+  			else {
+  				var ps2 = [p2];
+  			}
+
+  			// 右下角圆弧
+  			if(rbr > 0) {
+  				let arc = this.graph.createShape(jmArc,{radius:rbr,anticlockwise:false});
+  				arc.center = {x:p3.x - rbr, y:p3.y - rbr};
+  				arc.startAngle = 0;
+  				arc.endAngle = q;
+  				var ps3 = arc.initPoints();
+  			}
+  			else {
+  				var ps3 = [p3];
+  			}
+
+  			// 左下角圆弧
+  			if(rbl > 0) {
+  				let arc = this.graph.createShape(jmArc,{radius:rbl,anticlockwise:false});
+  				arc.center = {x:p4.x + rbl, y:p4.y - rbl};
+  				arc.startAngle = q;
+  				arc.endAngle = Math.PI;
+  				var ps4 = arc.initPoints();
+  			}
+  			else {
+  				var ps4 = [p4];
+  			}
   			this.points = ps1.concat(ps2,ps3,ps4);
   		}
   		else {
@@ -6269,7 +6809,7 @@ var jmChart = (function (exports) {
   		this.style.textAlign = this.style.textAlign || 'left';
   		//文字垂直对齐
   		this.style.textBaseline = this.style.textBaseline || 'middle';
-  		this.text = params.text || '';
+  		this.text = params.text || params.value || '';
 
   		this.center = params.center || null;
   	}
@@ -6556,67 +7096,6 @@ var jmChart = (function (exports) {
   				else {
   					this.context.strokeText(txt,x,y);
   				}
-  			}
-  		}
-  		//如果有指定边框，则画出边框
-  		if(this.style.border) {
-  			//如果指定了边框样式
-  			if(this.style.border.style) {
-  				this.context.save && this.context.save();
-  				this.setStyle(this.style.border.style);
-  			}
-  			if(this.mode === '2d') {
-  				this.context.moveTo(this.points[0].x + bounds.left,this.points[0].y + bounds.top);
-  				if(this.style.border.top) {
-  					this.context.lineTo(this.points[1].x + bounds.left,this.points[1].y + bounds.top);
-  				}
-  				
-  				if(this.style.border.right) {
-  					this.context.moveTo(this.points[1].x + bounds.left,this.points[1].y + bounds.top);
-  					this.context.lineTo(this.points[2].x + bounds.left,this.points[2].y + bounds.top);
-  				}
-  				
-  				if(this.style.border.bottom) {
-  					this.context.moveTo(this.points[2].x + bounds.left,this.points[2].y + bounds.top);
-  					this.context.lineTo(this.points[3].x + bounds.left,this.points[3].y + bounds.top);
-  				}
-  				
-  				if(this.style.border.left) {
-  					this.context.moveTo(this.points[3].x + bounds.left,this.points[3].y + bounds.top);
-  					this.context.lineTo(this.points[0].x + bounds.left,this.points[0].y + bounds.top);
-  				}
-  			}
-  			else {
-  				const points = [];
-  				if(this.style.border.top) {
-  					points.push(this.points[0]);
-  					points.push(this.points[1]);
-  				}
-  				
-  				if(this.style.border.right) {
-  					points.push({
-  						...this.points[1],
-  						m: true
-  					});
-  					points.push(this.points[2]);
-  				}
-  				
-  				if(this.style.border.bottom) {
-  					points.push({
-  						...this.points[2],
-  						m: true
-  					});
-  					points.push(this.points[3]);
-  				}
-  				
-  				if(this.style.border.left) {
-  					points.push({
-  						...this.points[3],
-  						m: true
-  					});
-  					points.push(this.points[0]);
-  				}
-  				points.length && this.webglControl && this.webglControl.stroke(points);
   			}
   		}
   	}
@@ -7568,145 +8047,6 @@ var jmChart = (function (exports) {
   }
 
   /**
-   * 图层类
-   * 用于组织和管理图形对象，支持可见性和锁定控制
-   * 图层可以包含多个图形对象，并控制它们的显示和交互
-   *
-   * @class jmLayer
-   * @extends jmControl
-   * @param {object} params 图层参数
-   * @param {string} [params.name] 图层名称，默认为 'Layer_${timestamp}'
-   * @param {boolean} [params.visible=true] 图层是否可见
-   * @param {boolean} [params.locked=false] 图层是否锁定（锁定后不可交互）
-   * @param {jmGraph} [params.graph] 所属的画布对象
-   */
-  class jmLayer extends jmControl {
-  	
-  	constructor(params, t='jmLayer') {
-  		params = params || {};
-  		params.interactive = false; // 图层本身不响应交互事件
-  		super(params, t);
-
-  		this.name = params.name || `Layer_${Date.now()}`;
-  		this.visible = params.visible !== false;
-  		this.locked = params.locked || false;
-  	}
-
-  	/**
-  	 * 图层名称
-  	 * 图层的唯一标识符，用于查找和管理图层
-  	 * 
-  	 * @property name
-  	 * @type {string}
-  	 */
-  	get name() {
-  		return this.property('name');
-  	}
-  	set name(v) {
-  		if(!v || typeof v !== 'string') {
-  			console.warn('jmLayer: name must be a non-empty string');
-  			return;
-  		}
-  		return this.property('name', v);
-  	}
-
-  	/**
-  	 * 图层是否可见
-  	 * 不可见的图层不会被渲染，但仍然存在于图层列表中
-  	 * 
-  	 * @property visible
-  	 * @type {boolean}
-  	 */
-  	get visible() {
-  		return this.property('visible');
-  	}
-  	set visible(v) {
-  		this.needUpdate = true;
-  		return this.property('visible', v);
-  	}
-
-  	/**
-  	 * 图层是否锁定
-  	 * 锁定的图层中的图形不可被选中或移动，但仍然可见
-  	 * 适用于背景图层或参考图层
-  	 * 
-  	 * @property locked
-  	 * @type {boolean}
-  	 */
-  	get locked() {
-  		return this.property('locked');
-  	}
-  	set locked(v) {
-  		return this.property('locked', v);
-  	}
-
-  	/**
-  	 * 绘制图层
-  	 * 只有可见的图层才会被绘制
-  	 * 
-  	 * @method paint
-  	 * @param {boolean} v 是否需要重绘
-  	 */
-  	paint(v) {
-  		if(this.visible !== false) {
-  			super.paint(v);
-  		}
-  	}
-
-  	/**
-  	 * 检查点是否在图层内
-  	 * 锁定的图层不会响应鼠标事件
-  	 * 
-  	 * @method checkPoint
-  	 * @param {object} p 坐标点 {x, y}
-  	 * @param {number} [pad] padding，额外的检测范围
-  	 * @return {boolean} 是否在图层内
-  	 */
-  	checkPoint(p, pad) {
-  		// 锁定的图层不响应交互
-  		if(this.locked) return false;
-  		return super.checkPoint(p, pad);
-  	}
-
-  	/**
-  	 * 清空图层
-  	 * 移除图层中的所有图形对象
-  	 * 
-  	 * @method clear
-  	 */
-  	clear() {
-  		this.children.clear();
-  		this.needUpdate = true;
-  	}
-
-  	/**
-  	 * 获取图层中的图形数量
-  	 * 
-  	 * @method getShapeCount
-  	 * @return {number} 图形数量
-  	 */
-  	getShapeCount() {
-  		return this.children.length;
-  	}
-
-  	/**
-  	 * 获取图层信息
-  	 * 返回图层的基本信息，用于调试和日志
-  	 * 
-  	 * @method getInfo
-  	 * @return {object} 图层信息对象
-  	 */
-  	getInfo() {
-  		return {
-  			name: this.name,
-  			visible: this.visible,
-  			locked: this.locked,
-  			shapeCount: this.getShapeCount()
-  		};
-  	}
-  }
-
-  /**
    * jmGraph画图类库
    * 对canvas画图api进行二次封装，使其更易调用，省去很多重复的工作。
    *
@@ -7717,7 +8057,7 @@ var jmChart = (function (exports) {
    * @param {object} option 参数：{width:宽,height:高}
    * @param {function} callback 初始化后的回调
    */
-  class jmGraph$1 extends jmControl {
+  class jmGraph extends jmControl {
 
   	constructor(canvas, option, callback) {
   		if(typeof option == 'function') {
@@ -7935,7 +8275,7 @@ var jmChart = (function (exports) {
   	 * @return {jmGraph} jmGraph实例对象
   	 */
   	static create(...args) {
-  		return new jmGraph$1(...args);
+  		return new jmGraph(...args);
   	}
 
   	/**
@@ -7984,9 +8324,7 @@ var jmChart = (function (exports) {
   		if(shape) {
   			if(!args) args = {};
   			args.graph = this;
-  			let obj = new shape(args);
-  			// 添加到活动图层
-  			this.addShapeToLayer(obj);
+  			const obj = new shape(args);
   			return obj;
   		}
   	}
@@ -8112,13 +8450,19 @@ var jmChart = (function (exports) {
   			this.context.clearRect(0, 0, w, h);
   		}
   		else if(this.mode === 'webgl' && this.context.clear) {
-  			const color = this.style && this.style.fill? this.utils.hexToRGBA(this.style.fill): {
-  				r: 0,
-  				g: 0,
-  				b: 0,
-  				a: 0
-  			};
-  			this.context.clearColor(color.r, color.g, color.b, color.a); // 设置清空颜色缓冲时的颜色值
+  			// 缓存 clearColor 对象，避免每帧创建
+  			if(this.style && this.style.fill) {
+  				const color = this.utils.hexToRGBA(this.style.fill);
+  				this.__lastClearColor = color;
+  				this.context.clearColor(color.r, color.g, color.b, color.a);
+  			}
+  			else if(!this.__lastClearColor) {
+  				this.__lastClearColor = { r: 0, g: 0, b: 0, a: 0 };
+  				this.context.clearColor(0, 0, 0, 0);
+  			}
+  			else {
+  				this.context.clearColor(this.__lastClearColor.r, this.__lastClearColor.g, this.__lastClearColor.b, this.__lastClearColor.a);
+  			}
           	this.context.clear(this.context.COLOR_BUFFER_BIT); // 清空颜色缓冲区，也就是清空画布
   		}
   	}
@@ -8310,232 +8654,6 @@ var jmChart = (function (exports) {
   	}
 
   	/**
-  	 * 初始化图层系统
-  	 * 创建图层管理的基础结构，包括默认图层
-  	 * 
-  	 * @method initLayers
-  	 * @private
-  	 */
-  	initLayers() {
-  		if(!this.layers) {
-  			this.layers = new jmList();
-  			// 创建默认图层
-  			const defaultLayer = this.createLayer('Default Layer');
-  			this.activeLayer = defaultLayer;
-  		}
-  	}
-
-  	/**
-  	 * 创建新图层
-  	 * 图层用于组织和管理图形对象，支持可见性和锁定控制
-  	 * 
-  	 * @method createLayer
-  	 * @param {string} name 图层名称（必须唯一）
-  	 * @param {object} [options] 图层选项
-  	 * @param {boolean} [options.visible=true] 图层是否可见
-  	 * @param {boolean} [options.locked=false] 图层是否锁定（锁定后不可交互）
-  	 * @return {jmLayer} 新创建的图层
-  	 */
-  	createLayer(name, options = {}) {
-  		// 参数验证
-  		if(!name || typeof name !== 'string') {
-  			console.warn('jmGraph: createLayer - 图层名称必须是非空字符串');
-  			name = `Layer_${Date.now()}`;
-  		}
-  		
-  		this.initLayers();
-  		
-  		// 检查图层名称是否已存在
-  		const existingLayer = this.getLayer(name);
-  		if(existingLayer) {
-  			console.warn(`jmGraph: 图层 "${name}" 已存在，将返回现有图层`);
-  			return existingLayer;
-  		}
-  		
-  		const layer = new jmLayer({
-  			name: name,
-  			graph: this,
-  			...options
-  		});
-  		
-  		this.layers.add(layer);
-  		this.children.add(layer);
-  		this.needUpdate = true;
-  		return layer;
-  	}
-
-  	/**
-  	 * 获取所有图层
-  	 * 
-  	 * @method getLayers
-  	 * @return {jmList} 图层列表
-  	 */
-  	getLayers() {
-  		this.initLayers();
-  		return this.layers;
-  	}
-
-  	/**
-  	 * 根据名称获取图层
-  	 * 
-  	 * @method getLayer
-  	 * @param {string} name 图层名称
-  	 * @return {jmLayer|null} 图层对象，如果不存在则返回null
-  	 */
-  	getLayer(name) {
-  		this.initLayers();
-  		
-  		if(!name) return null;
-  		
-  		let result = null;
-  		this.layers.each((i, layer) => {
-  			if(layer.name === name) {
-  				result = layer;
-  				return false; // 找到后停止遍历
-  			}
-  		});
-  		return result;
-  	}
-
-  	/**
-  	 * 设置活动图层
-  	 * 新创建的图形将自动添加到活动图层
-  	 * 
-  	 * @method setActiveLayer
-  	 * @param {string|jmLayer} layer 图层名称或图层对象
-  	 * @return {jmGraph} 返回当前实例，支持链式调用
-  	 */
-  	setActiveLayer(layer) {
-  		this.initLayers();
-  		
-  		// 支持传入图层名称或图层对象
-  		if(typeof layer === 'string') {
-  			layer = this.getLayer(layer);
-  		}
-  		
-  		if(!layer || !(layer instanceof jmLayer)) {
-  			console.warn('jmGraph: setActiveLayer - 无效的图层');
-  			return this;
-  		}
-  		
-  		this.activeLayer = layer;
-  		return this;
-  	}
-
-  	/**
-  	 * 获取当前活动图层
-  	 * 活动图层是新创建图形的默认容器
-  	 * 
-  	 * @method getActiveLayer
-  	 * @return {jmLayer} 当前活动图层
-  	 */
-  	getActiveLayer() {
-  		this.initLayers();
-  		return this.activeLayer;
-  	}
-
-  	/**
-  	 * 移除图层
-  	 * 删除指定图层及其包含的所有图形
-  	 * 注意：默认图层不可删除
-  	 * 
-  	 * @method removeLayer
-  	 * @param {string|jmLayer} layer 图层名称或图层对象
-  	 * @return {boolean} 是否成功删除
-  	 */
-  	removeLayer(layer) {
-  		this.initLayers();
-  		
-  		// 支持传入图层名称或图层对象
-  		if(typeof layer === 'string') {
-  			layer = this.getLayer(layer);
-  		}
-  		
-  		if(!layer) {
-  			console.warn('jmGraph: removeLayer - 图层不存在');
-  			return false;
-  		}
-  		
-  		// 禁止删除默认图层
-  		if(layer.name === 'Default Layer') {
-  			console.warn('jmGraph: 不能删除默认图层');
-  			return false;
-  		}
-  		
-  		// 如果删除的是当前活动图层，切换到默认图层
-  		if(this.activeLayer === layer) {
-  			this.activeLayer = this.getLayer('Default Layer');
-  		}
-  		
-  		this.layers.remove(layer);
-  		this.children.remove(layer);
-  		this.needUpdate = true;
-  		return true;
-  	}
-
-  	/**
-  	 * 将形状添加到指定图层
-  	 * 如果未指定图层，则添加到当前活动图层
-  	 * 
-  	 * @method addShapeToLayer
-  	 * @param {jmControl} shape 要添加的形状对象
-  	 * @param {string|jmLayer} [layer] 图层名称或图层对象，默认为当前活动图层
-  	 * @return {jmGraph} 返回当前实例，支持链式调用
-  	 */
-  	addShapeToLayer(shape, layer) {
-  		this.initLayers();
-  		
-  		// 参数验证
-  		if(!shape) {
-  			console.warn('jmGraph: addShapeToLayer - 无效的形状对象');
-  			return this;
-  		}
-  		
-  		// 确定目标图层
-  		if(!layer) {
-  			layer = this.activeLayer;
-  		} else if(typeof layer === 'string') {
-  			layer = this.getLayer(layer);
-  		}
-  		
-  		if(!layer) {
-  			console.warn('jmGraph: addShapeToLayer - 图层不存在');
-  			return this;
-  		}
-  		
-  		layer.children.add(shape);
-  		this.needUpdate = true;
-  		return this;
-  	}
-
-  	/**
-  	 * 从图层中移除形状
-  	 * 
-  	 * @method removeShapeFromLayer
-  	 * @param {jmControl} shape 要移除的形状对象
-  	 * @return {jmGraph} 返回当前实例，支持链式调用
-  	 */
-  	removeShapeFromLayer(shape) {
-  		if(!shape) {
-  			console.warn('jmGraph: removeShapeFromLayer - 无效的形状对象');
-  			return this;
-  		}
-  		
-  		// 从所有图层中查找并移除
-  		if(this.layers) {
-  			this.layers.each((i, layer) => {
-  				if(layer.children.contains(shape)) {
-  					layer.children.remove(shape);
-  					this.needUpdate = true;
-  					return false; // 找到后停止遍历
-  				}
-  			});
-  		}
-  		
-  		return this;
-  	}
-
-  	/**
   	 * 保存为base64图形数据
   	 * 
   	 * @method toDataURL
@@ -8601,48 +8719,27 @@ var jmChart = (function (exports) {
   	}
 
   	/**
-  	 * 转换为SVG字符串
-  	 * 遍历所有图层和形状，生成SVG标记
-  	 * 
+  	 * 遍历所有形状，生成SVG标记
+  	 *
   	 * @method toSVG
   	 * @return {string} SVG字符串
   	 */
   	toSVG() {
   		// SVG头部，包含命名空间和画布尺寸
   		let svg = `<svg width="${this.width}" height="${this.height}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${this.width} ${this.height}">`;
-  		
+
   		// 添加背景色（如果有）
   		if(this.style && this.style.fill) {
   			svg += `<rect width="100%" height="100%" fill="${this.style.fill}"/>`;
   		}
-  		
-  		// 遍历所有图层
-  		if(this.layers) {
-  			this.layers.each((i, layer) => {
-  				if(layer.visible) {
-  					// 添加图层组，方便管理
-  					svg += `<g id="${layer.name}" opacity="${layer.opacity || 1}">`;
-  					
-  					// 遍历图层中的所有形状
-  					layer.children.each((j, shape) => {
-  						if(shape.toSVG) {
-  							svg += shape.toSVG();
-  						}
-  					});
-  					
-  					svg += '</g>';
-  				}
-  			});
-  		}
-  		else {
-  			// 遍历直接添加的形状（兼容没有图层系统的情况）
-  			this.children.each((i, shape) => {
-  				if(shape.toSVG) {
-  					svg += shape.toSVG();
-  				}
-  			});
-  		}
-  		
+
+  		// 遍历所有直接添加的形状
+  		this.children.each((i, shape) => {
+  			if(shape.toSVG) {
+  				svg += shape.toSVG();
+  			}
+  		});
+
   		svg += '</svg>';
   		return svg;
   	}
@@ -8692,7 +8789,7 @@ var jmChart = (function (exports) {
   			// 触发刷新事件
   			self.emit('update', time);
 
-  			self.__requestAnimationFrameFunHandler && self.cancelAnimationFrame(self.__requestAnimationFrameFunHandler);
+  			// 直接 requestAnimationFrame，无需先 cancel
   			self.__requestAnimationFrameFunHandler = self.requestAnimationFrame(update);
   			if(callback) callback();
   		}
@@ -8727,22 +8824,11 @@ var jmChart = (function (exports) {
       "star": jmStar
   };
 
-  class jmGraph extends jmGraph$1 {
+  class jmGraphImpl extends jmGraph {
       constructor(canvas, option, callback) {
-          
-          const targetType = new.target;
-
           // 合并shapes
           option = Object.assign({}, option);
           option.shapes = Object.assign(shapes, option.shapes||{});
-          
-          //不是用new实例化的话，返回一个promise
-  		if(!targetType || !(targetType.prototype instanceof jmGraph$1)) {
-  			return new Promise(function(resolve, reject){				
-  				var g = new jmGraph(canvas, option, callback);
-  				if(resolve) resolve(g);				
-  			});
-          }
 
           if(typeof option == 'function') {
   			callback = option;
@@ -8751,16 +8837,7 @@ var jmChart = (function (exports) {
           
           super(canvas, option, callback);
       }
-
-      static create(...args) {
-          return createJmGraph(...args);
-      }
   }
-
-  //创建实例
-  const createJmGraph = (...args) => {
-  	return new jmGraph(...args);
-  };
 
   /**
    * 基础样式
@@ -9963,13 +10040,16 @@ var jmChart = (function (exports) {
     clear() {
       this._min = null;
       this._max = null;
+      this._width = null; // 清除宽度缓存
       this.children.each((i, c) => {
         c.remove();
       }, true);
       // 清空栅格线
-      this.gridLines && this.gridLines.forEach(line => {
-        line.remove();
-      });
+      if (this.gridLines && this.gridLines.length) {
+        for (let i = 0; i < this.gridLines.length; i++) {
+          this.gridLines[i].remove();
+        }
+      }
       this.labels && this.labels.forEach(label => {
         label.remove();
       });
@@ -10181,7 +10261,9 @@ var jmChart = (function (exports) {
     }
   };
 
-  const ANIMATION_DATA_THRESHOLD$7 = 100;
+  // 公共常量提取到基类，避免每个子类重复定义
+  const ANIMATION_DATA_THRESHOLD = 100;
+  const DEFAULT_ANIMATION_COUNT = 10;
 
   /**
    * 图表系列基类
@@ -10300,14 +10382,20 @@ var jmChart = (function (exports) {
      */
     initDataPoint(...args) {
       let dataChanged = false;
-      if (this.enableAnimate && this.data && this.data.length < ANIMATION_DATA_THRESHOLD$7) {
-        this.lastPoints = this.graph.utils.clone(this.dataPoints, null, true, obj => {
-          if (obj instanceof jmControl) return obj;
-        });
-        this.dataPoints = this.createPoints(...args);
-        dataChanged = utils.arrayIsChange(this.lastPoints, this.dataPoints, (s, t) => {
-          return s.x === t.x && s.y === t.y;
-        });
+      if (this.enableAnimate && this.data && this.data.length < ANIMATION_DATA_THRESHOLD) {
+        // 仅在数据引用变化时才做深度比较
+        if (this._lastData !== this.data) {
+          this.lastPoints = this.graph.utils.clone(this.dataPoints, null, true, obj => {
+            if (obj instanceof jmControl) return obj;
+          });
+          this.dataPoints = this.createPoints(...args);
+          dataChanged = utils.arrayIsChange(this.lastPoints, this.dataPoints, (s, t) => {
+            return s.x === t.x && s.y === t.y;
+          });
+          this._lastData = this.data;
+        } else {
+          this.dataPoints = this.createPoints(...args);
+        }
         if (dataChanged) {
           this.___animateCounter = 0;
         }
@@ -10440,7 +10528,7 @@ var jmChart = (function (exports) {
           xValue: xv,
           xLabel: xv,
           points: [],
-          style: this.graph.utils.clone(this.style)
+          style: this.style // 共享引用，避免深拷贝；子类如需修改应自行创建副本
         };
         p.x = xstep * i + this.xAxis.labelStart;
         for (let j = 0; j < fields.length; j++) {
@@ -10606,9 +10694,6 @@ var jmChart = (function (exports) {
     }
   }
 
-  const ANIMATION_DATA_THRESHOLD$6 = 100;
-  const DEFAULT_ANIMATION_COUNT$6 = 10;
-
   /**
    * 柱图
    *
@@ -10638,16 +10723,18 @@ var jmChart = (function (exports) {
       const len = points.length;
       if (!len) return;
       this.initWidth(len);
-      const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0) && len < ANIMATION_DATA_THRESHOLD$6;
+      const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0) && len < ANIMATION_DATA_THRESHOLD;
       let aniIsEnd = true;
-      const aniCount = this.style.aniCount || DEFAULT_ANIMATION_COUNT$6;
+      const aniCount = this.style.aniCount || DEFAULT_ANIMATION_COUNT;
       for (let i = 0; i < len; i++) {
         const point = points[i];
         if (typeof point.y === 'undefined' || point.y === null) {
           continue;
         }
-        point.style.fill = this.getColor(point);
-        const sp = this.addShape(this.graph.createPath(null, point.style));
+        const style = Object.assign({}, point.style, {
+          fill: this.getColor(point)
+        });
+        const sp = this.addShape(this.graph.createPath(null, style));
         const p1 = {
           x: point.x - this.barTotalWidth / 2 + this.barWidth * this.barIndex,
           y: this.baseY
@@ -10782,16 +10869,20 @@ var jmChart = (function (exports) {
         let topStartY = this.baseY;
         let bottomStartY = this.baseY;
         for (let index = 0; index < point.points.length; index++) {
-          const style = this.graph.utils.clone(this.style);
           const p = point.points[index];
-          if (style.color && typeof style.color === 'function') {
-            style.fill = style.color.call(this, {
+          let fillColor;
+          if (this.style.color && typeof this.style.color === 'function') {
+            fillColor = this.style.color.call(this, {
               index,
               point: p
             });
           } else {
-            style.fill = this.graph.getColor(index);
+            fillColor = this.graph.getColor(index);
           }
+          // 使用浅拷贝而非深拷贝
+          const style = Object.assign({}, this.style, {
+            fill: fillColor
+          });
           const sp = this.addShape(this.graph.createPath(null, style));
           let startY = topStartY;
           if (p.yValue < this.baseYValue) startY = bottomStartY;
@@ -10900,7 +10991,7 @@ var jmChart = (function (exports) {
       this.totalValue = 0;
       //计算最大值和最小值
       if (this.data) {
-        for (const i in this.data) {
+        for (let i = 0; i < this.data.length; i++) {
           const s = this.data[i];
           const vy = s[this.field];
           if (vy) {
@@ -10997,15 +11088,20 @@ var jmChart = (function (exports) {
             yLabel: yv,
             step: Math.abs(yv / this.totalValue),
             // 每个数值点比
-            style: this.graph.utils.clone(this.style),
+            style: this.style,
+            // 共享引用，仅在需要修改时才拷贝
             anticlockwise
           };
           points.push(p);
           //p.style.color = this.graph.getColor(index);
           if (p.style.color && typeof p.style.color === 'function') {
+            p.style = this.graph.utils.clone(this.style);
             p.style.fill = p.style.color.call(this, p);
           } else {
-            p.style.fill = this.graph.getColor(index);
+            // fill 需要独立，创建轻量样式覆盖
+            p.style = Object.assign({}, this.style, {
+              fill: this.graph.getColor(index)
+            });
           }
           const start = startAni; // 上一个扇形的结束角度为当前的起始角度
           // 计算当前结束角度, 同时也是下一个的起始角度
@@ -11211,11 +11307,12 @@ var jmChart = (function (exports) {
       const rotateStep = Math.PI * 2 / yCount;
 
       // 清空除了一个默认外的所有Y轴
-      for (let index in this.graph.yAxises) {
-        const axis = this.graph.yAxises[index];
+      const yAxisKeys = Object.keys(this.graph.yAxises || {});
+      for (let k = 0; k < yAxisKeys.length; k++) {
+        const axis = this.graph.yAxises[yAxisKeys[k]];
         if (!axis || axis === this.yAxis) continue;
         axis.remove();
-        delete this.graph.yAxises[index];
+        delete this.graph.yAxises[yAxisKeys[k]];
       }
       for (let index = 0; index < yCount; index++) {
         if (!this.field[index]) continue;
@@ -11362,21 +11459,30 @@ var jmChart = (function (exports) {
       const points = [];
       for (var i = 0; i < this.data.length; i++) {
         const s = this.data[i];
-        const style = this.graph.utils.clone(this.style);
-        if (style.color && typeof style.color === 'function') {
-          style.stroke = style.color.call(this, {
+        let strokeColor;
+        if (this.style.color && typeof this.style.color === 'function') {
+          strokeColor = this.style.color.call(this, {
             data: s,
             index: i
           });
         } else {
-          style.stroke = this.graph.getColor(i);
+          strokeColor = this.graph.getColor(i);
         }
-        if (typeof style.fill === 'function') {
-          style.fill = style.fill.call(this, style);
+        let fillColor;
+        if (typeof this.style.fill === 'function') {
+          fillColor = this.style.fill.call(this, {
+            ...this.style,
+            stroke: strokeColor
+          });
         } else {
-          const color = this.graph.utils.hexToRGBA(style.stroke);
-          style.fill = `rgba(${color.r},${color.g},${color.b}, 0.2)`;
+          const color = this.graph.utils.hexToRGBA(strokeColor);
+          fillColor = `rgba(${color.r},${color.g},${color.b}, 0.2)`;
         }
+        // 使用浅拷贝而非深拷贝
+        const style = Object.assign({}, this.style, {
+          stroke: strokeColor,
+          fill: fillColor
+        });
         const shapePoints = [];
         for (const axis of this.axises) {
           if (!axis || !axis.field) continue;
@@ -11470,9 +11576,6 @@ var jmChart = (function (exports) {
     });
   };
 
-  const ANIMATION_DATA_THRESHOLD$5 = 100;
-  const DEFAULT_ANIMATION_COUNT$5 = 10;
-
   /**
    * 线图
    *
@@ -11504,9 +11607,9 @@ var jmChart = (function (exports) {
       if (!len) return;
       this.style.stroke = this.style.color;
       this.style.item.stroke = this.style.color;
-      const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0) && len < ANIMATION_DATA_THRESHOLD$5;
+      const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0) && len < ANIMATION_DATA_THRESHOLD;
       let shapePoints = [];
-      const aniCount = this.style.aniCount || DEFAULT_ANIMATION_COUNT$5;
+      const aniCount = this.style.aniCount || DEFAULT_ANIMATION_COUNT;
       const aniStep = Math.floor(len / aniCount) || 1;
       for (let i = 0; i < len; i++) {
         const p = points[i];
@@ -11889,7 +11992,6 @@ var jmChart = (function (exports) {
           console.warn('K线图数据不完整，需要4个字段（开盘、收盘、最高、最低）');
           continue;
         }
-        const sp = this.addShape(this.graph.createPath([], p.style));
         const bl = {
           x: p.x - w,
           y: p.points[0].y
@@ -11908,14 +12010,18 @@ var jmChart = (function (exports) {
         };
         let tm = p.points[1];
         let bm = p.points[0];
-        p.style.stroke = p.style.fill = p.style.masculineColor || 'red';
+
+        // 使用浅拷贝避免污染共享引用
+        const style = Object.assign({}, p.style);
+        style.stroke = style.fill = style.masculineColor || 'red';
         if (p.points[0].yValue > p.points[1].yValue) {
-          p.style.stroke = p.style.fill = p.style.negativeColor || 'green';
+          style.stroke = style.fill = style.negativeColor || 'green';
           bl.y = br.y = p.points[1].y;
           tl.y = tr.y = p.points[0].y;
           tm = p.points[0];
           bm = p.points[1];
         }
+        const sp = this.addShape(this.graph.createPath([], style));
         sp.points.push(p.points[2], tm, tl, bl, bm, p.points[3], bm, br, tr, tm, p.points[2]);
         this.emit('onPointCreated', p);
       }
@@ -11939,9 +12045,6 @@ var jmChart = (function (exports) {
       }
     }
   }
-
-  const ANIMATION_DATA_THRESHOLD$4 = 100;
-  const DEFAULT_ANIMATION_COUNT$4 = 10;
 
   /**
    * 散点图
@@ -11974,8 +12077,8 @@ var jmChart = (function (exports) {
       if (!len) return;
       this.style.stroke = this.style.color;
       this.style.item.stroke = this.style.color;
-      const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0) && len < ANIMATION_DATA_THRESHOLD$4;
-      const aniCount = this.style.aniCount || DEFAULT_ANIMATION_COUNT$4;
+      const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0) && len < ANIMATION_DATA_THRESHOLD;
+      const aniCount = this.style.aniCount || DEFAULT_ANIMATION_COUNT;
       const aniStep = Math.floor(len / aniCount) || 1;
       for (let i = 0; i < len; i++) {
         const p = points[i];
@@ -12048,9 +12151,6 @@ var jmChart = (function (exports) {
     }
   }
 
-  const ANIMATION_DATA_THRESHOLD$3 = 100;
-  const DEFAULT_ANIMATION_COUNT$3 = 10;
-
   /**
    * 气泡图
    *
@@ -12082,8 +12182,8 @@ var jmChart = (function (exports) {
       if (!len) return;
       this.style.stroke = this.style.color;
       this.style.item.stroke = this.style.color;
-      const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0) && len < ANIMATION_DATA_THRESHOLD$3;
-      const aniCount = this.style.aniCount || DEFAULT_ANIMATION_COUNT$3;
+      const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0) && len < ANIMATION_DATA_THRESHOLD;
+      const aniCount = this.style.aniCount || DEFAULT_ANIMATION_COUNT;
       const aniStep = Math.floor(len / aniCount) || 1;
       for (let i = 0; i < len; i++) {
         const p = points[i];
@@ -12162,9 +12262,6 @@ var jmChart = (function (exports) {
     }
   }
 
-  const ANIMATION_DATA_THRESHOLD$2 = 100;
-  const DEFAULT_ANIMATION_COUNT$2 = 10;
-
   /**
    * 热力图
    *
@@ -12207,8 +12304,8 @@ var jmChart = (function (exports) {
       }
       this.minValue = minValue;
       this.maxValue = maxValue;
-      const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0) && len < ANIMATION_DATA_THRESHOLD$2;
-      const aniCount = this.style.aniCount || DEFAULT_ANIMATION_COUNT$2;
+      const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0) && len < ANIMATION_DATA_THRESHOLD;
+      const aniCount = this.style.aniCount || DEFAULT_ANIMATION_COUNT;
       const aniStep = Math.floor(len / aniCount) || 1;
       for (let i = 0; i < len; i++) {
         const p = points[i];
@@ -12575,20 +12672,15 @@ var jmChart = (function (exports) {
     }
   }
 
-  const ANIMATION_DATA_THRESHOLD$1 = 100;
-  const DEFAULT_ANIMATION_COUNT$1 = 10;
-
   /**
    * 面积图
+   * 继承自折线图，默认启用区域填充
    *
    * @class jmAreaSeries
    * @module jmChart
-   * @param {jmChart} chart 当前图表
-   * @param {array} mappings 图形字段映射
-   * @param {style} style 样式
+   * @extends jmLineSeries
    */
-
-  class jmAreaSeries extends jmSeries {
+  class jmAreaSeries extends jmLineSeries {
     constructor(options) {
       options.style = options.style || options.graph.style.area;
       super(options);
@@ -12597,192 +12689,12 @@ var jmChart = (function (exports) {
     }
 
     /**
-     * 初始化面积图
-     *
-     * @method init
-     * @for jmAreaSeries
-     */
-    init() {
-      const {
-        points,
-        dataChanged
-      } = this.initDataPoint();
-      const len = points.length;
-      if (!len) return;
-      this.style.stroke = this.style.color;
-      this.style.item.stroke = this.style.color;
-      const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0) && len < ANIMATION_DATA_THRESHOLD$1;
-      let shapePoints = [];
-      const aniCount = this.style.aniCount || DEFAULT_ANIMATION_COUNT$1;
-      const aniStep = Math.floor(len / aniCount) || 1;
-      for (let i = 0; i < len; i++) {
-        const p = points[i];
-        if (typeof p.y === 'undefined' || p.y === null) {
-          continue;
-        }
-        if (isRunningAni && i > this.___animateCounter) {
-          break;
-        }
-        if (this.style.showItem) {
-          this.createPointItem(p);
-        }
-        if (this.style.curve) {
-          shapePoints = this.createCurePoints(shapePoints, p);
-        } else if (this.style.lineType === 'dotted') {
-          shapePoints = this.createDotLine(shapePoints, p);
-        }
-        shapePoints.push(p);
-        this.createItemLabel(p);
-        this.emit('onPointCreated', p);
-      }
-      if (this.___animateCounter >= len - 1) {
-        this.___animateCounter = 0;
-      } else if (isRunningAni) {
-        this.___animateCounter += aniStep;
-        this.graph.utils.requestAnimationFrame(() => {
-          this.needUpdate = true;
-        });
-      }
-      this.points = shapePoints;
-      this.createArea(shapePoints);
-    }
-
-    /**
-     * 生成点的小圆圈
-     *
-     * @method createPointItem
-     * @for jmAreaSeries
-     * @param {object} p 数据点
-     */
-    createPointItem(p) {
-      const pointShape = this.graph.createShape('circle', {
-        style: this.style.item,
-        center: p,
-        radius: this.style.radius || 3
-      });
-      pointShape.zIndex = (pointShape.style.zIndex || 1) + 1;
-      return this.addShape(pointShape);
-    }
-
-    /**
-     * 创建曲线点
-     *
-     * @method createCurePoints
-     * @for jmAreaSeries
-     * @param {array} shapePoints 形状点数组
-     * @param {object} p 当前点
-     * @return {array} 新的形状点数组
-     */
-    createCurePoints(shapePoints, p) {
-      const startPoint = shapePoints[shapePoints.length - 1];
-      if (!startPoint || !p) return shapePoints;
-      if (startPoint.x === undefined || startPoint.x === null || startPoint.y === undefined || startPoint.y === null || p.x === undefined || p.x === null || p.y === undefined || p.y === null) {
-        return shapePoints;
-      }
-      const p1 = {
-        x: startPoint.x + (p.x - startPoint.x) / 5,
-        y: startPoint.y
-      };
-      const p2 = {
-        x: startPoint.x + (p.x - startPoint.x) / 2,
-        y: p.y - (p.y - startPoint.y) / 2
-      };
-      const p3 = {
-        x: p.x - (p.x - startPoint.x) / 5,
-        y: p.y
-      };
-      this.__bezier = this.__bezier || this.graph.createShape('bezier');
-      this.__bezier.cpoints = [startPoint, p1, p2, p3, p];
-      const bzpoints = this.__bezier.initPoints();
-      if (bzpoints && bzpoints.length) {
-        shapePoints = shapePoints.concat(bzpoints);
-      }
-      return shapePoints;
-    }
-
-    /**
-     * 创建虚线点
-     *
-     * @method createDotLine
-     * @for jmAreaSeries
-     * @param {array} shapePoints 形状点数组
-     * @param {object} p 当前点
-     * @return {array} 新的形状点数组
-     */
-    createDotLine(shapePoints, p) {
-      const startPoint = shapePoints[shapePoints.length - 1];
-      if (!startPoint || !p) return shapePoints;
-      if (startPoint.x === undefined || startPoint.x === null || startPoint.y === undefined || startPoint.y === null || p.x === undefined || p.x === null || p.y === undefined || p.y === null) {
-        return shapePoints;
-      }
-      this.__line = this.__line || this.graph.createShape('line', {
-        style: this.style
-      });
-      this.__line.start = startPoint;
-      this.__line.end = p;
-      const dots = this.__line.initPoints();
-      if (dots && dots.length) {
-        shapePoints = shapePoints.concat(dots);
-      }
-      return shapePoints;
-    }
-
-    /**
-     * 生成面积效果
-     *
-     * @method createArea
-     * @for jmAreaSeries
-     * @param {array} points 数据点数组
-     * @param {boolean} needClosePoint 是否需要闭合点
-     */
-    createArea(points, needClosePoint = true) {
-      // 有指定绘制区域效果才展示
-      if (!this.style.area || points.length < 2) return;
-      const start = points[0];
-      const end = points[points.length - 1];
-      const style = this.graph.utils.clone(this.style.area, {}, true);
-      // 连框颜色如果没指定，就透明
-      style.stroke = style.stroke || 'transparent';
-      if (!style.fill) {
-        const color = this.graph.utils.hexToRGBA(this.style.stroke);
-        style.fill = `linear-gradient(50% 0 50% 100%, 
-				rgba(${color.r},${color.g},${color.b}, 0) 1,
-				rgba(${color.r},${color.g},${color.b}, 0.1) 0.7, 
-				rgba(${color.r},${color.g},${color.b}, 0.3) 0)`;
-      } else if (typeof style.fill === 'function') {
-        style.fill = style.fill.call(this, style);
-      }
-      const area = this.graph.createShape('path', {
-        points: this.graph.utils.clone(points, true),
-        style,
-        width: this.graph.chartArea.width,
-        height: this.graph.chartArea.height
-      });
-
-      // 在点集合前后加上落地到X轴的点就可以组成一个封闭的图形area
-      if (needClosePoint) {
-        area.points.unshift({
-          x: start.x,
-          y: this.baseY
-        });
-        area.points.push({
-          x: end.x,
-          y: this.baseY
-        });
-      }
-      this.addShape(area);
-    }
-
-    /**
      * 生成图例
-     *
-     * @method createLegend
-     * @for jmAreaSeries
      */
     createLegend() {
-      // 生成图例前的图标
       var style = this.graph.utils.clone(this.style);
       style.stroke = style.color;
+      style.fill = style.color;
       var shape = this.graph.createShape('path', {
         style: style
       });
@@ -12804,8 +12716,7 @@ var jmChart = (function (exports) {
           y: 0
         };
         this.__bezier = this.__bezier || this.graph.createShape('bezier');
-        this.__bezier.cpoints = [p1, p2, p3, p4]; //设置控制点
-
+        this.__bezier.cpoints = [p1, p2, p3, p4];
         shape.points = this.__bezier.initPoints();
       } else {
         shape.points = [{
@@ -12820,8 +12731,6 @@ var jmChart = (function (exports) {
     }
   }
 
-  const ANIMATION_DATA_THRESHOLD = 100;
-  const DEFAULT_ANIMATION_COUNT = 10;
   class jmWaterfallSeries extends jmSeries {
     constructor(options) {
       options.style = options.style || options.graph.style.waterfall;
@@ -14254,12 +14163,11 @@ var jmChart = (function (exports) {
           if (chart.style.markLine.longtap) {
             longtap = 1;
             longtapHandler && graph.utils.cancelAnimationFrame(longtapHandler);
-            let tapStartTime = Date.now();
+            const tapStartTime = Date.now();
             const reqFun = () => {
-              const elapsed = Date.now() - tapStartTime;
               if (longtap === 1 || longtap === 2) {
                 // 如果还未过一定时间，则继续等待
-                if (elapsed < 500) {
+                if (Date.now() - tapStartTime < 500) {
                   longtapHandler = graph.utils.requestAnimationFrame(reqFun);
                   return;
                 }
@@ -14270,9 +14178,6 @@ var jmChart = (function (exports) {
             };
             // 如果一定时间后还没有取消，则表示长按了
             longtapHandler = graph.utils.requestAnimationFrame(reqFun);
-
-            //args.event.stopPropagation();
-            //args.event.preventDefault();// 阻止默认行为	
           } else {
             this.startMove(args);
           }
@@ -14379,7 +14284,7 @@ var jmChart = (function (exports) {
    * @module jmChart
    * @param {element} container 图表容器
    */
-  class jmChart extends jmGraph {
+  class jmChart extends jmGraphImpl {
     constructor(container, options) {
       options = options || {};
       const enableAnimate = !!options.enableAnimate;
@@ -14473,25 +14378,27 @@ var jmChart = (function (exports) {
 
       // 绑定点击事件
       this.on('click', args => {
-        if (this.option.onClick) {
-          // 找到点击位置的数据点
-          let closestPoint = null;
-          let minDistance = Infinity;
-          this.series.each((i, serie) => {
-            if (serie.dataPoints) {
-              serie.dataPoints.forEach(point => {
-                const distance = Math.sqrt(Math.pow(args.position.x - point.x, 2) + Math.pow(args.position.y - point.y, 2));
-                if (distance < minDistance && distance < 20) {
-                  // 20px 范围内的点
-                  minDistance = distance;
-                  closestPoint = point;
-                }
-              });
+        if (!this.option.onClick) return;
+        // 找到点击位置的数据点
+        let closestPoint = null;
+        let minDistance = 20; // 20px 范围，同时作为阈值，无需再比较小于阈值
+
+        this.series.each((i, serie) => {
+          if (!serie.dataPoints) return;
+          const points = serie.dataPoints;
+          for (let j = 0, len = points.length; j < len; j++) {
+            const point = points[j];
+            const dx = args.position.x - point.x;
+            const dy = args.position.y - point.y;
+            const distance = dx * dx + dy * dy; // 避免开方，直接比较平方
+            if (distance < minDistance * minDistance) {
+              minDistance = distance;
+              closestPoint = point;
             }
-          });
-          if (closestPoint) {
-            this.option.onClick(closestPoint);
           }
+        });
+        if (closestPoint) {
+          this.option.onClick(closestPoint);
         }
       });
     }
@@ -14521,7 +14428,7 @@ var jmChart = (function (exports) {
           options = this.utils.clone(options, {
             autoRefresh: true
           }, true);
-          this.touchGraph = new jmGraph(cn, options);
+          this.touchGraph = new jmGraphImpl(cn, options);
           this.touchGraph.chartGraph = this;
           this.on('propertyChange', (name, args) => {
             if (['width', 'height'].includes(name)) {
@@ -14561,8 +14468,9 @@ var jmChart = (function (exports) {
         delete this.xAxis;
       }
       if (this.yAxises) {
-        for (let i in this.yAxises) {
-          this.yAxises[i].remove();
+        const keys = Object.keys(this.yAxises);
+        for (let k = 0; k < keys.length; k++) {
+          this.yAxises[keys[k]].remove();
         }
         delete this.yAxises;
       }
@@ -14574,18 +14482,9 @@ var jmChart = (function (exports) {
      * @param {int} index 颜色索引
      */
     getColor(index) {
-      const cacheKey = `color_${index}`;
-      if (this._cache.has(cacheKey)) {
-        return this._cache.get(cacheKey);
-      }
-      let color;
-      if (index >= this.style.chartColors.length) {
-        color = this.style.chartColors[index % this.style.chartColors.length];
-      } else {
-        color = this.style.chartColors[index];
-      }
-      this._cache.set(cacheKey, color);
-      return color;
+      const colors = this.style.chartColors;
+      const colorIndex = index % colors.length;
+      return colors[colorIndex];
     }
 
     /**
@@ -14603,40 +14502,43 @@ var jmChart = (function (exports) {
         this.xAxis.clear();
       }
       if (this.yAxises) {
-        for (let i in this.yAxises) {
-          this.yAxises[i].clear();
+        const keys = Object.keys(this.yAxises);
+        for (let k = 0; k < keys.length; k++) {
+          this.yAxises[keys[k]].clear();
         }
       }
       this.barSeriesCount = 0;
+      // 合并两次 series 遍历为一次，减少遍历开销
+      const seriesInited = [];
       this.series.each((i, serie) => {
         if (!serie.style.color) {
           serie.style.color = serie.graph.getColor(i);
         }
-        if (serie.graph.style.layout != 'inside') {
-          if (serie instanceof jmBarSeries) {
+        if (serie instanceof jmBarSeries) {
+          if (serie.graph.style.layout != 'inside') {
             serie.graph.style.layout = 'inside';
           }
-        }
-        if (serie instanceof jmBarSeries) {
           serie.barIndex = serie.graph.barSeriesCount;
           serie.graph.barSeriesCount++;
         }
         serie.reset();
+        seriesInited.push(serie);
       });
       if (this.legend) {
         this.legend.reset();
       }
       if (this.yAxises) {
-        for (let i in this.yAxises) {
-          this.yAxises[i].reset();
+        const keys = Object.keys(this.yAxises);
+        for (let k = 0; k < keys.length; k++) {
+          this.yAxises[keys[k]].reset();
         }
       }
       if (this.xAxis) {
         this.xAxis.reset();
       }
-      this.series.each((i, serie) => {
-        serie.init && serie.init();
-      });
+      for (let i = 0; i < seriesInited.length; i++) {
+        seriesInited[i].init && seriesInited[i].init();
+      }
     }
 
     /**
@@ -14814,14 +14716,35 @@ var jmChart = (function (exports) {
       this.initChart();
     },
     updated() {
-      this.initChart();
+      this.refresh();
     },
     destroyed() {
       this.chartInstance && this.chartInstance.destroy();
     },
     watch: {
-      chartData: function (newData, oldData) {
-        this.refresh();
+      chartData: {
+        handler: function (newData, oldData) {
+          this.refresh();
+        },
+        deep: false // 仅监听引用变化，由使用者显式替换数组时触发
+      },
+      chartOptions: {
+        handler: function (newOptions, oldOptions) {
+          // 配置变化时需要重建图表
+          if (this.chartInstance) {
+            this.chartInstance.destroy();
+            this.chartInstance = null;
+          }
+          this.option = Object.assign({
+            enableAnimate: false,
+            legendPosition: 'top',
+            legendVisible: true,
+            width: this.width,
+            height: this.height
+          }, newOptions);
+          this.$nextTick(() => this.initChart());
+        },
+        deep: false
       },
       width: function (newWidth, oldWidth) {
         if (!this.chartInstance) return;

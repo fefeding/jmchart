@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+	<meta content="text/html; charset=UTF-8" http-equiv="content-type" />
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<title>jmChart 性能测试</title>
+	<style>
+	html,body {
+		margin:0;
+		padding:0;
+		width:100%;
+		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+		background-color: #f0f2f5;
+		color: #333;
+	}
+	.header {
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		padding: 20px;
+	}
+	.header h1 {
+		margin: 0;
+		font-size: 22px;
+		color: #fff;
+	}
+	.header .subtitle {
+		margin: 4px 0 0;
+		font-size: 13px;
+		color: rgba(255,255,255,0.8);
+	}
+	.container {
+		background: #fff;
+		max-width: 1200px;
+		margin: 20px auto;
+		border-radius: 12px;
+		box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+		padding: 24px;
+		overflow: hidden;
+	}
+	.controls {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 12px;
+		align-items: center;
+		margin-bottom: 20px;
+		padding-bottom: 16px;
+		border-bottom: 1px solid #e8e8e8;
+	}
+	.controls label {
+		font-size: 14px;
+		font-weight: 500;
+		color: #555;
+	}
+	.controls select, .controls input {
+		padding: 6px 12px;
+		border: 1px solid #d9d9d9;
+		border-radius: 6px;
+		font-size: 14px;
+		background: #fff;
+		color: #333;
+		outline: none;
+		transition: border-color 0.3s;
+	}
+	.controls select:focus, .controls input:focus {
+		border-color: #667eea;
+	}
+	.controls input[type="number"] {
+		width: 120px;
+	}
+	.btn-group {
+		display: flex;
+		gap: 8px;
+		margin-left: auto;
+	}
+	button {
+		padding: 8px 20px;
+		border: none;
+		border-radius: 6px;
+		cursor: pointer;
+		font-size: 14px;
+		font-weight: 500;
+		transition: all 0.3s;
+	}
+	.btn-primary {
+		background: #667eea;
+		color: white;
+	}
+	.btn-primary:hover {
+		background: #5568d3;
+		transform: translateY(-1px);
+		box-shadow: 0 4px 12px rgba(102,126,234,0.3);
+	}
+	.btn-primary:disabled {
+		background: #a0aec0;
+		cursor: not-allowed;
+		transform: none;
+		box-shadow: none;
+	}
+	.btn-secondary {
+		background: #f0f2f5;
+		color: #333;
+		border: 1px solid #d9d9d9;
+	}
+	.btn-secondary:hover {
+		background: #e2e6ea;
+	}
+	.chart-area {
+		background: #fafafa;
+		border: 1px dashed #d9d9d9;
+		border-radius: 8px;
+		min-height: 400px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		position: relative;
+		overflow: hidden;
+	}
+	.chart-area canvas {
+		background: #fff !important;
+	}
+	.chart-area .placeholder {
+		color: #aaa;
+		font-size: 15px;
+		text-align: center;
+		padding: 20px;
+	}
+	.progress-bar {
+		height: 4px;
+		background: #e8e8e8;
+		border-radius: 2px;
+		overflow: hidden;
+		margin-top: 12px;
+		display: none;
+	}
+	.progress-bar .bar {
+		height: 100%;
+		background: linear-gradient(90deg, #667eea, #764ba2);
+		width: 0%;
+		transition: width 0.3s;
+		border-radius: 2px;
+	}
+	.results {
+		margin-top: 20px;
+	}
+	.results h2 {
+		font-size: 18px;
+		margin: 0 0 12px;
+		color: #333;
+	}
+	.results-table {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: 13px;
+	}
+	.results-table thead th {
+		background: #fafafa;
+		padding: 10px 12px;
+		text-align: left;
+		font-weight: 600;
+		color: #555;
+		border-bottom: 2px solid #e8e8e8;
+		white-space: nowrap;
+	}
+	.results-table tbody td {
+		padding: 8px 12px;
+		border-bottom: 1px solid #f0f0f0;
+	}
+	.results-table tbody tr:hover {
+		background: #fafafa;
+	}
+	.results-table .time { font-family: 'Courier New', monospace; font-weight: 600; }
+	.results-table .fast { color: #52c41a; }
+	.results-table .medium { color: #faad14; }
+	.results-table .slow { color: #f5222d; }
+	.results-table .status-pass { color: #52c41a; font-weight: 600; }
+	.results-table .status-fail { color: #f5222d; font-weight: 600; }
+	.summary {
+		display: flex;
+		gap: 16px;
+		margin-top: 16px;
+		flex-wrap: wrap;
+	}
+	.summary-card {
+		flex: 1;
+		min-width: 160px;
+		background: #fafafa;
+		border-radius: 8px;
+		padding: 16px;
+		text-align: center;
+	}
+	.summary-card .value {
+		font-size: 28px;
+		font-weight: 700;
+		color: #667eea;
+	}
+	.summary-card .label {
+		font-size: 12px;
+		color: #888;
+		margin-top: 4px;
+	}
+	.options-row {
+		display: flex;
+		gap: 16px;
+		flex-wrap: wrap;
+		align-items: center;
+		margin-bottom: 12px;
+	}
+	.options-row label {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		font-size: 13px;
+		color: #666;
+		cursor: pointer;
+	}
+	.options-row input[type="checkbox"] {
+		width: 16px;
+		height: 16px;
+		cursor: pointer;
+	}
+	.batch-controls {
+		display: none;
+		padding: 12px;
+		background: #f8f9ff;
+		border-radius: 8px;
+		border: 1px solid #e8ecf5;
+		margin-bottom: 12px;
+	}
+	.batch-controls h3 {
+		margin: 0 0 8px;
+		font-size: 14px;
+		color: #555;
+	}
+	.batch-progress {
+		font-size: 13px;
+		color: #667eea;
+		margin-top: 8px;
+	}
+	@media (max-width: 768px) {
+		.container { padding: 15px; margin: 10px; }
+		.controls { flex-direction: column; align-items: stretch; }
+		.btn-group { margin-left: 0; justify-content: stretch; }
+		.btn-group button { flex: 1; }
+	}
+	</style>
+	<script type="module">
+		import { jmChart } from '../dist/jmchart.esm.js';
+
+		// 状态
+		let currentChart = null;
+		const results = [];
+
+		// DOM 引用
+		const chartArea = document.getElementById('chartArea');
+		const btnRun = document.getElementById('btnRun');
+		const btnBatch = document.getElementById('btnBatch');
+		const btnClear = document.getElementById('btnClear');
+		const selectType = document.getElementById('chartType');
+		const inputCount = document.getElementById('dataCount');
+		const inputWidth = document.getElementById('chartWidth');
+		const inputHeight = document.getElementById('chartHeight');
+		const cbAnimate = document.getElementById('cbAnimate');
+		const cbTouchGraph = document.getElementById('cbTouchGraph');
+		const progressBar = document.querySelector('.progress-bar');
+		const progressFill = progressBar.querySelector('.bar');
+		const batchControls = document.getElementById('batchControls');
+		const batchProgress = document.getElementById('batchProgress');
+
+		// 批量测试配置
+		const batchTestTypes = [
+			{ type: 'line', label: '折线图', counts: [100, 500, 1000, 5000, 10000, 50000] },
+			{ type: 'bar', label: '柱状图', counts: [50, 100, 500, 1000, 5000, 10000] },
+			{ type: 'scatter', label: '散点图', counts: [100, 500, 1000, 5000, 10000, 50000] },
+			{ type: 'area', label: '面积图', counts: [100, 500, 1000, 5000, 10000, 50000] },
+		];
+
+		// 数据生成器
+		function generateData(type, count) {
+			const data = [];
+			for (let i = 0; i < count; i++) {
+				switch (type) {
+					case 'line':
+					case 'area':
+						data.push({ x: i, y: Math.sin(i / count * Math.PI * 4) * 100 + Math.random() * 20 });
+						break;
+					case 'bar':
+						data.push({ x: i, y: Math.random() * 200 - 100 });
+						break;
+					case 'scatter':
+						data.push({ x: Math.random() * 1000, y: Math.random() * 1000 });
+						break;
+					case 'pie':
+						data.push({ x: i, name: `P${i}`, value: Math.random() * 100 + 10 });
+						break;
+					case 'stackBar':
+						data.push({ x: i, y1: Math.random() * 100, y2: Math.random() * 100, y3: Math.random() * 100 });
+						break;
+					case 'stackLine':
+						data.push({ x: i, y1: i + Math.random() * 10, y2: i * 2 + Math.random() * 10 });
+						break;
+					case 'candlestick':
+						data.push({
+							day: `D${i}`,
+							open: Math.random() * 50 + 100,
+							close: Math.random() * 50 + 100,
+							max: Math.random() * 60 + 110,
+							min: Math.random() * 60 + 90
+						});
+						break;
+					case 'radar':
+						data.push({
+							x: `S${i % 5}`,
+							d1: Math.random() * 100,
+							d2: Math.random() * 100,
+							d3: Math.random() * 100,
+							d4: Math.random() * 100,
+							d5: Math.random() * 100
+						});
+						break;
+					case 'heatmap':
+						data.push({ x: i % 50, y: Math.floor(i / 50), value: Math.random() * 100 });
+						break;
+					default:
+						data.push({ x: i, y: Math.random() * 200 });
+				}
+			}
+			return data;
+		}
+
+		// 图表配置生成
+		function getSeriesConfig(type) {
+			const showItem = false;
+			const label = { show: false };
+			const touchGraph = cbTouchGraph.checked;
+			const enableAnimate = cbAnimate.checked;
+
+			const baseOptions = {
+				enableAnimate,
+				autoRefresh: enableAnimate,
+				touchGraph,
+				style: {
+					markLine: false,
+					legend: { visible: false },
+					axis: { grid: { x: false, y: false } },
+					margin: { left: 50, top: 20, right: 20, bottom: 40 }
+				}
+			};
+
+			const seriesConfigs = {
+				line: () => ({
+					...baseOptions, xField: 'x',
+					series: [{ type: 'line', field: 'y', style: { showItem, label, lineWidth: 1 } }]
+				}),
+				bar: () => ({
+					...baseOptions, xField: 'x', baseY: 0,
+					series: [{ type: 'bar', field: 'y', style: { label: { show: false }, perWidth: 0.8 } }]
+				}),
+				scatter: () => ({
+					...baseOptions, xField: 'x',
+					series: [{ type: 'scatter', field: 'y', style: { radius: 2, showItem: false } }]
+				}),
+				area: () => ({
+					...baseOptions, xField: 'x',
+					series: [{ type: 'area', field: 'y', style: { showItem, label, lineWidth: 1, area: { fill: 'rgba(102,126,234,0.15)' } } }]
+				}),
+				pie: () => ({
+					...baseOptions,
+					series: [{ type: 'pie', field: 'value', xField: 'name' }]
+				}),
+				stackBar: () => ({
+					...baseOptions, xField: 'x', baseY: 0,
+					series: [{ type: 'stackBar', fields: ['y1', 'y2', 'y3'] }]
+				}),
+				stackLine: () => ({
+					...baseOptions, xField: 'x',
+					series: [{ type: 'stackLine', fields: ['y1', 'y2'], style: { showItem, label } }]
+				}),
+				candlestick: () => ({
+					...baseOptions, xField: 'day',
+					series: [{ type: 'candlestick', fields: ['open', 'close', 'max', 'min'], style: { lineWidth: 1, perWidth: 0.8 } }]
+				}),
+				radar: () => ({
+					...baseOptions,
+					series: [{ type: 'radar', fields: ['d1', 'd2', 'd3', 'd4', 'd5'], style: { showItem: false } }]
+				}),
+				heatmap: () => ({
+					...baseOptions, xField: 'x',
+					series: [{ type: 'heatmap', field: 'value', style: { cellWidth: 15, cellHeight: 15 } }]
+				}),
+			};
+
+			return (seriesConfigs[type] || seriesConfigs.line)();
+		}
+
+		// 创建并测量图表
+		async function runTest(type, count, w, h) {
+			// 清理旧图表
+			if (currentChart) {
+				try { currentChart.destroy(); } catch(e) {}
+				currentChart = null;
+			}
+			// 清空 chartArea 内容
+			chartArea.innerHTML = '';
+
+			const data = generateData(type, count);
+			const config = getSeriesConfig(type);
+
+			// 测量数据生成时间
+			const t0 = performance.now();
+			const chart = new jmChart(chartArea, {
+				width: w,
+				height: h,
+				...config
+			});
+
+			// 创建 series
+			for (const s of config.series) {
+				chart.createSeries(s.type, s);
+			}
+
+			const t1 = performance.now();
+
+			// 设置数据
+			chart.data = data;
+			const t2 = performance.now();
+
+			// 渲染
+			chart.refresh();
+			const t3 = performance.now();
+
+			// 等待动画完成（如果启用）
+			if (cbAnimate.checked) {
+				await new Promise(resolve => setTimeout(resolve, 1500));
+			}
+
+			currentChart = chart;
+
+			return {
+				type,
+				label: selectType.options[selectType.selectedIndex].text,
+				count,
+				initTime: t1 - t0,
+				dataTime: t2 - t1,
+				renderTime: t3 - t2,
+				totalTime: t3 - t0,
+				width: w,
+				height: h,
+				status: t3 - t0 < 3000 ? 'pass' : 'fail'
+			};
+		}
+
+		// 单次运行
+		async function runSingle() {
+			const type = selectType.value;
+			const count = parseInt(inputCount.value) || 1000;
+			const w = parseInt(inputWidth.value) || 1000;
+			const h = parseInt(inputHeight.value) || 500;
+
+			btnRun.disabled = true;
+			btnRun.textContent = '测试中...';
+			progressBar.style.display = 'block';
+			progressFill.style.width = '30%';
+
+			// 用 setTimeout 让 UI 更新
+			await new Promise(r => setTimeout(r, 50));
+
+			const result = await runTest(type, count, w, h);
+
+			progressFill.style.width = '100%';
+			results.push(result);
+			renderResults();
+
+			btnRun.disabled = false;
+			btnRun.textContent = '运行测试';
+
+			setTimeout(() => {
+				progressBar.style.display = 'none';
+				progressFill.style.width = '0%';
+			}, 500);
+		}
+
+		// 批量测试
+		async function runBatch() {
+			batchControls.style.display = 'block';
+			btnBatch.disabled = true;
+			btnRun.disabled = true;
+			progressBar.style.display = 'block';
+
+			const w = parseInt(inputWidth.value) || 1000;
+			const h = parseInt(inputHeight.value) || 500;
+			const totalTests = batchTestTypes.reduce((sum, t) => sum + t.counts.length, 0);
+			let completed = 0;
+
+			for (const testGroup of batchTestTypes) {
+				for (const count of testGroup.counts) {
+					batchProgress.textContent = `正在测试: ${testGroup.label} - ${count} 条数据 (${completed + 1}/${totalTests})`;
+					progressFill.style.width = `${((completed) / totalTests) * 100}%`;
+
+					await new Promise(r => setTimeout(r, 100));
+
+					// 在 selectType 中找到对应选项
+					const optIdx = [...selectType.options].findIndex(o => o.value === testGroup.type);
+					if (optIdx >= 0) {
+						selectType.selectedIndex = optIdx;
+					}
+
+					const result = await runTest(testGroup.type, count, w, h);
+					result.label = testGroup.label;
+					results.push(result);
+
+					completed++;
+					progressFill.style.width = `${(completed / totalTests) * 100}%`;
+					renderResults();
+				}
+			}
+
+			batchProgress.textContent = `批量测试完成! 共 ${completed} 项测试`;
+			btnBatch.disabled = false;
+			btnRun.disabled = false;
+
+			setTimeout(() => {
+				progressBar.style.display = 'none';
+				progressFill.style.width = '0%';
+			}, 1000);
+		}
+
+		// 渲染结果表格
+		function renderResults() {
+			const tbody = document.getElementById('resultsBody');
+			const summaryEl = document.getElementById('summary');
+			const resultsSection = document.getElementById('resultsSection');
+
+			if (results.length === 0) {
+				resultsSection.style.display = 'none';
+				return;
+			}
+			resultsSection.style.display = 'block';
+
+			tbody.innerHTML = results.map((r, i) => {
+				const timeClass = r.totalTime < 100 ? 'fast' : r.totalTime < 1000 ? 'medium' : 'slow';
+				const statusClass = r.status === 'pass' ? 'status-pass' : 'status-fail';
+				const statusText = r.status === 'pass' ? 'PASS' : 'FAIL';
+				return `<tr>
+					<td>${i + 1}</td>
+					<td>${r.label}</td>
+					<td>${r.count.toLocaleString()}</td>
+					<td>${r.width} x ${r.height}</td>
+					<td class="time ${timeClass}">${r.initTime.toFixed(1)}ms</td>
+					<td class="time ${timeClass}">${r.dataTime.toFixed(1)}ms</td>
+					<td class="time ${timeClass}">${r.renderTime.toFixed(1)}ms</td>
+					<td class="time ${timeClass}">${r.totalTime.toFixed(1)}ms</td>
+					<td class="${statusClass}">${statusText}</td>
+				</tr>`;
+			}).join('');
+
+			// 汇总
+			const totalTimes = results.map(r => r.totalTime);
+			const avgTime = totalTimes.reduce((a, b) => a + b, 0) / totalTimes.length;
+			const maxTime = Math.max(...totalTimes);
+			const minTime = Math.min(...totalTimes);
+			const passCount = results.filter(r => r.status === 'pass').length;
+			const maxData = results.reduce((max, r) => Math.max(max, r.count), 0);
+			const maxTimeResult = results.find(r => r.totalTime === maxTime);
+
+			summaryEl.innerHTML = `
+				<div class="summary-card">
+					<div class="value">${results.length}</div>
+					<div class="label">总测试次数</div>
+				</div>
+				<div class="summary-card">
+					<div class="value" style="color:#52c41a">${passCount}/${results.length}</div>
+					<div class="label">通过率 (< 3s)</div>
+				</div>
+				<div class="summary-card">
+					<div class="value">${avgTime.toFixed(0)}ms</div>
+					<div class="label">平均渲染耗时</div>
+				</div>
+				<div class="summary-card">
+					<div class="value" style="color:#f5222d">${maxTime.toFixed(0)}ms</div>
+					<div class="label">最大耗时 (${maxTimeResult ? maxTimeResult.label + ' ' + maxTimeResult.count : ''})</div>
+				</div>
+				<div class="summary-card">
+					<div class="value">${maxData.toLocaleString()}</div>
+					<div class="label">最大数据量</div>
+				</div>
+				<div class="summary-card">
+					<div class="value" style="color:#52c41a">${minTime.toFixed(0)}ms</div>
+					<div class="label">最小耗时</div>
+				</div>
+			`;
+		}
+
+		// 清空
+		function clearResults() {
+			results.length = 0;
+			if (currentChart) {
+				try { currentChart.destroy(); } catch(e) {}
+				currentChart = null;
+			}
+			chartArea.innerHTML = '<div class="placeholder">选择图表类型和数据量，点击"运行测试"开始性能测试</div>';
+			renderResults();
+			batchControls.style.display = 'none';
+		}
+
+		// 绑定事件
+		btnRun.addEventListener('click', runSingle);
+		btnBatch.addEventListener('click', runBatch);
+		btnClear.addEventListener('click', clearResults);
+
+		// 初始 placeholder
+		chartArea.innerHTML = '<div class="placeholder">选择图表类型和数据量，点击"运行测试"开始性能测试</div>';
+	</script>
+</head>
+<body>
+	<div class="header">
+		<h1>jmChart 性能测试</h1>
+		<p class="subtitle">极限性能压测 - 大数据量渲染、多图表类型批量测试、毫秒级计时</p>
+	</div>
+	<div class="container">
+		<div class="controls">
+			<label>图表类型</label>
+			<select id="chartType">
+				<option value="line">折线图</option>
+				<option value="bar">柱状图</option>
+				<option value="scatter">散点图</option>
+				<option value="area">面积图</option>
+				<option value="pie">饼图</option>
+				<option value="stackBar">堆叠柱状图</option>
+				<option value="stackLine">堆叠折线图</option>
+				<option value="candlestick">K线图</option>
+				<option value="radar">雷达图</option>
+				<option value="heatmap">热力图</option>
+			</select>
+			<label>数据量</label>
+			<input type="number" id="dataCount" value="10000" min="10" step="10">
+			<label>宽</label>
+			<input type="number" id="chartWidth" value="1000" min="200" step="100">
+			<label>高</label>
+			<input type="number" id="chartHeight" value="500" min="100" step="50">
+		</div>
+		<div class="options-row">
+			<label><input type="checkbox" id="cbAnimate"> 启用动画</label>
+			<label><input type="checkbox" id="cbTouchGraph" checked> 独立操作层 (touchGraph)</label>
+		</div>
+		<div class="btn-group">
+			<button id="btnRun" class="btn-primary">运行测试</button>
+			<button id="btnBatch" class="btn-primary">批量测试</button>
+			<button id="btnClear" class="btn-secondary">清空</button>
+		</div>
+
+		<div id="batchControls" class="batch-controls">
+			<h3>批量测试配置</h3>
+			<p style="margin:4px 0;font-size:13px;color:#888;">
+				自动测试折线图、柱状图、散点图、面积图，数据量从 100 递增到 50000
+			</p>
+			<div class="batch-progress" id="batchProgress"></div>
+		</div>
+
+		<div class="progress-bar"><div class="bar"></div></div>
+
+		<div class="chart-area" id="chartArea"></div>
+
+		<div id="resultsSection" class="results" style="display:none">
+			<h2>测试结果</h2>
+			<div id="summary" class="summary"></div>
+			<table class="results-table">
+				<thead>
+					<tr>
+						<th>#</th>
+						<th>图表类型</th>
+						<th>数据量</th>
+						<th>尺寸</th>
+						<th>初始化</th>
+						<th>数据绑定</th>
+						<th>渲染耗时</th>
+						<th>总耗时</th>
+						<th>结果</th>
+					</tr>
+				</thead>
+				<tbody id="resultsBody"></tbody>
+			</table>
+		</div>
+	</div>
+</body>
+</html>
