@@ -79,7 +79,7 @@
             <div class="tab" data-tab="ringProgress">环形进度</div>
             <div class="tab" data-tab="boxPlot">箱线图</div>
             <div class="tab" data-tab="wordCloud">词云图</div>
-            <div class="tab" data-tab="sunburst">旭日图</div>
+
         </div>
 
         <!-- 折线图 -->
@@ -210,13 +210,7 @@
             </div>
         </div>
 
-        <!-- 旭日图 -->
-        <div class="tab-content" id="sunburst">
-            <div class="chart-container">
-                <h2>旭日图 (Sunburst Chart)</h2>
-                <canvas class="chart" id="sunburstChart"></canvas>
-            </div>
-        </div>
+
     </div>
 
     <script type="module">
@@ -351,36 +345,7 @@
                 { word: '动画', weight: 50 },
                 { word: '性能优化', weight: 45 }
             ],
-            sunburst: [
-                {
-                    name: '根节点',
-                    children: [
-                        {
-                            name: '分类A',
-                            children: [
-                                { name: 'A1', value: 30 },
-                                { name: 'A2', value: 20 },
-                                { name: 'A3', value: 15 }
-                            ]
-                        },
-                        {
-                            name: '分类B',
-                            children: [
-                                { name: 'B1', value: 25 },
-                                { name: 'B2', value: 35 }
-                            ]
-                        },
-                        {
-                            name: '分类C',
-                            children: [
-                                { name: 'C1', value: 40 },
-                                { name: 'C2', value: 30 },
-                                { name: 'C3', value: 20 }
-                            ]
-                        }
-                    ]
-                }
-            ]
+
         };
 
         for(let i = 0; i < 20; i++) {
@@ -400,7 +365,7 @@
                 window.charts[type].destroy();
             }
 
-            const noAxisCharts = ['pie', 'radar', 'gauge', 'funnel', 'ringProgress', 'wordCloud', 'sunburst'];
+            const noAxisCharts = ['pie', 'radar', 'gauge', 'funnel', 'ringProgress', 'wordCloud'];
             const showAxis = !noAxisCharts.includes(type);
 
             const chart = new jmChart(canvas, {
@@ -598,15 +563,7 @@
                         }
                     });
                     break;
-                case 'sunburst':
-                    chart.createSeries('sunburst', {
-                        data: chartData.sunburst,
-                        style: {
-                            innerRadius: 30,
-                            showLabels: true
-                        }
-                    });
-                    break;
+
             }
 
             chart.refresh();

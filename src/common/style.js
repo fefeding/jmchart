@@ -556,25 +556,4 @@ export default {
 		zIndex: 11,
 		cursor: 'default'
 	},
-	sunburst: {
-		normal: {
-			zIndex: 11,
-			cursor: 'default'
-		},
-		hover: {
-			cursor: 'pointer'
-		},
-		innerRadius: 0,
-		startAngle: 0,
-		showLabels: true,
-		showCenter: true,
-		centerFill: '#fff',
-		centerStroke: '#e0e0e0',
-		stroke: '#fff',
-		lineWidth: 1,
-		labelColor: '#fff',
-		labelFont: '12px Arial',
-		zIndex: 11,
-		cursor: 'default'
-	}
 }

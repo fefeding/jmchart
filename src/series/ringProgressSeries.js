@@ -51,7 +51,9 @@ export default class jmRingProgressSeries extends jmSeries {
 
 		const maxRadius = Math.min(chartWidth, chartHeight) / 2 - 20;
 		const lineWidth = this.style.lineWidth || 20;
-		const startAngle = this.style.startAngle !== undefined ? this.style.startAngle : -90;
+		// 角度转弧度（jmArc 内部使用弧度）
+		const DEG = Math.PI / 180;
+		const startAngle = (this.style.startAngle !== undefined ? this.style.startAngle : -90) * DEG;
 		const maxValue = this.style.max || 100;
 		const field = this.field || 'value';
 
@@ -92,7 +94,7 @@ export default class jmRingProgressSeries extends jmSeries {
 			center: { x: centerX, y: centerY },
 			radius: radius,
 			startAngle: 0,
-			endAngle: 360
+			endAngle: Math.PI * 2
 		});
 
 		this.addShape(bgArc);
@@ -105,7 +107,7 @@ export default class jmRingProgressSeries extends jmSeries {
 		if(ratio <= 0) return;
 
 		const color = this.getColor(null, index);
-		const endAngle = startAngle + ratio * 360;
+		const endAngle = startAngle + ratio * Math.PI * 2;
 
 		const progressArc = this.graph.createShape('arc', {
 			style: {

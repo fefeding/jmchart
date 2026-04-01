@@ -25,7 +25,6 @@ import jmFunnelSeries from './series/funnelSeries.js';
 import jmRingProgressSeries from './series/ringProgressSeries.js';
 import jmBoxPlotSeries from './series/boxPlotSeries.js';
 import jmWordCloudSeries from './series/wordCloudSeries.js';
-import jmSunburstSeries from './series/sunburstSeries.js';
 import jmMarkLineManager from './core/markLine/manager';
 
 const ANIMATION_DATA_THRESHOLD = 100;
@@ -443,8 +442,7 @@ export default class jmChart extends jmGraph  {
 				'funnel': jmFunnelSeries,
 				'ringProgress': jmRingProgressSeries,
 				'boxPlot': jmBoxPlotSeries,
-				'wordCloud': jmWordCloudSeries,
-				'sunburst': jmSunburstSeries
+				'wordCloud': jmWordCloudSeries
 			};		
 		}
 

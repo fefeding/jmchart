@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>jmchart 波浪动画示例</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #0f0f23;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: #e0e0e0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .header {
+            text-align: center;
+            padding: 40px 20px 20px;
+        }
+        .header h1 {
+            margin: 0 0 8px;
+            background: linear-gradient(135deg, #a78bfa, #f472b6, #22d3ee);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 32px;
+        }
+        .header p {
+            margin: 0;
+            color: #888;
+            font-size: 14px;
+        }
+        .container {
+            width: 90%;
+            max-width: 900px;
+            margin: 20px auto;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .chart-wrapper {
+            position: relative;
+            width: 100%;
+            height: 400px;
+        }
+        .controls {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            padding: 16px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            flex-wrap: wrap;
+        }
+        .controls label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: #aaa;
+        }
+        .controls input[type="range"] {
+            width: 100px;
+            accent-color: #a78bfa;
+        }
+        .controls button {
+            padding: 6px 18px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
+            background: rgba(139, 92, 246, 0.15);
+            color: #a78bfa;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .controls button:hover {
+            background: rgba(139, 92, 246, 0.3);
+            border-color: rgba(139, 92, 246, 0.4);
+        }
+        .legend {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            padding: 12px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: #aaa;
+        }
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+        .fps {
+            font-size: 12px;
+            color: #555;
+        }
+        @media (max-width: 768px) {
+            .header h1 { font-size: 24px; }
+            .chart-wrapper { height: 280px; }
+            .container { width: 95%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Wave Animation</h1>
+        <p>实时波浪动画 - 多层叠加 + 平滑流动</p>
+    </div>
+    <div class="container">
+        <div class="chart-wrapper" id="heroLogo"></div>
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-dot" style="background: #a78bfa;"></div>
+                <span>主波浪</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background: #f472b6;"></div>
+                <span>次波浪</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background: #22d3ee;"></div>
+                <span>点缀线</span>
+            </div>
+        </div>
+        <div class="controls">
+            <label>
+                速度
+                <input type="range" id="speedRange" min="1" max="20" value="5">
+            </label>
+            <label>
+                数据量
+                <input type="range" id="countRange" min="10" max="80" value="30">
+            </label>
+            <label>
+                振幅
+                <input type="range" id="ampRange" min="5" max="40" value="25">
+            </label>
+            <button id="toggleBtn">暂停</button>
+            <span class="fps" id="fpsDisplay">FPS: --</span>
+        </div>
+    </div>
+
+    <script type="module">
+        import { jmChart } from '../dist/jmchart.esm.js';
+
+        const container = document.getElementById('heroLogo');
+        const speedRange = document.getElementById('speedRange');
+        const countRange = document.getElementById('countRange');
+        const ampRange = document.getElementById('ampRange');
+        const toggleBtn = document.getElementById('toggleBtn');
+        const fpsDisplay = document.getElementById('fpsDisplay');
+
+        const width = container.clientWidth || 900;
+        const height = container.clientHeight || 400;
+
+        const chart = new jmChart(container, {
+            width,
+            height,
+            autoRefresh: true,
+            enableAnimate: false,
+            mode: '2d',
+            style: {
+                fill: 'transparent',
+                axis: { x: false, y: false },
+                grid: { x: false, y: false },
+                margin: { top: 5, left: 5, right: 5, bottom: 5 }
+            }
+        });
+
+        let dataCount = 30;
+        let timeOffset = 0;
+        let paused = false;
+
+        const generateWaveData = (amp) => {
+            return Array.from({ length: dataCount }, (_, i) => {
+                const x = i / (dataCount - 1) * 10;
+                return {
+                    wave1: 50 + Math.sin((x + timeOffset) * 0.8) * amp + Math.sin((x + timeOffset) * 1.5) * (amp * 0.4),
+                    wave2: 50 + Math.cos((x + timeOffset * 0.7) * 0.6) * (amp * 0.8) + Math.sin((x + timeOffset) * 2) * (amp * 0.32),
+                    wave3: 50 + Math.sin((x + timeOffset * 1.2) * 1.2) * (amp * 0.6)
+                };
+            });
+        };
+
+        chart.data = generateWaveData(25);
+
+        // 主面积系列 - 紫色渐变
+        chart.createSeries('area', {
+            field: 'wave1',
+            index: 1,
+            minYValue: 0,
+            maxYValue: 100,
+            style: {
+                fill: 'rgba(139, 92, 246, 0.35)',
+                stroke: '#a78bfa',
+                lineWidth: 3,
+                curve: true
+            }
+        });
+
+        // 次面积系列 - 粉色渐变
+        chart.createSeries('area', {
+            field: 'wave2',
+            index: 2,
+            minYValue: 0,
+            maxYValue: 100,
+            style: {
+                fill: 'rgba(236, 72, 153, 0.25)',
+                stroke: '#f472b6',
+                lineWidth: 2,
+                curve: true
+            }
+        });
+
+        // 点缀线条 - 青色虚线
+        chart.createSeries('line', {
+            field: 'wave3',
+            index: 3,
+            minYValue: 0,
+            maxYValue: 100,
+            style: {
+                stroke: '#22d3ee',
+                lineWidth: 2,
+                curve: true,
+                lineDash: [8, 4]
+            }
+        });
+
+        // 动画循环
+        let lastTime = 0;
+        let frameCount = 0;
+        let fpsTime = 0;
+
+        const animateChart = (currentTime) => {
+            if (paused) {
+                requestAnimationFrame(animateChart);
+                return;
+            }
+
+            // FPS 计算
+            frameCount++;
+            if (currentTime - fpsTime >= 1000) {
+                fpsDisplay.textContent = `FPS: ${frameCount}`;
+                frameCount = 0;
+                fpsTime = currentTime;
+            }
+
+            const speed = Number(speedRange.value);
+            const amp = Number(ampRange.value);
+            const interval = 100 / speed; // 速度越大更新越频繁
+
+            if (currentTime - lastTime > interval) {
+                timeOffset += 0.05;
+                dataCount = Number(countRange.value);
+                chart.data = generateWaveData(amp);
+                lastTime = currentTime;
+                chart.redraw();
+            }
+
+            requestAnimationFrame(animateChart);
+        };
+
+        requestAnimationFrame(animateChart);
+
+        // 控制按钮
+        toggleBtn.addEventListener('click', () => {
+            paused = !paused;
+            toggleBtn.textContent = paused ? '继续' : '暂停';
+        });
+    </script>
+</body>
+</html>

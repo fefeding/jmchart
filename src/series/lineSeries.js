@@ -188,11 +188,45 @@ export default class jmLineSeries extends jmSeries {
 		this.graph.legend.append(this, shape);
 	}
 
-	// 生成布效果
-	createArea(points, needClosePoint = true) {
+	// 生成面积效果
+	createArea(points) {
 		// 有指定绘制区域效果才展示
 		if(!this.style.area || points.length < 2) return;
 
+		// 基线：取X轴的实际Y位置（chartArea相对坐标），没有X轴时用下边界
+		const axisY = this.graph.xAxis 
+			? this.graph.xAxis.start.y - this.graph.chartArea.position.y 
+			: this.graph.chartArea.height;
+
+		// 过滤有效点
+		const validPoints = points.filter(p => p.y != null && typeof p.y !== 'undefined');
+		if(validPoints.length < 2) return;
+
+		// 检测所有点是否在基线的同一侧
+		// y < axisY 表示在基线上方（数据值大于基线值），y > axisY 表示在基线下方
+		let allAbove = true;
+		let allBelow = true;
+		for(const p of validPoints) {
+			if(p.y <= axisY) allBelow = false;
+			if(p.y >= axisY) allAbove = false;
+		}
+
+		if(allAbove || allBelow) {
+			// 全部在基线同侧：创建单个封闭区域
+			this._createAreaSegment(points, allAbove, axisY);
+		} else {
+			// 混合数据：在交叉点处分割，分别创建封闭区域
+			this._createMixedAreas(points, axisY);
+		}
+	}
+
+	/**
+	 * 创建单个面积段
+	 * @param {Array} points 线条上的点
+	 * @param {boolean} isAbove 是否在基线上方
+	 * @param {number} axisY 基线Y坐标（chartArea相对坐标）
+	 */
+	_createAreaSegment(points, isAbove, axisY) {
 		const start = points[0];
 		const end = points[points.length - 1];
 
@@ -202,14 +236,24 @@ export default class jmLineSeries extends jmSeries {
 
 		if(!style.fill) {
 			const color = this.graph.utils.hexToRGBA(this.style.stroke);
-			style.fill = `linear-gradient(50% 0 50% 100%, 
-				rgba(${color.r},${color.g},${color.b}, 0) 1,
-				rgba(${color.r},${color.g},${color.b}, 0.1) 0.7, 
-				rgba(${color.r},${color.g},${color.b}, 0.3) 0)`;
+			if(isAbove) {
+				// 基线上方：渐变从线条处（顶部）不透明到基线处（底部）透明
+				style.fill = `linear-gradient(50% 0 50% 100%, 
+					rgba(${color.r},${color.g},${color.b}, 0) 1,
+					rgba(${color.r},${color.g},${color.b}, 0.1) 0.7, 
+					rgba(${color.r},${color.g},${color.b}, 0.3) 0)`;
+			} else {
+				// 基线下方：渐变从基线处（顶部）透明到线条处（底部）不透明
+				style.fill = `linear-gradient(50% 0 50% 100%, 
+					rgba(${color.r},${color.g},${color.b}, 0.3) 1,
+					rgba(${color.r},${color.g},${color.b}, 0.1) 0.3, 
+					rgba(${color.r},${color.g},${color.b}, 0) 0)`;
+			}
 		}
 		else if(typeof style.fill === 'function') {
-			style.fill = style.fill.call(this, style);
+			style.fill = style.fill.call(this, style, isAbove);
 		}
+
 		const area = this.graph.createShape('path', {
 			points: this.graph.utils.clone(points, true),
 			style,
@@ -217,19 +261,75 @@ export default class jmLineSeries extends jmSeries {
 			height: this.graph.chartArea.height
 		});
 
-		// 在点集合前后加上落地到X轴的点就可以组成一个封闭的图形area
-		if(needClosePoint) {
+		// 在首尾加上基线上的点，组成封闭多边形
+		// 如果首/尾点已经在基线上（交叉点），则不重复添加
+		if(Math.abs(start.y - axisY) > 0.5) {
 			area.points.unshift({
 				x: start.x,
-				y: this.baseY
+				y: axisY
 			});
+		}
+		if(Math.abs(end.y - axisY) > 0.5) {
 			area.points.push({
 				x: end.x,
-				y: this.baseY
+				y: axisY
 			});
 		}
 
 		this.addShape(area);
+	}
+
+	/**
+	 * 处理跨基线的混合数据，在交叉点处分割成多个独立区域
+	 * @param {Array} points 线条上的点
+	 * @param {number} axisY 基线Y坐标（chartArea相对坐标）
+	 */
+	_createMixedAreas(points, axisY) {
+		const segments = [];
+		let currentSegment = [];
+		let prevAbove = null;
+
+		for(let i = 0; i < points.length; i++) {
+			const p = points[i];
+			if(p.y == null || typeof p.y === 'undefined') continue;
+
+			const isAbove = p.y < axisY;
+
+			if(currentSegment.length === 0) {
+				currentSegment.push(p);
+				prevAbove = isAbove;
+			} else if(isAbove === prevAbove) {
+				currentSegment.push(p);
+			} else {
+				// 检测到跨基线交叉：计算交叉点
+				const prev = currentSegment[currentSegment.length - 1];
+				const t = (axisY - prev.y) / (p.y - prev.y);
+				const crossPoint = {
+					x: prev.x + (p.x - prev.x) * t,
+					y: axisY
+				};
+
+				// 当前段在交叉点处结束
+				currentSegment.push(crossPoint);
+				if(currentSegment.length >= 2) {
+					segments.push({ points: [...currentSegment], above: prevAbove });
+				}
+
+				// 新段从交叉点开始
+				currentSegment = [crossPoint, p];
+				prevAbove = isAbove;
+			}
+		}
+
+		// 最后一段
+		if(currentSegment.length >= 2) {
+			segments.push({ points: currentSegment, above: prevAbove });
+		}
+
+		// 为每段创建独立的面积
+		for(const seg of segments) {
+			this._createAreaSegment(seg.points, seg.above, axisY);
+		}
 	}
 }
 

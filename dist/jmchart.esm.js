@@ -9658,27 +9658,6 @@ var defaultStyle = {
     spiral: true,
     zIndex: 11,
     cursor: 'default'
-  },
-  sunburst: {
-    normal: {
-      zIndex: 11,
-      cursor: 'default'
-    },
-    hover: {
-      cursor: 'pointer'
-    },
-    innerRadius: 0,
-    startAngle: 0,
-    showLabels: true,
-    showCenter: true,
-    centerFill: '#fff',
-    centerStroke: '#e0e0e0',
-    stroke: '#fff',
-    lineWidth: 1,
-    labelColor: '#fff',
-    labelFont: '12px Arial',
-    zIndex: 11,
-    cursor: 'default'
   }
 };
 
@@ -11987,10 +11966,42 @@ class jmLineSeries extends jmSeries {
     this.graph.legend.append(this, shape);
   }
 
-  // 生成布效果
-  createArea(points, needClosePoint = true) {
+  // 生成面积效果
+  createArea(points) {
     // 有指定绘制区域效果才展示
     if (!this.style.area || points.length < 2) return;
+
+    // 基线：取X轴的实际Y位置（chartArea相对坐标），没有X轴时用下边界
+    const axisY = this.graph.xAxis ? this.graph.xAxis.start.y - this.graph.chartArea.position.y : this.graph.chartArea.height;
+
+    // 过滤有效点
+    const validPoints = points.filter(p => p.y != null && typeof p.y !== 'undefined');
+    if (validPoints.length < 2) return;
+
+    // 检测所有点是否在基线的同一侧
+    // y < axisY 表示在基线上方（数据值大于基线值），y > axisY 表示在基线下方
+    let allAbove = true;
+    let allBelow = true;
+    for (const p of validPoints) {
+      if (p.y <= axisY) allBelow = false;
+      if (p.y >= axisY) allAbove = false;
+    }
+    if (allAbove || allBelow) {
+      // 全部在基线同侧：创建单个封闭区域
+      this._createAreaSegment(points, allAbove, axisY);
+    } else {
+      // 混合数据：在交叉点处分割，分别创建封闭区域
+      this._createMixedAreas(points, axisY);
+    }
+  }
+
+  /**
+   * 创建单个面积段
+   * @param {Array} points 线条上的点
+   * @param {boolean} isAbove 是否在基线上方
+   * @param {number} axisY 基线Y坐标（chartArea相对坐标）
+   */
+  _createAreaSegment(points, isAbove, axisY) {
     const start = points[0];
     const end = points[points.length - 1];
     const style = this.graph.utils.clone(this.style.area, {}, true);
@@ -11998,12 +12009,21 @@ class jmLineSeries extends jmSeries {
     style.stroke = style.stroke || 'transparent';
     if (!style.fill) {
       const color = this.graph.utils.hexToRGBA(this.style.stroke);
-      style.fill = `linear-gradient(50% 0 50% 100%, 
-				rgba(${color.r},${color.g},${color.b}, 0) 1,
-				rgba(${color.r},${color.g},${color.b}, 0.1) 0.7, 
-				rgba(${color.r},${color.g},${color.b}, 0.3) 0)`;
+      if (isAbove) {
+        // 基线上方：渐变从线条处（顶部）不透明到基线处（底部）透明
+        style.fill = `linear-gradient(50% 0 50% 100%, 
+					rgba(${color.r},${color.g},${color.b}, 0) 1,
+					rgba(${color.r},${color.g},${color.b}, 0.1) 0.7, 
+					rgba(${color.r},${color.g},${color.b}, 0.3) 0)`;
+      } else {
+        // 基线下方：渐变从基线处（顶部）透明到线条处（底部）不透明
+        style.fill = `linear-gradient(50% 0 50% 100%, 
+					rgba(${color.r},${color.g},${color.b}, 0.3) 1,
+					rgba(${color.r},${color.g},${color.b}, 0.1) 0.3, 
+					rgba(${color.r},${color.g},${color.b}, 0) 0)`;
+      }
     } else if (typeof style.fill === 'function') {
-      style.fill = style.fill.call(this, style);
+      style.fill = style.fill.call(this, style, isAbove);
     }
     const area = this.graph.createShape('path', {
       points: this.graph.utils.clone(points, true),
@@ -12012,18 +12032,77 @@ class jmLineSeries extends jmSeries {
       height: this.graph.chartArea.height
     });
 
-    // 在点集合前后加上落地到X轴的点就可以组成一个封闭的图形area
-    if (needClosePoint) {
+    // 在首尾加上基线上的点，组成封闭多边形
+    // 如果首/尾点已经在基线上（交叉点），则不重复添加
+    if (Math.abs(start.y - axisY) > 0.5) {
       area.points.unshift({
         x: start.x,
-        y: this.baseY
+        y: axisY
       });
+    }
+    if (Math.abs(end.y - axisY) > 0.5) {
       area.points.push({
         x: end.x,
-        y: this.baseY
+        y: axisY
       });
     }
     this.addShape(area);
+  }
+
+  /**
+   * 处理跨基线的混合数据，在交叉点处分割成多个独立区域
+   * @param {Array} points 线条上的点
+   * @param {number} axisY 基线Y坐标（chartArea相对坐标）
+   */
+  _createMixedAreas(points, axisY) {
+    const segments = [];
+    let currentSegment = [];
+    let prevAbove = null;
+    for (let i = 0; i < points.length; i++) {
+      const p = points[i];
+      if (p.y == null || typeof p.y === 'undefined') continue;
+      const isAbove = p.y < axisY;
+      if (currentSegment.length === 0) {
+        currentSegment.push(p);
+        prevAbove = isAbove;
+      } else if (isAbove === prevAbove) {
+        currentSegment.push(p);
+      } else {
+        // 检测到跨基线交叉：计算交叉点
+        const prev = currentSegment[currentSegment.length - 1];
+        const t = (axisY - prev.y) / (p.y - prev.y);
+        const crossPoint = {
+          x: prev.x + (p.x - prev.x) * t,
+          y: axisY
+        };
+
+        // 当前段在交叉点处结束
+        currentSegment.push(crossPoint);
+        if (currentSegment.length >= 2) {
+          segments.push({
+            points: [...currentSegment],
+            above: prevAbove
+          });
+        }
+
+        // 新段从交叉点开始
+        currentSegment = [crossPoint, p];
+        prevAbove = isAbove;
+      }
+    }
+
+    // 最后一段
+    if (currentSegment.length >= 2) {
+      segments.push({
+        points: currentSegment,
+        above: prevAbove
+      });
+    }
+
+    // 为每段创建独立的面积
+    for (const seg of segments) {
+      this._createAreaSegment(seg.points, seg.above, axisY);
+    }
   }
 }
 
@@ -12692,8 +12771,10 @@ class jmGaugeSeries extends jmSeries {
     const value = typeof p.yValue === 'number' ? p.yValue : 0;
     const min = this.style.min || 0;
     const max = this.style.max || 100;
-    const startAngle = this.style.startAngle || -150;
-    const endAngle = this.style.endAngle || 150;
+    // 度数转弧度（jmArc 内部使用弧度）
+    const DEG = Math.PI / 180;
+    const startAngle = (this.style.startAngle || -150) * DEG;
+    const endAngle = (this.style.endAngle || 150) * DEG;
     const angleRange = endAngle - startAngle;
     const normalizedValue = Math.max(min, Math.min(max, value));
     const ratio = (normalizedValue - min) / (max - min);
@@ -12774,10 +12855,10 @@ class jmGaugeSeries extends jmSeries {
     for (let i = 0; i < tickCount; i++) {
       const angle = startAngle + angleStep * i;
       const value = min + (max - min) / (tickCount - 1) * i;
-      const tickStartX = centerX + Math.cos(angle * Math.PI / 180) * (radius - 30);
-      const tickStartY = centerY + Math.sin(angle * Math.PI / 180) * (radius - 30);
-      const tickEndX = centerX + Math.cos(angle * Math.PI / 180) * (radius - 10);
-      const tickEndY = centerY + Math.sin(angle * Math.PI / 180) * (radius - 10);
+      const tickStartX = centerX + Math.cos(angle) * (radius - 30);
+      const tickStartY = centerY + Math.sin(angle) * (radius - 30);
+      const tickEndX = centerX + Math.cos(angle) * (radius - 10);
+      const tickEndY = centerY + Math.sin(angle) * (radius - 10);
       const tickLine = this.graph.createShape('line', {
         style: {
           stroke: this.style.tickColor || '#666',
@@ -12794,8 +12875,8 @@ class jmGaugeSeries extends jmSeries {
         }
       });
       this.addShape(tickLine);
-      const labelX = centerX + Math.cos(angle * Math.PI / 180) * (radius - 45);
-      const labelY = centerY + Math.sin(angle * Math.PI / 180) * (radius - 45);
+      const labelX = centerX + Math.cos(angle) * (radius - 45);
+      const labelY = centerY + Math.sin(angle) * (radius - 45);
       const tickLabel = this.graph.createShape('label', {
         style: {
           fill: this.style.tickLabelColor || '#333',
@@ -12819,8 +12900,8 @@ class jmGaugeSeries extends jmSeries {
    */
   createGaugePointer(centerX, centerY, radius, angle) {
     const pointerLength = radius * 0.7;
-    const pointerX = centerX + Math.cos(angle * Math.PI / 180) * pointerLength;
-    const pointerY = centerY + Math.sin(angle * Math.PI / 180) * pointerLength;
+    const pointerX = centerX + Math.cos(angle) * pointerLength;
+    const pointerY = centerY + Math.sin(angle) * pointerLength;
     const pointerLine = this.graph.createShape('line', {
       style: {
         stroke: this.style.pointerColor || '#333',
@@ -13359,7 +13440,9 @@ class jmRingProgressSeries extends jmSeries {
     const centerY = chartHeight / 2;
     const maxRadius = Math.min(chartWidth, chartHeight) / 2 - 20;
     const lineWidth = this.style.lineWidth || 20;
-    const startAngle = this.style.startAngle !== undefined ? this.style.startAngle : -90;
+    // 角度转弧度（jmArc 内部使用弧度）
+    const DEG = Math.PI / 180;
+    const startAngle = (this.style.startAngle !== undefined ? this.style.startAngle : -90) * DEG;
     const maxValue = this.style.max || 100;
     const field = this.field || 'value';
     const len = data.length;
@@ -13397,7 +13480,7 @@ class jmRingProgressSeries extends jmSeries {
       },
       radius: radius,
       startAngle: 0,
-      endAngle: 360
+      endAngle: Math.PI * 2
     });
     this.addShape(bgArc);
   }
@@ -13408,7 +13491,7 @@ class jmRingProgressSeries extends jmSeries {
   createRingProgress(centerX, centerY, radius, lineWidth, startAngle, ratio, index) {
     if (ratio <= 0) return;
     const color = this.getColor(null, index);
-    const endAngle = startAngle + ratio * 360;
+    const endAngle = startAngle + ratio * Math.PI * 2;
     const progressArc = this.graph.createShape('arc', {
       style: {
         stroke: color,
@@ -13959,228 +14042,6 @@ class jmWordCloudSeries extends jmSeries {
         x: 0,
         y: 0
       }
-    });
-    this.graph.legend.append(this, shape);
-  }
-}
-
-/**
- * 旭日图
- * 
- * 旭日图用于展示层级数据的占比关系，由多个同心圆环组成，每个圆环代表一个层级。
- * 内层圆环是外层圆环的父级，扇形角度代表数据占比。
- * 
- * 数据格式要求：
- * - 树形结构数据，每个节点包含 name、value 和 children
- * 
- * 样式配置：
- * - innerRadius: 内圆半径，默认 0
- * - startAngle: 起始角度，默认 0
- * - showLabels: 是否显示标签，默认 true
- *
- * @class jmSunburstSeries
- * @module jmChart
- * @extends jmSeries
- * 
- * @example
- * chart.createSeries('sunburst', {
- *   data: [{
- *     name: 'Root',
- *     children: [
- *       { name: 'A', value: 30 },
- *       { name: 'B', value: 70 }
- *     ]
- *   }]
- * });
- */
-class jmSunburstSeries extends jmSeries {
-  constructor(options) {
-    options.style = options.style || options.graph.style.sunburst;
-    super(options);
-    this.maxDepth = 0;
-  }
-
-  /**
-   * 初始化旭日图
-   */
-  init() {
-    const data = this.option.data || this.data;
-    if (!data || !data.length) return;
-    const chartWidth = this.graph.chartArea.width;
-    const chartHeight = this.graph.chartArea.height;
-    const centerX = chartWidth / 2;
-    const centerY = chartHeight / 2;
-    const maxRadius = Math.min(chartWidth, chartHeight) / 2 - 20;
-    this.maxDepth = this.calculateMaxDepth(data);
-    if (this.maxDepth === 0) return;
-    const ringWidth = maxRadius / this.maxDepth;
-    const innerRadius = this.style.innerRadius || 0;
-    this.drawLevel(data, centerX, centerY, innerRadius, ringWidth, 0, 360, 0);
-    if (this.style.showCenter !== false && innerRadius > 0) {
-      this.drawCenter(centerX, centerY, innerRadius);
-    }
-  }
-
-  /**
-   * 计算最大深度
-   */
-  calculateMaxDepth(data, depth = 1) {
-    let maxDepth = depth;
-    for (const node of data) {
-      if (node.children && node.children.length > 0) {
-        const childDepth = this.calculateMaxDepth(node.children, depth + 1);
-        maxDepth = Math.max(maxDepth, childDepth);
-      }
-    }
-    return maxDepth;
-  }
-
-  /**
-   * 计算节点总值
-   */
-  calculateTotalValue(data) {
-    let total = 0;
-    for (const node of data) {
-      if (node.children && node.children.length > 0) {
-        total += this.calculateTotalValue(node.children);
-      } else {
-        total += node.value || 0;
-      }
-    }
-    return total;
-  }
-
-  /**
-   * 绘制层级
-   */
-  drawLevel(data, centerX, centerY, innerRadius, ringWidth, startAngle, totalAngle, level) {
-    const total = this.calculateTotalValue(data);
-    if (total === 0) return;
-    let currentAngle = startAngle;
-    const outerRadius = innerRadius + ringWidth;
-    for (const node of data) {
-      let nodeValue = 0;
-      if (node.children && node.children.length > 0) {
-        nodeValue = this.calculateTotalValue(node.children);
-      } else {
-        nodeValue = node.value || 0;
-      }
-      const angleRatio = nodeValue / total;
-      const nodeAngle = totalAngle * angleRatio;
-      const endAngle = currentAngle + nodeAngle;
-      if (nodeAngle > 0.1) {
-        const color = this.getColor(node, level);
-        this.drawArc(centerX, centerY, innerRadius, outerRadius, currentAngle, endAngle, color, node);
-        if (this.style.showLabels !== false && nodeAngle > 10) {
-          this.drawLabel(centerX, centerY, innerRadius, outerRadius, currentAngle, endAngle, node);
-        }
-        if (node.children && node.children.length > 0) {
-          this.drawLevel(node.children, centerX, centerY, outerRadius, ringWidth, currentAngle, nodeAngle, level + 1);
-        }
-      }
-      currentAngle = endAngle;
-    }
-  }
-
-  /**
-   * 绘制扇形
-   */
-  drawArc(centerX, centerY, innerRadius, outerRadius, startAngle, endAngle, color, node) {
-    const arc = this.graph.createShape('arc', {
-      style: {
-        fill: color,
-        stroke: this.style.stroke || '#fff',
-        lineWidth: this.style.lineWidth || 1,
-        zIndex: 1
-      },
-      center: {
-        x: centerX,
-        y: centerY
-      },
-      radius: outerRadius,
-      innerRadius: innerRadius,
-      startAngle: startAngle - 90,
-      endAngle: endAngle - 90
-    });
-    this.addShape(arc);
-    node.shape = arc;
-  }
-
-  /**
-   * 绘制标签
-   */
-  drawLabel(centerX, centerY, innerRadius, outerRadius, startAngle, endAngle, node) {
-    const midAngle = (startAngle + endAngle) / 2 - 90;
-    const midRadius = (innerRadius + outerRadius) / 2;
-    const x = centerX + midRadius * Math.cos(midAngle * Math.PI / 180);
-    const y = centerY + midRadius * Math.sin(midAngle * Math.PI / 180);
-    const text = node.name || '';
-    if (!text) return;
-    const label = this.graph.createShape('label', {
-      style: {
-        fill: this.style.labelColor || '#fff',
-        font: this.style.labelFont || '12px Arial',
-        textAlign: 'center',
-        textBaseline: 'middle',
-        zIndex: 10
-      },
-      text: text,
-      position: {
-        x,
-        y
-      }
-    });
-    this.addShape(label);
-  }
-
-  /**
-   * 绘制中心
-   */
-  drawCenter(centerX, centerY, innerRadius) {
-    const centerCircle = this.graph.createShape('circle', {
-      style: {
-        fill: this.style.centerFill || '#fff',
-        stroke: this.style.centerStroke || '#e0e0e0',
-        lineWidth: 1,
-        zIndex: 0
-      },
-      center: {
-        x: centerX,
-        y: centerY
-      },
-      radius: innerRadius
-    });
-    this.addShape(centerCircle);
-  }
-
-  /**
-   * 获取颜色
-   */
-  getColor(node, level) {
-    if (node.color) return node.color;
-    if (this.style.colors && this.style.colors.length > 0) {
-      return this.style.colors[level % this.style.colors.length];
-    }
-    if (typeof this.style.color === 'function') {
-      return this.style.color.call(this, node, level);
-    }
-    return this.graph.getColor(level);
-  }
-
-  /**
-   * 生成图例
-   */
-  createLegend() {
-    const style = this.graph.utils.clone(this.style);
-    style.fill = this.style.color || this.graph.getColor(0);
-    style.stroke = style.fill;
-    const shape = this.graph.createShape('circle', {
-      style: style,
-      center: {
-        x: this.graph.style.legend.item.shape.width / 2,
-        y: this.graph.style.legend.item.shape.height / 2
-      },
-      radius: this.graph.style.legend.item.shape.height / 2
     });
     this.graph.legend.append(this, shape);
   }
@@ -14905,8 +14766,7 @@ class jmChart extends jmGraphImpl {
         'funnel': jmFunnelSeries,
         'ringProgress': jmRingProgressSeries,
         'boxPlot': jmBoxPlotSeries,
-        'wordCloud': jmWordCloudSeries,
-        'sunburst': jmSunburstSeries
+        'wordCloud': jmWordCloudSeries
       };
     }
 

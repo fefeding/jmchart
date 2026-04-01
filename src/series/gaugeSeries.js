@@ -33,8 +33,10 @@ export default class jmGaugeSeries extends jmSeries {
 
 		const min = this.style.min || 0;
 		const max = this.style.max || 100;
-		const startAngle = this.style.startAngle || -150;
-		const endAngle = this.style.endAngle || 150;
+		// 度数转弧度（jmArc 内部使用弧度）
+		const DEG = Math.PI / 180;
+		const startAngle = (this.style.startAngle || -150) * DEG;
+		const endAngle = (this.style.endAngle || 150) * DEG;
 
 		const angleRange = endAngle - startAngle;
 		
@@ -118,10 +120,10 @@ export default class jmGaugeSeries extends jmSeries {
 			const angle = startAngle + (angleStep * i);
 			const value = min + ((max - min) / (tickCount - 1)) * i;
 
-			const tickStartX = centerX + Math.cos(angle * Math.PI / 180) * (radius - 30);
-			const tickStartY = centerY + Math.sin(angle * Math.PI / 180) * (radius - 30);
-			const tickEndX = centerX + Math.cos(angle * Math.PI / 180) * (radius - 10);
-			const tickEndY = centerY + Math.sin(angle * Math.PI / 180) * (radius - 10);
+			const tickStartX = centerX + Math.cos(angle) * (radius - 30);
+			const tickStartY = centerY + Math.sin(angle) * (radius - 30);
+			const tickEndX = centerX + Math.cos(angle) * (radius - 10);
+			const tickEndY = centerY + Math.sin(angle) * (radius - 10);
 
 			const tickLine = this.graph.createShape('line', {
 				style: {
@@ -135,8 +137,8 @@ export default class jmGaugeSeries extends jmSeries {
 
 			this.addShape(tickLine);
 
-			const labelX = centerX + Math.cos(angle * Math.PI / 180) * (radius - 45);
-			const labelY = centerY + Math.sin(angle * Math.PI / 180) * (radius - 45);
+			const labelX = centerX + Math.cos(angle) * (radius - 45);
+			const labelY = centerY + Math.sin(angle) * (radius - 45);
 
 			const tickLabel = this.graph.createShape('label', {
 				style: {
@@ -159,8 +161,8 @@ export default class jmGaugeSeries extends jmSeries {
 	 */
 	createGaugePointer(centerX, centerY, radius, angle) {
 		const pointerLength = radius * 0.7;
-		const pointerX = centerX + Math.cos(angle * Math.PI / 180) * pointerLength;
-		const pointerY = centerY + Math.sin(angle * Math.PI / 180) * pointerLength;
+		const pointerX = centerX + Math.cos(angle) * pointerLength;
+		const pointerY = centerY + Math.sin(angle) * pointerLength;
 
 		const pointerLine = this.graph.createShape('line', {
 			style: {
