@@ -1118,7 +1118,8 @@ var jmChart = (function (exports) {
   		let sy2 = Number(y2) + bounds.top;
   		if(this.type === 'linear') {
   			if(control.mode === 'webgl' && control.webglControl) {
-  				gradient = control.webglControl.createLinearGradient(x1, y1, x2, y2, bounds);
+  				// WebGL 着色器中 v_text_coord 是绝对坐标，需要传递绝对坐标
+  				gradient = control.webglControl.createLinearGradient(sx1, sy1, sx2, sy2, bounds);
   				gradient.key = this.toString();
   			}	
   			else {		
@@ -1137,7 +1138,8 @@ var jmChart = (function (exports) {
   				r2 = d * r2;
   			}
   			if(control.mode === 'webgl' && control.webglControl) {
-  				gradient = control.webglControl.createRadialGradient(x1, y1, r1, x2, y2, r2, bounds);
+  				// WebGL 着色器中 v_text_coord 是绝对坐标，需要传递绝对坐标
+  				gradient = control.webglControl.createRadialGradient(sx1, sy1, r1, sx2, sy2, r2, bounds);
   				gradient.key = this.toString();
   			}	
   			//offsetLine = Math.abs(r2 - r1);//二圆半径差
@@ -2284,10 +2286,14 @@ var jmChart = (function (exports) {
       return result;
   };
 
-  // 渐变
+  const MAX_STOPS = 16;
+
+  /**
+   * WebGL 渐变对象
+   * 支持 GLSL 着色器直接计算渐变色，无需 textureCanvas
+   */
   class WebglGradient {
-      // type:[linear= 线性渐变,radial=放射性渐变] 
-      constructor(type='linear', params={}) {
+      constructor(type = 'linear', params = {}) {
           this.type = type || 'linear';
 
           this.x1 = params.x1 || 0;
@@ -2307,161 +2313,114 @@ var jmChart = (function (exports) {
           this.control = params.control;
 
           this.stops = [];
-          this.init();
+          this._sortedStops = null;
+          this._paramsHash = null;
       }
 
-      init() {
-          const dx = this.x2 - this.x1;
-          const dy = this.y2 - this.y1;
-
-          if(this.type === 'radial') {
-              this.length = this.r2 - this.r1;
-          }
-          else if(dx === 0 && dy === 0) {
-              this.length = 0;
-          }
-          else {
-              // 渐变中心的距离
-              this.length = Math.sqrt(Math.pow(dx, 2), Math.pow(dy, 2));
-              this.sin = dy / this.length;
-              this.cos = dx / this.length;
-          }
-      }
-
-      // 渐变颜色
+      /**
+       * 添加颜色断点
+       */
       addColorStop(offset, color) {
           this.stops.push({
-              offset,
+              offset: Math.max(0, Math.min(1, offset)),
               color
           });
+          this._sortedStops = null;
+          this._paramsHash = null;
       }
 
-      // 转为渐变为纹理
-      toImageData(control, bounds, points=null) {
-          // 缓存基于渐变参数（不含 bounds，因为同一个渐变只是位置不同时纹理相同）
-          const gradientKey = this.toString();
-          if(this.__cachedData && this.__cacheKey === gradientKey && 
-             this.__cachedData.data && this.__cachedData.data.width === Math.ceil(bounds.width) &&
-             this.__cachedData.data.data && this.__cachedData.data.data.height === Math.ceil(bounds.height)) {
-              return this.__cachedData;
+      /**
+       * 获取排序后的 stops（带解析后的颜色）
+       */
+      _getSortedStops() {
+          if (this._sortedStops) return this._sortedStops;
+
+          const utils = this.control && this.control.graph && this.control.graph.utils;
+          this._sortedStops = this.stops
+              .map(s => {
+                  let c = s.color;
+                  if (utils && typeof c === 'string') {
+                      c = utils.hexToRGBA(c);
+                  }
+                  if (typeof c === 'object' && c !== null) {
+                      // hexToRGBA 返回 r/g/b 为 0~255，a 为 0~1
+                      // 但如果已经是 0~1 范围（由 rgbToDecimal 处理过），需要检测
+                      const needNormalize = (c.r > 1 || c.g > 1 || c.b > 1) ? 255 : 1;
+                      return {
+                          offset: s.offset,
+                          r: (c.r !== undefined ? c.r : 0) / needNormalize,
+                          g: (c.g !== undefined ? c.g : 0) / needNormalize,
+                          b: (c.b !== undefined ? c.b : 0) / needNormalize,
+                          a: c.a !== undefined ? c.a : 1
+                      };
+                  }
+                  return { offset: s.offset, r: 0, g: 0, b: 0, a: 1 };
+              })
+              .sort((a, b) => a.offset - b.offset);
+
+          return this._sortedStops;
+      }
+
+      /**
+       * 将渐变参数以 uniform 形式传递给着色器
+       * 返回 { type, start, end, stopCount, stops } 供着色器使用
+       */
+      toUniformParams() {
+          const stops = this._getSortedStops();
+          const count = Math.min(stops.length, MAX_STOPS);
+
+          // 展平为 Float32Array: [offset, r, g, b, a, ...]
+          const flatStops = new Float32Array(count * 5);
+          for (let i = 0; i < count; i++) {
+              const s = stops[i];
+              flatStops[i * 5 + 0] = s.offset;
+              flatStops[i * 5 + 1] = s.r;
+              flatStops[i * 5 + 2] = s.g;
+              flatStops[i * 5 + 3] = s.b;
+              flatStops[i * 5 + 4] = s.a;
           }
 
-          if(!control.textureContext) {
-              return null;
-          }
-          let gradient = null;
-          if(this.type === 'linear') {
-              gradient = control.textureContext.createLinearGradient(this.x1, this.y1, this.x2, this.y2);
+          return {
+              gradientType: this.type === 'radial' ? 2 : 1,
+              gradientStart: new Float32Array([
+                  this.x1, this.y1,
+                  this.type === 'radial' ? Math.max(0, this.r1) : 0,
+                  0
+              ]),
+              gradientEnd: new Float32Array([
+                  this.x2, this.y2,
+                  this.type === 'radial' ? Math.max(0, this.r2) : 0,
+                  0
+              ]),
+              stopCount: count,
+              stops: flatStops
+          };
+      }
+
+      /**
+       * 使缓存失效
+       */
+      invalidateCache() {
+          this._sortedStops = null;
+          this._paramsHash = null;
+      }
+
+      /**
+       * 转换为渐变的字符串表达
+       */
+      toString() {
+          let str = this.type + '-gradient(';
+          if (this.type == 'linear') {
+              str += this.x1 + ' ' + this.y1 + ' ' + this.x2 + ' ' + this.y2;
           }
           else {
-              gradient = control.textureContext.createRadialGradient(this.x1, this.y1, this.r1, this.x2, this.y2, this.r2);
+              str += this.x1 + ' ' + this.y1 + ' ' + this.r1 + ' ' + this.x2 + ' ' + this.y2 + ' ' + this.r2;
           }
-          this.stops.forEach(function(s, i) {	
-              const c = control.graph.utils.toColor(s.color);
-              gradient && gradient.addColorStop(s.offset, c);		
+          this.stops.forEach(function(s) {
+              str += ',' + s.color + ' ' + s.offset;
           });
-          
-          const data = control.toFillTexture(gradient, bounds, points);
-
-          this.__cachedData = data;
-          this.__cacheKey = gradientKey;
-
-          return data;
+          return str + ')';
       }
-
-      // 当渐变参数变化时使缓存失效
-      invalidateCache() {
-          this.__cachedData = null;
-          this.__cacheKey = null;
-      }
-
-      // 根据绘制图形的坐标计算出对应点的颜色
-      /*
-      toPointColors(points) {
-          const stops = this.getStops();
-          const colors = [];
-          for(let i=0; i<points.length; i+=2) {
-              const p = {
-                  x: points[i],
-                  y: points[i+1]
-              }
-              if(this.type === 'radial') {
-                  const dx = p.x - this.x1;
-                  const dy = p.y - this.y1;
-                  const len = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
-                  const rang = this.getStopRange(len, stops);
-                  if(!rang.start && rang.end) {
-                      colors.push(rang.end.color);
-                  }
-                  else if(!rang.end && rang.start) {
-                      colors.push(rang.start.color);
-                  }
-                  else {
-                      const rangLength = rang.end.length - rang.start.length;
-                      const offlen = len - rang.start.length;
-                      const per = offlen / rangLength;
-                      const color = {
-                          r: rang.start.color.r + (rang.end.color.r - rang.start.color.r) * per,
-                          g: rang.start.color.g + (rang.end.color.g - rang.start.color.g) * per,
-                          b: rang.start.color.b + (rang.end.color.b - rang.start.color.b) * per,
-                          a: rang.start.color.a + (rang.end.color.a - rang.start.color.a) * per,
-                      };
-                      colors.push(color);
-                  }
-              }
-          }
-          return colors;
-      }
-  */
-      // 根据起点距离获取边界stop
-      /*
-      getStopRange(len, stops) {
-          const res = {};
-          for(const s of stops) {
-              if(s.length <= len) {
-                  res.start = s;
-              }
-              else {
-                  res.end = s;
-              }
-          }
-          return res;
-      }
-
-      // 根据stop计算offset长度
-      getStops() {
-          const stops = this.stops.sort((p1, p2) => p1.offset - p2.offset); // 渐变色排序从小于大
-          for(const s of stops) {
-              
-              const color = typeof s.color === 'string'? this.control.graph.utils.hexToRGBA(s.color) : s.color;
-              console.log(s, color);
-              s.color = this.control.graph.utils.rgbToDecimal(color);
-              s.length = s.offset * this.length;
-          }
-          return stops;
-      }
-  */
-      /**
-  	 * 转换为渐变的字符串表达
-  	 *
-  	 * @method toString
-  	 * @for jmGradient
-  	 * @return {string} linear-gradient(x1 y1 x2 y2, color1 step, color2 step, ...);	//radial-gradient(x1 y1 r1 x2 y2 r2, color1 step,color2 step, ...);
-  	 */
-  	toString() {
-  		let str = this.type + '-gradient(';
-  		if(this.type == 'linear') {
-  			str += this.x1 + ' ' + this.y1 + ' ' + this.x2 + ' ' + this.y2;
-  		}
-  		else {
-  			str += this.x1 + ' ' + this.y1 + ' ' + this.r1 + ' ' + this.x2 + ' ' + this.y2 + ' ' + this.r2;
-  		}
-  		//颜色渐变
-  		this.stops.forEach(function(s) {	
-  			str += ',' + s.color + ' ' + s.offset;
-  		});
-  		return str + ')';
-  	}
   }
 
   // 生成着色器
@@ -2786,8 +2745,8 @@ var jmChart = (function (exports) {
         vec4 pos = translatePosition(a_position, a_center_point.x, a_center_point.y);
         gl_Position = pos;
         v_color = a_color;
-        if(a_type == 2) {
-            v_text_coord = a_text_coord;
+        if(a_type == 2 || a_type == 5) {
+            v_text_coord = a_position.xy;
         }
     }
 `;
@@ -2797,20 +2756,72 @@ var jmChart = (function (exports) {
     uniform sampler2D u_sample;
     uniform vec4 v_texture_bounds; // 纹理的左上坐标和大小 x,y,z,w
     uniform vec4 v_single_color;
+    // GLSL 渐变 uniforms
+    uniform int u_gradient_type;     // 0=无 1=线性 2=径向
+    uniform vec4 u_gradient_start;   // 线性:{x1,y1,0,0} 径向:{cx,cy,r1,0}
+    uniform vec4 u_gradient_end;     // 线性:{x2,y2,0,0} 径向:{cx,cy,r2,0}
+    uniform int u_gradient_stop_count;
+    uniform float u_gradient_offsets[${MAX_STOPS}];
+    uniform vec4 u_gradient_colors[${MAX_STOPS}]; // {r, g, b, a} 0~1 范围
     varying float v_type;
     varying vec4 v_color;
     varying vec2 v_text_coord;
 
     ${convertTexturePosition}
 
+    // 在 sorted stops 中按 t 值采样颜色
+    // 兼容 GLSL ES 1.0：循环仅与常量比较，无 break/continue
+    vec4 sampleGradient(float t) {
+        t = clamp(t, 0.0, 1.0);
+        // 正向扫描：始终遍历 MAX_STOPS-1 次，找到 t 所在段并覆盖结果
+        float localT = 0.0;
+        vec4 c0 = u_gradient_colors[0];
+        vec4 c1 = u_gradient_colors[0];
+        for(int i = 0; i < ${MAX_STOPS - 1}; i++) {
+            float s0 = u_gradient_offsets[i];
+            float s1 = u_gradient_offsets[i + 1];
+            if(t >= s0) {
+                float range = s1 - s0;
+                localT = range > 0.0001 ? clamp((t - s0) / range, 0.0, 1.0) : 0.0;
+                c0 = u_gradient_colors[i];
+                c1 = u_gradient_colors[i + 1];
+            }
+        }
+        return mix(c0, c1, localT);
+    }
+
     void main() {
         // 如果是fill，则直接填充颜色
         if(v_type == 1.0) {
             gl_FragColor = v_single_color;
         }
-        // 渐变色
+        // 渐变色 (旧方式，顶点颜色插值)
         else if(v_type == 3.0) {
             gl_FragColor = v_color;
+        }
+        // GLSL 渐变填充 (type=5)
+        else if(v_type == 5.0) {
+            float t;
+            if(u_gradient_type == 2) {
+                // 径向渐变
+                vec2 d = v_text_coord - u_gradient_start.xy;
+                float dist = length(d);
+                float r1 = u_gradient_start.z;
+                float r2 = u_gradient_end.z;
+                float range = r2 - r1;
+                t = range > 0.001 ? (dist - r1) / range : 0.0;
+            } else {
+                // 线性渐变
+                vec2 dir = u_gradient_end.xy - u_gradient_start.xy;
+                float lenSq = dot(dir, dir);
+                if(lenSq > 0.001) {
+                    vec2 pos = v_text_coord - u_gradient_start.xy;
+                    t = dot(pos, dir) / lenSq;
+                } else {
+                    t = 0.0;
+                }
+            }
+            gl_FragColor = sampleGradient(t) * v_single_color.a;
         }
         else if(v_type == 2.0) {
             vec2 pos = translateTexturePosition(v_text_coord, v_texture_bounds);
@@ -2882,7 +2893,7 @@ var jmChart = (function (exports) {
       rotate(angle) {
           const cos = Math.cos(angle);
           const sin = Math.sin(angle);
-          const [a, b, c, d, tx, ty] = this.transformMatrix;
+          const [a, b, c, d] = this.transformMatrix;
           
           // 更新变换矩阵
           this.transformMatrix[0] = a * cos - b * sin;
@@ -2913,21 +2924,20 @@ var jmChart = (function (exports) {
           };
       }
 
-      // 纹理绘制canvas
-      get textureCanvas() {
-          let canvas = this.graph.textureCanvas;
-          if(!canvas) {
-              if(typeof document === 'undefined') return null;
-              canvas = this.graph.textureCanvas = document.createElement('canvas');
+      // 文本测量用的离屏 canvas context（1x1 单例缓存，不依赖 textureCanvas）
+      get _measureCtx() {
+          if(!this.__measureCtx) {
+              try {
+                  if(typeof document !== 'undefined') {
+                      const c = document.createElement('canvas');
+                      c.width = c.height = 1;
+                      this.__measureCtx = c.getContext('2d');
+                  }
+              } catch(e) {
+                  this.__measureCtx = null;
+              }
           }
-          return canvas;
-      }
-      // 纹理绘制canvas ctx
-      get textureContext() {
-          const ctx = this.textureCanvas.ctx || (this.textureCanvas.ctx = this.textureCanvas.getContext('2d', {
-              willReadFrequently: true
-          }));
-          return ctx;
+          return this.__measureCtx;
       }
 
       // i当前程序
@@ -2973,23 +2983,37 @@ var jmChart = (function (exports) {
       // 把传统颜色转为webgl识别的
       convertColor(color) {
           if(this.isGradient(color)) return color;
-          if(typeof color === 'string') color = this.graph.utils.hexToRGBA(color);
-          return this.graph.utils.rgbToDecimal(color);
+          if(typeof color === 'string') {
+              // 先尝试 hexToRGBA 解析
+              color = this.graph.utils.hexToRGBA(color);
+              // hexToRGBA 对无法识别的格式（如 hsl）会原样返回字符串
+              // 利用离屏 canvas 将任意 CSS 颜色转为 rgba
+              if(typeof color === 'string') {
+                  color = this.__parseCSSColor(color);
+              }
+          }
+          if(typeof color === 'object' && color.r !== undefined) {
+              return this.graph.utils.rgbToDecimal(color);
+          }
+          return color;
       }
 
-      setTextureStyle(style, value='') {
-          
-          if(typeof style === 'string') {
-              if(['fillStyle', 'strokeStyle', 'shadowColor'].indexOf(style) > -1) {
-                  value = this.graph.utils.toColor(value);
+      // 利用离屏 canvas 解析任意 CSS 颜色（hsl/hsla/命名颜色等）
+      __parseCSSColor(colorStr) {
+          const ctx = this._measureCtx;
+          if(!ctx) return { r: 0, g: 0, b: 0, a: 0 };
+          try {
+              ctx.clearRect(0, 0, 1, 1);
+              ctx.fillStyle = '#000000';
+              ctx.fillStyle = colorStr;
+              ctx.fillRect(0, 0, 1, 1);
+              const [r, g, b, a] = ctx.getImageData(0, 0, 1, 1).data;
+              if(ctx.fillStyle === '#000000' && colorStr !== '#000000' && colorStr !== 'black') {
+                  return { r: 0, g: 0, b: 0, a: 0 };
               }
-              this.textureContext[style] = value;
-          }
-          else {
-              for(const name in style) {
-                  if(name === 'constructor') continue;
-                  this.setTextureStyle(name, style[name]);
-              }
+              return { r, g, b, a: a / 255 };
+          } catch(e) {
+              return { r: 0, g: 0, b: 0, a: 0 };
           }
       }
 
@@ -3164,70 +3188,23 @@ var jmChart = (function (exports) {
           return obj && obj instanceof WebglGradient;
       }
 
-      /**
+  	/**
   	 * 测试获取文本所占大小
   	 *
   	 * @method testSize
   	 * @return {object} 含文本大小的对象
   	 */
   	testSize(text, style=this.style) {
-  		
-  		this.textureContext.save && this.textureContext.save();
-  		// 修改字体，用来计算
-  		if(style.font || style.fontSize) this.textureContext.font = style.font || (style.fontSize + 'px ' + style.fontFamily);
-  		
-  		//计算宽度
-  		const size = this.textureContext.measureText?
-                          this.textureContext.measureText(text):
-  							{width:15};
-          this.textureContext.restore &&this.textureContext.restore();
-  		size.height = this.style.fontSize? this.style.fontSize: 15;
+  		const ctx = this._measureCtx;
+  		if(!ctx) return { width: 15, height: style.fontSize || 15 };
+
+  		ctx.save && ctx.save();
+  		if(style.font || style.fontSize) ctx.font = style.font || (style.fontSize + 'px ' + style.fontFamily);
+  		const size = ctx.measureText ? ctx.measureText(text) : { width: 15 };
+          ctx.restore && ctx.restore();
+  		size.height = style.fontSize ? parseInt(style.fontSize) : 15;
   		return size;
   	}
-
-      // 使用纹理canvas生成图，
-      // 填充可以是颜色或渐变对象
-      // 如果指定了points，则表明要绘制不规则的图形
-      toFillTexture(fillStyle, bounds, points=null) {
-          const canvas = this.textureCanvas;
-          if(!canvas) {
-              return fillStyle;
-          }
-          canvas.width = bounds.width;
-          canvas.height = bounds.height;
-
-          if(!canvas.width || !canvas.height) {
-              return fillStyle;
-          }
-
-          this.textureContext.clearRect(0, 0, canvas.width, canvas.height);
-
-          this.textureContext.fillStyle = fillStyle;
-
-          // 规则图形用 fillRect，比 beginPath/lineTo/fill 快
-          if(!points || !points.length) {
-              this.textureContext.fillRect(0, 0, bounds.width, bounds.height);
-          } else {
-              this.textureContext.beginPath();
-              for(const p of points) {
-                  //移至当前坐标
-                  if(p.m) {
-                      this.textureContext.moveTo(p.x - bounds.left, p.y - bounds.top);
-                  }
-                  else {
-                      this.textureContext.lineTo(p.x - bounds.left, p.y - bounds.top);
-                  }			
-              }
-              this.textureContext.closePath();
-              this.textureContext.fill();
-          }
-
-          const data = this.textureContext.getImageData(0, 0, canvas.width, canvas.height);
-          return {
-              data,
-              points
-          };
-      }
   }
 
   // path 绘制类
@@ -3433,6 +3410,112 @@ var jmChart = (function (exports) {
       // 二点是否重合
       equalPoint(p1, p2) {
           return p1.x === p2.x && p1.y === p2.y;
+      }
+
+      // 将带 moveTo 标记的点集拆分为外轮廓和多个洞
+      splitSubPaths(points) {
+          const subPaths = [];
+          let current = [];
+          for(let i = 0; i < points.length; i++) {
+              const p = points[i];
+              if(p.m && current.length > 0) {
+                  subPaths.push(current);
+                  current = [];
+              }
+              current.push(p);
+          }
+          if(current.length > 0) subPaths.push(current);
+
+          // 面积最大的作为外轮廓，其余作为洞
+          let maxArea = -1;
+          let outerIdx = 0;
+          for(let i = 0; i < subPaths.length; i++) {
+              const area = Math.abs(this.polygonArea(subPaths[i]));
+              if(area > maxArea) {
+                  maxArea = area;
+                  outerIdx = i;
+              }
+          }
+
+          const outerPoints = subPaths[outerIdx];
+          const holes = [];
+          for(let i = 0; i < subPaths.length; i++) {
+              if(i !== outerIdx) holes.push(subPaths[i]);
+          }
+          return { outerPoints, holes };
+      }
+
+      // 计算多边形面积（Shoelace 公式）
+      polygonArea(points) {
+          let area = 0;
+          const n = points.length;
+          for(let i = 0; i < n; i++) {
+              const j = (i + 1) % n;
+              area += points[i].x * points[j].y;
+              area -= points[j].x * points[i].y;
+          }
+          return area / 2;
+      }
+
+      // 使用 earcut 带 holes 填充多边形
+      fillWithHoles(outerPoints, holes, isTexture = false) {
+          // 将所有点合并：外轮廓 + 各个洞，并记录洞的起始索引
+          const allPoints = [...outerPoints];
+          const holeIndices = [];
+          for(const hole of holes) {
+              holeIndices.push(allPoints.length);
+              allPoints.push(...hole);
+          }
+
+          const dim = 2;
+          const vertexData = [];
+          for(const p of allPoints) {
+              vertexData.push(p.x, p.y);
+          }
+
+          // 用 earcut 进行带洞三角化
+          const indices = earcut(vertexData, holeIndices, dim);
+
+          if(!indices || indices.length < 3) return;
+
+          // 构建 GPU 顶点数据
+          const allVertices = [];
+          const allTexCoords = [];
+          for(let i = 0; i < indices.length; i++) {
+              const p = allPoints[indices[i]];
+              allVertices.push(p.x, p.y);
+              if(isTexture) allTexCoords.push(p.x, p.y);
+          }
+
+          const gl = this.context;
+          const vertexArr = new Float32Array(allVertices);
+
+          let posBuffer = this.__cachedBuffers.find(b => b.attr === this.program.attrs.a_position);
+          if(!posBuffer) {
+              posBuffer = this.createFloat32Buffer(vertexArr, gl.ARRAY_BUFFER, gl.DYNAMIC_DRAW);
+              posBuffer.attr = this.program.attrs.a_position;
+              this.__cachedBuffers.push(posBuffer);
+          } else {
+              gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer.buffer);
+              gl.bufferData(gl.ARRAY_BUFFER, vertexArr, gl.DYNAMIC_DRAW);
+          }
+          this.writeVertexAttrib(posBuffer, this.program.attrs.a_position, 2, 0, 0);
+
+          if(isTexture && allTexCoords.length) {
+              const texData = new Float32Array(allTexCoords);
+              let texBuffer = this.__cachedBuffers.find(b => b.attr === this.program.attrs.a_text_coord);
+              if(!texBuffer) {
+                  texBuffer = this.createFloat32Buffer(texData, gl.ARRAY_BUFFER, gl.DYNAMIC_DRAW);
+                  texBuffer.attr = this.program.attrs.a_text_coord;
+                  this.__cachedBuffers.push(texBuffer);
+              } else {
+                  gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer.buffer);
+                  gl.bufferData(gl.ARRAY_BUFFER, texData, gl.DYNAMIC_DRAW);
+              }
+              this.writeVertexAttrib(texBuffer, this.program.attrs.a_text_coord, 2, 0, 0);
+          }
+
+          gl.drawArrays(gl.TRIANGLES, 0, allVertices.length / 2);
       }
       // 把path坐标集合转为线段集
       pathToLines(points) {
@@ -3660,9 +3743,46 @@ var jmChart = (function (exports) {
           }
           if(points && points.length) {
               const regular = lineWidth <= 1.2;
-              points = regular? points : this.pathToPoints(points);
-              this.writePoints(points);
-              this.context.drawArrays(regular? this.context.LINE_LOOP: this.context.POINTS, 0, points.length);
+              const hasMoveTo = points.some && points.some(p => p.m);
+              const isRing = !hasMoveTo && this.needCut; // 空心形状（jmHArc close=true 时无 m 标记）
+              if(regular && (hasMoveTo || isRing)) {
+                  // 有 moveTo 标记或空心形状时，分段绘制每个子路径的 LINE_LOOP
+                  // 避免 LINE_LOOP 把不同子路径的点连起来产生拉扯线
+                  if(hasMoveTo) {
+                      let subPath = [];
+                      for(let i = 0; i < points.length; i++) {
+                          if(points[i].m && subPath.length > 0) {
+                              this.writePoints(subPath);
+                              this.context.drawArrays(this.context.LINE_LOOP, 0, subPath.length);
+                              subPath = [];
+                          }
+                          subPath.push(points[i]);
+                      }
+                      if(subPath.length > 1) {
+                          this.writePoints(subPath);
+                          this.context.drawArrays(this.context.LINE_LOOP, 0, subPath.length);
+                      }
+                  }
+                  else if(isRing) {
+                      // 空心形状：前半段为内弧，后半段为外弧（反向），各自 LINE_LOOP
+                      const mid = Math.floor(points.length / 2);
+                      const inner = points.slice(0, mid);
+                      const outer = points.slice(mid);
+                      if(inner.length > 1) {
+                          this.writePoints(inner);
+                          this.context.drawArrays(this.context.LINE_LOOP, 0, inner.length);
+                      }
+                      if(outer.length > 1) {
+                          this.writePoints(outer);
+                          this.context.drawArrays(this.context.LINE_LOOP, 0, outer.length);
+                      }
+                  }
+              }
+              else {
+                  points = regular? points : this.pathToPoints(points);
+                  this.writePoints(points);
+                  this.context.drawArrays(regular? this.context.LINE_LOOP: this.context.POINTS, 0, points.length);
+              }
               // buffer 由 endDraw 统一清理
           }
           colorBuffer && this.disableVertexAttribArray(colorBuffer && colorBuffer.attr);
@@ -3684,10 +3804,9 @@ var jmChart = (function (exports) {
 
       fillColor(color, points, bounds, type=1) {
           
-          // 如果是渐变色，则需要计算偏移量的颜色
+          // 如果是渐变色，使用 GLSL 着色器直接计算
           if(this.isGradient(color)) {
-              const imgData = color.toImageData(this, bounds, points);
-              return this.fillImage(imgData.data, imgData.points, bounds);
+              return this.fillGradient(color, points, bounds);
           }
           
           // 标注为fill
@@ -3698,6 +3817,83 @@ var jmChart = (function (exports) {
 
           colorBuffer && this.disableVertexAttribArray(colorBuffer && colorBuffer.attr);
 
+      }
+
+      /**
+       * 使用 GLSL 着色器渲染渐变填充
+       * 无需 textureCanvas，直接通过 uniform 传递渐变参数给 GPU
+       */
+      fillGradient(gradient, points, bounds) {
+          const params = gradient.toUniformParams();
+          if(!params) return;
+
+          // 标注为 GLSL 渐变 (type=5)
+          this.context.uniform1i(this.program.uniforms.a_type.location, 5);
+
+          // 设置 globalAlpha（通过 v_single_color.a 传递给着色器）
+          this.context.uniform4f(this.program.uniforms.v_single_color.location, 1.0, 1.0, 1.0, this.style.globalAlpha);
+
+          // 设置渐变类型
+          if(this.program.uniforms.u_gradient_type) {
+              this.context.uniform1i(this.program.uniforms.u_gradient_type.location, params.gradientType);
+          }
+
+          // 设置渐变起点/终点
+          if(this.program.uniforms.u_gradient_start) {
+              this.context.uniform4fv(this.program.uniforms.u_gradient_start.location, params.gradientStart);
+          }
+          if(this.program.uniforms.u_gradient_end) {
+              this.context.uniform4fv(this.program.uniforms.u_gradient_end.location, params.gradientEnd);
+          }
+
+          // 设置颜色断点数量
+          if(this.program.uniforms.u_gradient_stop_count) {
+              this.context.uniform1i(this.program.uniforms.u_gradient_stop_count.location, params.stopCount);
+          }
+
+          // 设置每个 stop 的 offset
+          // 关键：必须填充完整的 MAX_STOPS 长度数组，否则未初始化元素默认为 0
+          // 会导致着色器循环中 t >= 0 始终为 true，返回黑色
+          if(this.program.uniforms.u_gradient_offsets) {
+              const offsets = new Float32Array(MAX_STOPS);
+              for(let i = 0; i < params.stopCount; i++) {
+                  offsets[i] = params.stops[i * 5];
+              }
+              // 用 2.0 填充剩余项，使 t(0~1) >= 2.0 为 false，不会被匹配
+              for(let i = params.stopCount; i < MAX_STOPS; i++) {
+                  offsets[i] = 2.0;
+              }
+              this.context.uniform1fv(this.program.uniforms.u_gradient_offsets.location, offsets);
+          }
+
+          // 设置每个 stop 的颜色 (rgba)
+          if(this.program.uniforms.u_gradient_colors) {
+              const colors = new Float32Array(MAX_STOPS * 4);
+              for(let i = 0; i < params.stopCount; i++) {
+                  colors[i * 4 + 0] = params.stops[i * 5 + 1]; // r
+                  colors[i * 4 + 1] = params.stops[i * 5 + 2]; // g
+                  colors[i * 4 + 2] = params.stops[i * 5 + 3]; // b
+                  colors[i * 4 + 3] = params.stops[i * 5 + 4]; // a
+              }
+              // 用最后一个 stop 的颜色填充剩余项，确保不会返回黑色
+              if(params.stopCount > 0) {
+                  const lastR = params.stops[(params.stopCount - 1) * 5 + 1];
+                  const lastG = params.stops[(params.stopCount - 1) * 5 + 2];
+                  const lastB = params.stops[(params.stopCount - 1) * 5 + 3];
+                  const lastA = params.stops[(params.stopCount - 1) * 5 + 4];
+                  for(let i = params.stopCount; i < MAX_STOPS; i++) {
+                      colors[i * 4 + 0] = lastR;
+                      colors[i * 4 + 1] = lastG;
+                      colors[i * 4 + 2] = lastB;
+                      colors[i * 4 + 3] = lastA;
+                  }
+              }
+              this.context.uniform4fv(this.program.uniforms.u_gradient_colors.location, colors);
+          }
+
+          // 填充多边形（需要纹理坐标来计算渐变位置）
+          this.fillPolygons(points, true);
+          this.disableVertexAttribArray(this.program.attrs.a_text_coord);
       }
 
       // 区域填充图片
@@ -3765,6 +3961,29 @@ var jmChart = (function (exports) {
 
           // 规则图形（凸多边形，如圆）：直接用 TRIANGLE_FAN 一次性绘制，无需 earcut
           if(this.isRegular) {
+              // 检查是否有 moveTo 标记，如果有说明路径包含多个子路径（如空心圆弧 jmHArc）
+              const hasMoveTo = points.some && points.some(p => p.m);
+              if(hasMoveTo) {
+                  // 有 m 标记：按 m 标记拆分子路径
+                  const { outerPoints, holes } = this.splitSubPaths(points);
+                  this.fillWithHoles(outerPoints, holes, isTexture);
+                  return;
+              }
+              // 无 m 标记但 needCut=true 表示空心形状（如 jmHArc close=true）
+              // 前半段为内弧，后半段为外弧（反向），按中点拆分
+              if(this.needCut && points.length >= 6) {
+                  const mid = Math.floor(points.length / 2);
+                  const inner = points.slice(0, mid);
+                  const outer = points.slice(mid);
+                  const innerArea = Math.abs(this.polygonArea(inner));
+                  const outerArea = Math.abs(this.polygonArea(outer));
+                  if(outerArea >= innerArea) {
+                      this.fillWithHoles(outer, [inner], isTexture);
+                  } else {
+                      this.fillWithHoles(inner, [outer], isTexture);
+                  }
+                  return;
+              }
               this.writePoints(points);
               isTexture? this.writePoints(points, this.program.attrs.a_text_coord): null;
               this.context.drawArrays(this.context.TRIANGLE_FAN, 0, points.length);
@@ -3832,46 +4051,73 @@ var jmChart = (function (exports) {
       }
 
       drawText(text, x, y, bounds) {
-          let canvas = this.textureCanvas;
+          // 文本渲染仍需要 2D canvas 绘制字形，然后作为纹理上传
+          // 使用临时 canvas，不依赖共享的 textureCanvas
+          if(!bounds.width || !bounds.height) return null;
+          if(typeof document === 'undefined') return null;
+
+          let canvas = this.__textCanvas;
           if(!canvas) {
-              return null;
+              canvas = document.createElement('canvas');
+              this.__textCanvas = canvas;
           }
           canvas.width = bounds.width;
           canvas.height = bounds.height;
 
-          if(!canvas.width || !canvas.height) {
-              return null;
-          }
+          const ctx = canvas.getContext('2d', { willReadFrequently: true });
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-          this.textureContext.clearRect(0, 0, canvas.width, canvas.height);
           // 修改字体
-  		this.textureContext.font = this.style.font || (this.style.fontSize + 'px ' + this.style.fontFamily);
+          ctx.font = this.style.font || (this.style.fontSize + 'px ' + this.style.fontFamily);
 
           x -= bounds.left;
           y -= bounds.top;
 
-          this.setTextureStyle(this.style);
+          // 设置文本样式
+          if(this.style.fillStyle) {
+              ctx.fillStyle = this.graph.utils.toColor(this.style.fillStyle);
+          }
+          if(this.style.strokeStyle) {
+              ctx.strokeStyle = this.graph.utils.toColor(this.style.strokeStyle);
+          }
+          if(this.style.shadowColor) {
+              ctx.shadowColor = this.graph.utils.toColor(this.style.shadowColor);
+          }
+          if(this.style.shadowBlur) {
+              ctx.shadowBlur = this.style.shadowBlur;
+          }
+          if(this.style.shadowOffsetX !== undefined) {
+              ctx.shadowOffsetX = this.style.shadowOffsetX;
+          }
+          if(this.style.shadowOffsetY !== undefined) {
+              ctx.shadowOffsetY = this.style.shadowOffsetY;
+          }
+          if(this.style.textAlign) {
+              ctx.textAlign = this.style.textAlign;
+          }
+          if(this.style.textBaseline) {
+              ctx.textBaseline = this.style.textBaseline;
+          }
 
-          if(this.style.fillStyle && this.textureContext.fillText) {
-
+          if(this.style.fillStyle && ctx.fillText) {
               if(this.style.maxWidth) {
-                  this.textureContext.fillText(text, x, y, this.style.maxWidth);
+                  ctx.fillText(text, x, y, this.style.maxWidth);
               }
               else {
-                  this.textureContext.fillText(text, x, y);
+                  ctx.fillText(text, x, y);
               }
           }
-          if(this.textureContext.strokeText) {
-
+          if(this.style.strokeStyle && ctx.strokeText) {
               if(this.style.maxWidth) {
-                  this.textureContext.strokeText(text, x, y, this.style.maxWidth);
+                  ctx.strokeText(text, x, y, this.style.maxWidth);
               }
               else {
-                  this.textureContext.strokeText(text, x, y);
+                  ctx.strokeText(text, x, y);
               }
           }
+
           // 用纹理图片代替文字
-          const data = this.textureContext.getImageData(0, 0, canvas.width, canvas.height);
+          const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
           this.fillImage(data, this.points, bounds);
       }
   }
@@ -6104,8 +6350,8 @@ var jmChart = (function (exports) {
   		
   		maxps.reverse();//大圆逆序
   		if(!this.style || !this.style.close) {
-  			maxps[0].m = true;//开始画大圆时表示为移动
-  		}		
+  			maxps[0].m = true;//非闭合时标记 moveTo，分隔内外两个子路径
+  		}
   		this.points = minps.concat(maxps);
   	}
   }
@@ -8123,8 +8369,6 @@ var jmChart = (function (exports) {
   		else {
   			this.context = canvas.getContext(this.mode);
   		}
-
-  		this.textureCanvas = option.textureCanvas || null;
   		
   		// webgl模式
   		if(this.mode === 'webgl') {
@@ -8833,9 +9077,13 @@ var jmChart = (function (exports) {
           if(typeof option == 'function') {
   			callback = option;
   			option = {};
-          } 
+  		} 
           
           super(canvas, option, callback);
+      }
+
+      static create(...args) {
+          return new jmGraphImpl(...args);
       }
   }
 
