@@ -1,6 +1,6 @@
 {
   "name": "jmchart",
-  "version": "1.2.18",
+  "version": "1.2.19",
   "description": "chart",
   "main": "./index.js",
   "types": "./index.d.ts",
@@ -29,7 +29,7 @@
   },
   "homepage": "https://surl.fit/tools/tools/jmchart",
   "dependencies": {
-    "jmgraph": "^3.2.25"
+    "jmgraph": "^3.2.27"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
