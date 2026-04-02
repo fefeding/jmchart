@@ -12892,7 +12892,7 @@ var jmChart = (function (exports) {
             x: labelX,
             y: labelY
           },
-          text: value.toString()
+          text: Number(value.toFixed(2)).toString()
         });
         this.addShape(tickLabel);
       }
@@ -12946,6 +12946,10 @@ var jmChart = (function (exports) {
      * 创建仪表盘值标签
      */
     createGaugeValueLabel(centerX, centerY, radius, value) {
+      // 使用 itemLabelFormat 格式化，如果没有则默认最多保留2位小数
+      const text = this.option.itemLabelFormat ? this.option.itemLabelFormat.call(this, {
+        yValue: value
+      }) : Number(value.toFixed(2)).toString();
       const valueLabel = this.graph.createShape('label', {
         style: {
           fill: this.style.valueColor || '#333',
@@ -12958,7 +12962,7 @@ var jmChart = (function (exports) {
           x: centerX,
           y: centerY + radius * 0.3
         },
-        text: value.toString()
+        text: text
       });
       this.addShape(valueLabel);
       if (this.style.unit) {

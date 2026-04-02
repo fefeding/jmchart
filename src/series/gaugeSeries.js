@@ -149,7 +149,7 @@ export default class jmGaugeSeries extends jmSeries {
 					zIndex: 4
 				},
 				position: { x: labelX, y: labelY },
-				text: value.toString()
+				text: Number(value.toFixed(2)).toString()
 			});
 
 			this.addShape(tickLabel);
@@ -198,6 +198,11 @@ export default class jmGaugeSeries extends jmSeries {
 	 * 创建仪表盘值标签
 	 */
 	createGaugeValueLabel(centerX, centerY, radius, value) {
+		// 使用 itemLabelFormat 格式化，如果没有则默认最多保留2位小数
+		const text = this.option.itemLabelFormat 
+			? this.option.itemLabelFormat.call(this, { yValue: value })
+			: Number(value.toFixed(2)).toString();
+
 		const valueLabel = this.graph.createShape('label', {
 			style: {
 				fill: this.style.valueColor || '#333',
@@ -207,7 +212,7 @@ export default class jmGaugeSeries extends jmSeries {
 				zIndex: 7
 			},
 			position: { x: centerX, y: centerY + radius * 0.3 },
-			text: value.toString()
+			text: text
 		});
 
 		this.addShape(valueLabel);
