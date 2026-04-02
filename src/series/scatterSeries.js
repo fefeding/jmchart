@@ -102,12 +102,11 @@ export default class jmScatterSeries extends jmSeries {
 	 * @for jmScatterSeries
 	 */
 	createLegend() {
-		// 生成图例前的图标
-		var style = this.graph.utils.clone(this.style);
+		const style = this.graph.utils.clone(this.style);
 		style.stroke = style.color;
 		style.fill = style.color;
-		
-		var shape = this.graph.createShape('circle', {
+
+		const shape = this.graph.createShape('circle', {
 			style: style,
 			center: {
 				x: this.graph.style.legend.item.shape.width / 2,
@@ -118,8 +117,4 @@ export default class jmScatterSeries extends jmSeries {
 		
 		this.graph.legend.append(this, shape);
 	}
-}
-
-export {
-	jmScatterSeries
 }

@@ -173,7 +173,3 @@ export default class jmWaterfallSeries extends jmSeries {
 		this.graph.legend.append(this, shape);
 	}
 }
-
-export {
-	jmWaterfallSeries
-}

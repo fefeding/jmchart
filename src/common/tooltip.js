@@ -1,8 +1,8 @@
 
 /**
- * 显示提示控件
- * params参数:style=样式，value=显示的文字
- *
+ * 显示提示控件（已废弃）
+ * 
+ * @deprecated 此模块已废弃，未被任何代码引用，保留仅供参考
  * @class jmTooltip
  * @for jmGraph
  * @module jmGraph

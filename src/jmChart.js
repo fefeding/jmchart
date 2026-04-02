@@ -27,9 +27,6 @@ import jmBoxPlotSeries from './series/boxPlotSeries.js';
 import jmWordCloudSeries from './series/wordCloudSeries.js';
 import jmMarkLineManager from './core/markLine/manager';
 
-const ANIMATION_DATA_THRESHOLD = 100;
-const DEFAULT_ANIMATION_COUNT = 10;
-
 /**
  * jm图表组件
  * option参数:graph=jmgraph
@@ -47,7 +44,7 @@ export default class jmChart extends jmGraph  {
 		options.autoRefresh = typeof options.autoRefresh === 'undefined' ? enableAnimate : options.autoRefresh;
 
 		if(enableAnimate && !options.autoRefresh) {
-			console.warn('开启了动画，却没有开户自动刷新');
+			console.warn('开启了动画，却没有开启自动刷新');
 		}
 
 		options.style = jmUtils.clone(defaultStyle, options.style, true);
@@ -409,7 +406,7 @@ export default class jmChart extends jmGraph  {
 			options.maxYValue =  typeof options.maxYValue === 'undefined'?this.option.maxYValue:Math.max(this.option.maxYValue, options.maxYValue);
 		}
 		
-		var yaxis = this.yAxises[options.index] || (this.yAxises[options.index] = this.createAxis(options));
+		const yaxis = this.yAxises[options.index] || (this.yAxises[options.index] = this.createAxis(options));
 		return yaxis;
 	}
 

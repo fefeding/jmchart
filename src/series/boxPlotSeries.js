@@ -59,8 +59,8 @@ export default class jmBoxPlotSeries extends jmSeries {
 
 		if(allValues.length === 0) return;
 
-		const minValue = Math.min(...allValues);
-		const maxValue = Math.max(...allValues);
+		const minValue = allValues.reduce((a, b) => Math.min(a, b));
+		const maxValue = allValues.reduce((a, b) => Math.max(a, b));
 		const valueRange = maxValue - minValue || 1;
 
 		const boxWidth = this.style.boxWidth || (chartWidth / data.length * 0.5);
@@ -250,5 +250,3 @@ export default class jmBoxPlotSeries extends jmSeries {
 		this.graph.legend.append(this, shape);
 	}
 }
-
-export { jmBoxPlotSeries };

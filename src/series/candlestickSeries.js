@@ -28,7 +28,7 @@ import jmSeries from './series.js';
 
 export default class jmCandlestickSeries extends jmSeries {
 	constructor(options) {
-		options.style = options.style || options.graph.style.line;
+		options.style = options.style || options.graph.style.candlestick || options.graph.style.line;
 		super(options);
 	}
 
@@ -122,8 +122,4 @@ export default class jmCandlestickSeries extends jmSeries {
 			this.barTotalWidth = maxWidth * count;
 		}
 	}
-}
-
-export {
-	jmCandlestickSeries
 }

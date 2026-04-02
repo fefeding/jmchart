@@ -35,8 +35,8 @@ jmchart 是一个轻量级、高性能的图表组件，支持微信小程序，
 | 气泡图 | `bubble` | 展示三个变量之间的关系 |
 | 热力图 | `heatmap` | 展示数据密度和强度 |
 | 雷达图 | `radar` | 多维度数据对比 |
-| K线图 | `candlestick` | 金融数据展示 |
-| 箱线图 | `boxPlot` | 展示数据分布情况 |
+| K线图 | `candlestick` | 金融数据展示（开盘/收盘/最高/最低） |
+| 箱线图 | `boxPlot` | 展示数据分布情况（四分位数） |
 
 ### 专业图表
 | 图表类型 | 类型名 | 说明 |
@@ -278,6 +278,28 @@ chart.createSeries('radar', {
 chart.data = [
     { x: '学生A', 语文: 80, 数学: 90, 英语: 75, 物理: 85, 化学: 70 },
     { x: '学生B', 语文: 90, 数学: 85, 英语: 80, 物理: 70, 化学: 95 }
+];
+```
+
+#### K线图（蜡烛图）
+
+K线图用于展示金融数据的开盘价、收盘价、最高价和最低价。
+
+```javascript
+chart.createSeries('candlestick', {
+    field: ['open', 'close', 'high', 'low'], // 开盘/收盘/最高/最低
+    xField: 'date',
+    style: {
+        perWidth: 0.6,            // K线宽度占比
+        masculineColor: 'red',    // 阳线颜色（收>开）
+        negativeColor: 'green'    // 阴线颜色（收<开）
+    }
+});
+// 数据格式
+chart.data = [
+    { date: '1月1日', open: 50, close: 55, high: 60, low: 48 },
+    { date: '1月2日', open: 55, close: 52, high: 58, low: 50 },
+    { date: '1月3日', open: 52, close: 58, high: 62, low: 51 }
 ];
 ```
 
@@ -526,38 +548,160 @@ chart.data = [
 
 ### jmChart 类
 
+#### 属性
+
+| 属性 | 类型 | 说明 |
+|-----|------|------|
+| `data` | `Array` | 图表绑定的数据源 |
+| `series` | `jmList` | 当前所有图表系列 |
+| `enableAnimate` | `boolean` | 是否启用动画 |
+| `baseY` | `number` | Y 轴基线值，默认 0 |
+| `xField` | `string` | X 轴数据字段名 |
+| `chartArea` | `jmControl` | 绘图区域 |
+| `legend` | `jmLegend` | 图例对象 |
+| `xAxis` | `jmAxis` | X 轴对象 |
+| `yAxises` | `Object` | Y 轴对象集合（支持多 Y 轴） |
+| `markLine` | `jmMarkLineManager` | 标线管理器 |
+| `touchGraph` | `jmGraph` | 操作层画布（用于触摸交互优化） |
+| `style` | `jmChartStyle` | 图表样式配置 |
+
 #### 方法
 
 | 方法 | 说明 | 参数 |
 |-----|------|-----|
-| `createSeries(type, options)` | 创建图表序列 | type: 图表类型, options: 配置选项 |
+| `createSeries(type, options)` | 创建图表系列 | type: 图表类型或自定义类, options: 配置选项 |
 | `createXAxis(options)` | 创建X轴 | options: 轴配置 |
-| `createYAxis(options)` | 创建Y轴 | options: 轴配置 |
-| `reset()` | 重置图表 | - |
-| `refresh()` | 刷新图表 | - |
+| `createYAxis(options)` | 创建Y轴（支持多轴，通过 index 区分） | options: 轴配置 |
+| `reset()` | 重置图表，清除所有系列和轴 | - |
+| `beginDraw()` | 绘制图表前的前置处理 | - |
+| `resetAreaPosition()` | 重置画图区域位置 | - |
+| `getColor(index)` | 获取配色数组中的颜色 | index: 颜色索引 |
+| `createAxis(options)` | 创建轴 | options: 轴配置 |
 | `destroy()` | 销毁图表 | - |
-| `getColor(index)` | 获取颜色 | index: 颜色索引 |
 
 #### 事件
 
-| 事件 | 说明 |
+| 事件 | 说明 | 回调参数 |
+|-----|------|---------|
+| `click` | 图表点击事件 | point: 最近的数据点 |
+| `touchPointChange` | 数据点变化事件 | - |
+| `marklinestartmove` | 标线开始移动 | args: 事件参数 |
+| `marklinemove` | 标线移动中 | args: 事件参数 |
+| `marklineendmove` | 标线移动结束 | args: 事件参数 |
+| `marklinelongtapstart` | 标线长按触发 | args: 事件参数 |
+| `onPointCreated` | 数据点创建完成 | point: 数据点 |
+
+### jmSeries 基类
+
+所有图表系列的基类。可通过继承 `jmSeries` 来创建自定义图表类型。
+
+#### 核心方法
+
+| 方法 | 说明 |
 |-----|------|
-| `touchPointChange` | 数据点变化事件 |
-| `marklinelongtapstart` | 标线长按开始 |
-| `marklinestartmove` | 标线开始移动 |
-| `marklinemove` | 标线移动中 |
-| `marklineendmove` | 标线移动结束 |
+| `initDataPoint(...args)` | 初始化数据点，支持动画过渡 |
+| `createPoints(data)` | 根据数据源创建数据点，计算屏幕坐标 |
+| `getDataPointByX(x)` | 根据 X 坐标获取最近的数据点 |
+| `getDataPointByXValue(xValue)` | 根据 X 轴值获取数据点 |
+| `createItemLabel(point, position)` | 创建数据项标签 |
+| `createLegend()` | 创建图例 |
+| `getColor(p)` | 获取颜色 |
+| `addShape(shape)` | 添加形状到图表 |
+
+### 数据标签位置
+
+`createItemLabel` 支持以下标签位置：
+
+| 位置 | 说明 |
+|-----|------|
+| `top` | 数据点上方（默认正值） |
+| `bottom` | 数据点下方（默认负值） |
+| `left` | 数据点左侧 |
+| `right` | 数据点右侧 |
+| `inside` | 数据点内部 |
+
+```javascript
+// 自定义标签位置和样式
+chart.createSeries('bar', {
+    field: 'value',
+    xField: 'name',
+    style: {
+        label: {
+            show: true,
+            position: 'top',     // 标签位置
+            offset: 8,           // 偏移量（像素）
+            fill: '#333',        // 文字颜色
+            font: '14px Arial',  // 字体
+            textAlign: 'center'  // 对齐方式
+        }
+    }
+});
+```
+
+### 多 Y 轴
+
+支持创建多个 Y 轴，不同系列可以绑定到不同的 Y 轴：
+
+```javascript
+// 系列1绑定到默认Y轴（index=1）
+const series1 = chart.createSeries('line', {
+    field: 'temperature',
+    xField: 'date',
+    index: 1
+});
+
+// 系列2绑定到第二个Y轴（index=2）
+const series2 = chart.createSeries('bar', {
+    field: 'rainfall',
+    xField: 'date',
+    index: 2,
+    style: {
+        color: '#52c41a'
+    }
+});
+```
+
+### 标线交互
+
+标线支持鼠标/触摸拖拽移动，可以通过样式配置控制行为：
+
+```javascript
+const chart = new jmChart(container, {
+    style: {
+        markLine: {
+            x: true,              // 显示 X 标线
+            y: true,              // 显示 Y 标线
+            stroke: '#EB792A',    // 标线颜色
+            lineWidth: 1,
+            radius: 5,            // 中心小圆圈大小
+            longtap: false,       // 是否需要长按才启用标线
+            lock: {
+                x: 10,            // X 方向锁定阈值（像素）
+                y: 10             // Y 方向锁定阈值（像素）
+            }
+        }
+    }
+});
+
+// 监听标线事件
+chart.on('marklinemove', (args) => {
+    console.log('标线位置:', args.position);
+});
+```
 
 ## 性能优化
 
 本项目进行了以下性能优化：
 
-1. **动画阈值控制**：数据量超过100时自动禁用动画
-2. **缓存机制**：颜色计算等使用Map缓存
-3. **空值检查**：减少不必要的渲染和计算
-4. **代码优化**：移除冗余代码，优化循环和条件判断
-5. **常量提取**：提取魔法数字为命名常量
-6. **事件优化**：减少事件监听器的创建
+1. **动画阈值控制**：数据量超过 `ANIMATION_DATA_THRESHOLD`(100) 时自动禁用动画，避免大数据量时卡顿
+2. **使用 reduce 替代展开运算符**：`Math.max/min` 使用 `reduce` 计算，防止大数据量时栈溢出
+3. **缓存机制**：颜色计算等使用 Map 缓存
+4. **空值检查**：减少不必要的渲染和计算
+5. **代码优化**：移除冗余代码，优化循环和条件判断
+6. **常量提取**：提取魔法数字为命名常量（如 `ANIMATION_DATA_THRESHOLD`、`DEFAULT_ANIMATION_COUNT`）
+7. **事件优化**：减少事件监听器的创建，标线移动添加节流（~60fps）
+8. **数组副作用防护**：`Array.reverse()` 使用 `slice()` 先拷贝再反转，避免修改原数组
+9. **浅拷贝优化**：对于不需要深拷贝的场景使用 `Object.assign` 替代深拷贝
 
 ## 开发
 
@@ -597,6 +741,16 @@ MIT
 欢迎提交 Issue 和 Pull Request！
 
 ## 更新日志
+
+### v1.3.1
+- 代码质量优化：统一变量声明为 const/let，移除冗余 var
+- 修复 bug：修复 axis.js JSDoc 注释错误、多余分号、tooltip.js 标记废弃
+- 代码规范：统一 class 语法，将原型方法转换为 class 方法
+- 性能优化：Math.max/min 使用 reduce 防栈溢出，数组操作避免副作用
+- 常量提取：ANIMATION_DATA_THRESHOLD、DEFAULT_ANIMATION_COUNT
+- 清理冗余导出：移除各系列文件中多余的命名导出
+- 完善类型声明：index.d.ts 补充完整的类方法和属性定义
+- 完善文档：README.md 补充 K 线图、多 Y 轴、标线交互、数据标签等详细说明
 
 ### v1.3.0
 - 新增图表类型：漏斗图、环形进度图、箱线图、词云图

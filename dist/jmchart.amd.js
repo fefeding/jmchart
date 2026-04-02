@@ -23,7 +23,57 @@ define(['exports'], (function (exports) { 'use strict';
     return "symbol" == typeof i ? i : i + "";
   }
 
+  /**
+   * @fileoverview jmList 列表类
+   * 
+   * jmList 是 jmGraph 库的集合类，继承自原生 Array。
+   * 提供了增强的列表操作方法，包括去重添加、条件查找、遍历等。
+   * 
+   * 主要功能：
+   * - 去重添加元素（add）
+   * - 条件查找（get）
+   * - 正向/反向遍历（each）
+   * - 元素计数（count）
+   * - 移除回调支持
+   * 
+   * @module jmList
+   * @author jmGraph Team
+   * @license MIT
+   */
+
+  /**
+   * jmList 列表类
+   * 
+   * 继承自 Array 的增强列表类，提供去重、遍历、查找等功能。
+   * 主要用于管理图形对象的子元素集合。
+   * 
+   * @class jmList
+   * @extends Array
+   * 
+   * @param {...*} arg 初始元素或数组
+   * 
+   * @example
+   * // 创建列表
+   * const list = new jmList([1, 2, 3]);
+   * 
+   * // 添加元素（自动去重）
+   * list.add(4);
+   * list.add([5, 6]);
+   * 
+   * // 遍历
+   * list.each((index, item) => {
+   *     console.log(index, item);
+   * });
+   * 
+   * // 条件查找
+   * const found = list.get(item => item > 3);
+   */
   class jmList extends Array {
+      /**
+       * 构造函数
+       * 
+       * @param {...*} arg 初始元素或数组
+       */
       constructor(...arg) {
           const ps = [];
           if(arg && arg.length && Array.isArray(arg[0])) {
@@ -33,10 +83,33 @@ define(['exports'], (function (exports) { 'use strict';
           else {
               super();
           }
+          /**
+           * 配置选项
+           * @type {Object}
+           * @property {function} removeHandler 元素移除时的回调函数
+           */
           this.option = {};
+          /**
+           * 类型标识
+           * @type {string}
+           */
           this.type = 'jmList';
       }
 
+      /**
+       * 添加元素到列表
+       * 
+       * 自动去重，如果元素已存在则不会重复添加。
+       * 支持添加单个元素或数组。
+       * 
+       * @method add
+       * @param {*} obj 要添加的元素或数组
+       * @returns {*} 添加的元素
+       * 
+       * @example
+       * list.add(1);           // 添加单个元素
+       * list.add([2, 3, 4]);   // 添加数组
+       */
       add(obj) {
           if(obj && Array.isArray(obj)) {
               for(let i=0; i < obj.length; i++) {
@@ -49,6 +122,17 @@ define(['exports'], (function (exports) { 'use strict';
           return obj;
       }
 
+      /**
+       * 从列表中移除元素
+       * 
+       * 移除所有匹配的元素，并触发移除回调。
+       * 
+       * @method remove
+       * @param {*} obj 要移除的元素
+       * 
+       * @example
+       * list.remove(item);
+       */
       remove(obj) {
           for(let i = this.length -1; i>=0; i--) {
               if(this[i] == obj) {
@@ -57,6 +141,15 @@ define(['exports'], (function (exports) { 'use strict';
           }
       }
 
+      /**
+       * 移除指定索引位置的元素
+       * 
+       * @method removeAt
+       * @param {number} index 要移除的元素索引
+       * 
+       * @example
+       * list.removeAt(0);  // 移除第一个元素
+       */
       removeAt(index) {
           if(this.length > index) {
               const obj = this[index];
@@ -65,10 +158,39 @@ define(['exports'], (function (exports) { 'use strict';
           }
       }
 
+      /**
+       * 检查列表是否包含指定元素
+       * 
+       * @method contain
+       * @param {*} obj 要检查的元素
+       * @returns {boolean} 如果包含返回 true，否则返回 false
+       * 
+       * @example
+       * if (list.contain(item)) {
+       *     console.log('元素存在');
+       * }
+       */
       contain(obj) {
           return this.includes(obj);
       }
 
+      /**
+       * 获取元素
+       * 
+       * 如果参数是函数，则返回第一个满足条件的元素；
+       * 如果参数是数字，则返回指定索引的元素。
+       * 
+       * @method get
+       * @param {number|function} index 索引或条件函数
+       * @returns {*} 找到的元素，如果未找到返回 undefined
+       * 
+       * @example
+       * // 按索引获取
+       * const item = list.get(0);
+       * 
+       * // 按条件查找
+       * const found = list.get(item => item.id === 5);
+       */
       get(index) {
           if(typeof index == 'function') {
               return this.find(index);
@@ -78,6 +200,27 @@ define(['exports'], (function (exports) { 'use strict';
           }
       }
 
+      /**
+       * 遍历列表
+       * 
+       * 支持正向和反向遍历。在回调中返回 false 可以中断遍历。
+       * 
+       * @method each
+       * @param {function} cb 回调函数，参数为 (index, item)
+       * @param {boolean} [inverse=false] 是否反向遍历
+       * 
+       * @example
+       * // 正向遍历
+       * list.each((index, item) => {
+       *     console.log(index, item);
+       *     if (item.id === 3) return false;  // 中断遍历
+       * });
+       * 
+       * // 反向遍历
+       * list.each((index, item) => {
+       *     console.log(index, item);
+       * }, true);
+       */
       each(cb, inverse) {
           if(cb && typeof cb == 'function') {
               if(inverse) {
@@ -96,6 +239,20 @@ define(['exports'], (function (exports) { 'use strict';
           }
       }
 
+      /**
+       * 统计元素数量
+       * 
+       * 如果提供了条件函数，返回满足条件的元素数量；
+       * 否则返回列表总长度。
+       * 
+       * @method count
+       * @param {function} [handler] 条件函数
+       * @returns {number} 元素数量
+       * 
+       * @example
+       * const total = list.count();  // 总数量
+       * const matched = list.count(item => item.active);  // 满足条件的数量
+       */
       count(handler) {
           if(handler && typeof handler == 'function') {
               let count = 0;
@@ -110,11 +267,30 @@ define(['exports'], (function (exports) { 'use strict';
           return this.length;
       }
 
+      /**
+       * 清空列表
+       * 
+       * 移除列表中的所有元素。
+       * 
+       * @method clear
+       * 
+       * @example
+       * list.clear();
+       */
       clear() {
           this.splice(0, this.length);
       }
   }
 
+  /**
+   * CSS 颜色关键字映射表
+   * 
+   * 包含所有 CSS 标准颜色名称到十六进制值的映射。
+   * 支持 147 种命名颜色 + CSS 系统颜色。
+   * 
+   * @constant {Object.<string, string>}
+   * @private
+   */
   const colorKeywords = {
       aliceblue:            "#f0f8ff",
       antiquewhite:         "#faebd7",
@@ -296,11 +472,22 @@ define(['exports'], (function (exports) { 'use strict';
     };
 
   /**
-   * 画图基础对象
-   * 当前库的工具类
+   * jmGraph 工具类
+   * 
+   * 提供常用的静态工具方法，包括对象操作、事件处理、几何计算、颜色转换等。
    * 
    * @class jmUtils
    * @static
+   * 
+   * @example
+   * // 克隆对象
+   * const newObj = jmUtils.clone({ a: 1, b: 2 });
+   * 
+   * // 绑定事件
+   * jmUtils.bindEvent(element, 'click', handler);
+   * 
+   * // 检查点是否在多边形内
+   * const inside = jmUtils.pointInPolygon({x: 10, y: 10}, polygonPoints);
    */
   class jmUtils {
       /**
@@ -456,12 +643,12 @@ define(['exports'], (function (exports) { 'use strict';
                   el = el.offsetParent;
               }
           }
-          else if(el.x) {
-              pos.left += el.x;
-          }
-          else if(el.x){
-              pos.top += el.y;
-          } 
+  		else if(el.x) {
+  			pos.left += el.x;
+  		}
+  		else if(el.y){
+  			pos.top += el.y;
+  		}
           return pos;
       }
       /**
@@ -585,6 +772,30 @@ define(['exports'], (function (exports) { 'use strict';
           return this.rayCasting(pt, polygon, offset);
       }
 
+      /**
+       * 判断点是否在线段上
+       * 
+       * 通过计算点到线段的垂直距离来判断点是否在线段上。
+       * 同时检查点是否在线段的范围内（不仅仅是直线上）。
+       * 
+       * @method pointOnLine
+       * @static
+       * @private
+       * @param {Object} pt 待检测的点 {x, y}
+       * @param {Object} p1 线段起点 {x, y}
+       * @param {Object} p2 线段终点 {x, y}
+       * @param {number} offset 允许的偏差值（像素）
+       * @returns {number} 0=不在线段上, 1=在线段上
+       * 
+       * @example
+       * const onLine = jmUtils.pointOnLine(
+       *     {x: 5, y: 5},      // 待检测点
+       *     {x: 0, y: 0},      // 起点
+       *     {x: 10, y: 10},    // 终点
+       *     2                  // 允许偏差
+       * );
+       * // 返回 1，点在对角线上
+       */
       static pointOnLine(pt, p1, p2, offset) {
           const minX = Math.min(p1.x, p2.x);
           const maxX = Math.max(p1.x, p2.x);
@@ -625,6 +836,25 @@ define(['exports'], (function (exports) { 'use strict';
           return 0;
       }
 
+      /**
+       * 射线法判断点是否在多边形内部
+       * 
+       * 从待测点向右发射一条水平射线，计算与多边形边界的交点数量。
+       * - 交点数为奇数：点在多边形内部
+       * - 交点数为偶数：点在多边形外部
+       * 
+       * 这是判断点是否在任意多边形内的经典算法，时间复杂度 O(n)。
+       * 
+       * @method rayCasting
+       * @static
+       * @private
+       * @param {Object} pt 待检测的点 {x, y}
+       * @param {Array<Object>} polygon 多边形顶点数组 [{x, y}, ...]
+       * @param {number} offset 允许的偏差值（未使用）
+       * @returns {number} 0=在多边形外部, 2=在多边形内部
+       * 
+       * @see {@link https://en.wikipedia.org/wiki/Point_in_polygon Point in polygon - Wikipedia}
+       */
       static rayCasting(pt, polygon, offset) {
           const n = polygon.length;
           let inside = false;
@@ -998,8 +1228,19 @@ define(['exports'], (function (exports) { 'use strict';
       }
 
       /**
-       * 把255的rgb值转为0-1的值
-       * @param {rgba} color 颜色
+       * 将 RGB 颜色值从 0-255 范围转换为 0-1 范围
+       * 
+       * WebGL 中的颜色值通常使用 0-1 的浮点数表示，
+       * 此方法用于将标准 RGB 值转换为 WebGL 兼容格式。
+       * 
+       * @method rgbToDecimal
+       * @static
+       * @param {Object} color 颜色对象 {r, g, b, a?}
+       * @returns {Object} 转换后的颜色对象 {r, g, b, a?}，其中 r/g/b 为 0-1 范围
+       * 
+       * @example
+       * const color = jmUtils.rgbToDecimal({ r: 255, g: 128, b: 64 });
+       * // 返回 { r: 1, g: 0.502, b: 0.251 }
        */
       static rgbToDecimal(color) {
           color = this.clone(color);
@@ -1009,7 +1250,15 @@ define(['exports'], (function (exports) { 'use strict';
           return color;
       }
 
-      //255值转为0-1的小数
+      /**
+       * 将字节值（0-255）转换为小数（0-1）
+       * 
+       * @method byteToDecimal
+       * @static
+       * @private
+       * @param {number} b 字节值（0-255）
+       * @returns {number} 小数值（0-1）
+       */
       static byteToDecimal(b) {
           return b / 255;
       }
@@ -1052,11 +1301,48 @@ define(['exports'], (function (exports) { 'use strict';
           }
           return r;
       }
-      // window.requestAnimationFrame() 告诉浏览器——你希望执行一个动画，并且要求浏览器在下次重绘之前调用指定的回调函数更新动画。该方法需要传入一个回调函数作为参数，该回调函数会在浏览器下一次重绘之前执行
+      /**
+       * 请求动画帧
+       * 
+       * 封装浏览器原生的 requestAnimationFrame 方法，提供跨浏览器兼容性。
+       * 在不支持 requestAnimationFrame 的环境中降级为 setTimeout。
+       * 
+       * @method requestAnimationFrame
+       * @static
+       * @param {Function} callback 动画帧回调函数，接收时间戳参数
+       * @param {Window} [win] 可选的窗口对象（用于多窗口环境）
+       * @returns {number} 动画帧请求ID，用于取消
+       * 
+       * @example
+       * let animationId;
+       * function animate(timestamp) {
+       *     // 更新动画
+       *     animationId = jmUtils.requestAnimationFrame(animate);
+       * }
+       * animationId = jmUtils.requestAnimationFrame(animate);
+       * 
+       * // 取消动画
+       * jmUtils.cancelAnimationFrame(animationId);
+       */
       static requestAnimationFrame(callback, win) {
           let fun = win && win.requestAnimationFrame? win.requestAnimationFrame: (typeof window !== 'undefined' && window.requestAnimationFrame? window.requestAnimationFrame: setTimeout);        
   		return fun(callback, 20);
       }
+      /**
+       * 取消动画帧请求
+       * 
+       * 取消之前通过 requestAnimationFrame 注册的回调。
+       * 在不支持 cancelAnimationFrame 的环境中降级为 clearTimeout。
+       * 
+       * @method cancelAnimationFrame
+       * @static
+       * @param {number} handler requestAnimationFrame 返回的请求ID
+       * @param {Window} [win] 可选的窗口对象（用于多窗口环境）
+       * 
+       * @example
+       * const animationId = jmUtils.requestAnimationFrame(animate);
+       * jmUtils.cancelAnimationFrame(animationId);
+       */
       static cancelAnimationFrame(handler, win) {
           let fun = win && win.cancelAnimationFrame? win.cancelAnimationFrame: (typeof window !== 'undefined' && window.cancelAnimationFrame? window.cancelAnimationFrame: clearTimeout);        
   		return fun(handler);
@@ -1064,10 +1350,55 @@ define(['exports'], (function (exports) { 'use strict';
   }
 
   /**
+   * @fileoverview jmGradient 渐变类
+   * 
+   * jmGradient 提供了线性渐变和径向渐变的创建和管理功能。
+   * 支持从 CSS 渐变字符串解析，以及转换为 Canvas 渐变对象。
+   * 
+   * 主要功能：
+   * - 线性渐变（linear-gradient）
+   * - 径向渐变（radial-gradient）
+   * - CSS 渐变字符串解析
+   * - Canvas 渐变对象生成
+   * - WebGL 渐变支持
+   * 
+   * @module jmGradient
+   * @author jmGraph Team
+   * @license MIT
+   */
+
+  /**
    * 渐变类
-   *
+   * 
+   * 用于创建和管理线性渐变或径向渐变效果。
+   * 支持 CSS 渐变字符串格式解析，可以转换为 Canvas 或 WebGL 兼容的渐变对象。
+   * 
    * @class jmGradient
-   * @param {object} op 渐变参数,type:[linear= 线性渐变,radial=放射性渐变] 
+   * 
+   * @param {Object|string} opt 渐变参数对象或 CSS 渐变字符串
+   * @param {string} [opt.type='linear'] 渐变类型：'linear' 或 'radial'
+   * @param {number|string} [opt.x1] 起点X坐标（支持百分比）
+   * @param {number|string} [opt.y1] 起点Y坐标（支持百分比）
+   * @param {number|string} [opt.x2] 终点X坐标（支持百分比）
+   * @param {number|string} [opt.y2] 终点Y坐标（支持百分比）
+   * @param {number|string} [opt.r1] 内圆半径（径向渐变）
+   * @param {number|string} [opt.r2] 外圆半径（径向渐变）
+   * @param {Array} [opt.stops] 颜色停止点数组 [{offset, color}, ...]
+   * 
+   * @example
+   * // 创建线性渐变
+   * const gradient = new jmGradient({
+   *     type: 'linear',
+   *     x1: 0, y1: 0,
+   *     x2: '100%', y2: '100%',
+   *     stops: [
+   *         { offset: 0, color: '#ff0000' },
+   *         { offset: 1, color: '#0000ff' }
+   *     ]
+   * });
+   * 
+   * // 从 CSS 字符串创建
+   * const gradient = new jmGradient('linear-gradient(180deg, #ff0000, #0000ff)');
    */
   class jmGradient {
   	constructor(opt) {
@@ -1822,15 +2153,44 @@ define(['exports'], (function (exports) { 'use strict';
   }
 
   /**
-   * 画图阴影对象表示法
-   *
-   * @class jmShadow
-   * @param {number} x 横坐标偏移量
-   * @param {number} y 纵坐标编移量
-   * @param {number} blur 模糊值
-   * @param {string} color 阴影的颜色
+   * @fileoverview jmShadow 阴影类
+   * 
+   * jmShadow 提供了图形阴影效果的创建和管理功能。
+   * 支持设置阴影的偏移、模糊程度和颜色。
+   * 
+   * 主要功能：
+   * - 阴影偏移设置（x, y）
+   * - 模糊程度设置（blur）
+   * - 阴影颜色设置（color）
+   * - 字符串解析和序列化
+   * 
+   * @module jmShadow
+   * @author jmGraph Team
+   * @license MIT
    */
 
+  /**
+   * 阴影类
+   * 
+   * 用于创建图形的阴影效果。阴影可以应用于任何图形控件。
+   * 
+   * @class jmShadow
+   * 
+   * @param {number|string} x 横坐标偏移量，或阴影字符串格式 'x,y,blur,color'
+   * @param {number} [y] 纵坐标偏移量
+   * @param {number} [blur] 模糊值
+   * @param {string} [color] 阴影颜色
+   * 
+   * @example
+   * // 创建阴影
+   * const shadow = new jmShadow(5, 5, 10, 'rgba(0,0,0,0.5)');
+   * 
+   * // 从字符串创建
+   * const shadow = new jmShadow('5, 5, 10, rgba(0,0,0,0.5)');
+   * 
+   * // 应用到图形
+   * rect.style.shadow = shadow;
+   */
   class jmShadow {
   	constructor(x, y, blur, color) {
   		if(typeof x == 'string' && !y && !blur && !color) {
@@ -1885,13 +2245,50 @@ define(['exports'], (function (exports) { 'use strict';
   }
 
   /**
-   * CSS滤镜效果类
+   * @fileoverview jmFilter 滤镜类
+   * 
+   * jmFilter 提供了 CSS 滤镜效果的管理和应用功能。
+   * 支持多种滤镜效果，可以组合使用。
+   * 
+   * 支持的滤镜：
+   * - blur: 模糊效果
+   * - grayscale: 灰度效果
+   * - sepia: 复古效果
+   * - brightness: 亮度调节
+   * - contrast: 对比度调节
+   * - saturate: 饱和度调节
+   * - hue-rotate: 色相旋转
+   * - invert: 反色效果
+   * - opacity: 透明度调节
+   * 
+   * @module jmFilter
+   * @author jmGraph Team
+   * @license MIT
+   */
+
+  /**
+   * CSS 滤镜效果类
+   * 
    * 支持的滤镜: blur, grayscale, sepia, brightness, contrast, saturate, hue-rotate, invert, opacity
    *
    * @class jmFilter
    * @param {string|object} opt 滤镜参数
    *   字符串格式: "blur(2px) grayscale(50%) brightness(1.2)"
    *   对象格式: { blur: 2, grayscale: 0.5, brightness: 1.2 }
+   * 
+   * @example
+   * // 从字符串创建
+   * const filter = new jmFilter('blur(2px) grayscale(50%)');
+   * 
+   * // 从对象创建
+   * const filter = new jmFilter({
+   *     blur: 2,
+   *     grayscale: 0.5,
+   *     brightness: 1.2
+   * });
+   * 
+   * // 应用到图形
+   * shape.style.filter = filter;
    */
   class jmFilter {
   	constructor(opt) {
@@ -2031,78 +2428,185 @@ define(['exports'], (function (exports) { 'use strict';
   	}
   }
 
+  /**
+   * 控件ID计数器
+   * 用于为每个新创建的对象生成唯一标识符
+   * @type {number}
+   * @private
+   */
   let control_id_counter = 0;
 
+  /**
+   * jmGraph 基础对象类
+   * 
+   * 所有图形控件、属性对象、工具类的基类。
+   * 提供了对象标识、类型检查和动画调度等核心功能。
+   * 
+   * @class jmObject
+   * @example
+   * // 创建一个基础对象
+   * const obj = new jmObject();
+   * console.log(obj.id); // 输出唯一ID
+   * 
+   * // 类型检查
+   * obj.is('jmObject'); // true
+   * obj.is(jmObject);  // true
+   */
   class jmObject {
+  	/**
+  	 * 构造函数
+  	 * 
+  	 * 创建一个新的基础对象实例，自动分配唯一ID。
+  	 * 如果传入的是 jmGraph 实例，则建立关联关系。
+  	 * 
+  	 * @constructor
+  	 * @param {jmGraph} [g] - 可选的 jmGraph 实例，用于建立对象与画布的关联
+  	 * 
+  	 * @example
+  	 * // 创建独立对象
+  	 * const obj = new jmObject();
+  	 * 
+  	 * // 创建关联画布的对象
+  	 * const graph = new jmGraph(canvas);
+  	 * const objWithGraph = new jmObject(graph);
+  	 */
   	constructor(g) {
+  		// 如果传入的是 jmGraph 实例，则建立引用关系
   		if(g && g.type == 'jmGraph') {
   			this.graph = g;
   		}
+  		// 生成唯一ID
   		this.id = ++control_id_counter;
   	}
   	
   	/**
-  	 * 检 查对象是否为指定类型
+  	 * 检查对象是否为指定类型
+  	 * 
+  	 * 支持两种类型检查方式：
+  	 * 1. 字符串方式：检查对象的 type 属性是否匹配
+  	 * 2. 类构造函数方式：使用 instanceof 检查原型链
   	 * 
   	 * @method is
-  	 * @param {class} type 判断的类型
-  	 * @for jmObject
-  	 * @return {boolean} true=表示当前对象为指定的类型type,false=表示不是
+  	 * @param {string|Function} type - 要检查的类型名称（字符串）或类构造函数
+  	 * @returns {boolean} 如果对象是指定类型则返回 true，否则返回 false
+  	 * 
+  	 * @example
+  	 * // 使用字符串检查
+  	 * control.is('jmRect'); // 检查是否为矩形
+  	 * 
+  	 * // 使用类构造函数检查
+  	 * control.is(jmControl); // 检查是否为 jmControl 实例
+  	 * control.is(jmPath);   // 检查是否继承自 jmPath
   	 */
   	is(type) {
+  		// 字符串类型：检查 type 属性
   		if(typeof type == 'string') {
   			return this.type == type;
   		}
+  		// 类构造函数：使用 instanceof 检查原型链
   		return this instanceof type;
   	}
 
+  	/**
+  	 * 注册并执行动画帧回调
+  	 * 
+  	 * 提供动画帧调度功能，支持：
+  	 * - 按指定时间间隔执行回调
+  	 * - 多个动画句柄并行执行
+  	 * - 自动清理返回 false 的动画
+  	 * - 错误自动移除异常动画
+  	 * 
+  	 * 此方法通常由 jmGraph 实例调用，子控件会委托给所属的 graph 处理。
+  	 * 
+  	 * @method animate
+  	 * @param {Function} handle - 动画回调函数，返回 false 时自动移除
+  	 * @param {number} [millisec=20] - 执行间隔（毫秒），默认 20ms
+  	 * @param {...*} [params] - 传递给回调函数的额外参数
+  	 * 
+  	 * @example
+  	 * // 创建一个简单的动画
+  	 * let x = 0;
+  	 * graph.animate(function() {
+  	 *     x += 1;
+  	 *     rect.position.x = x;
+  	 *     graph.redraw();
+  	 *     
+  	 *     // 动画结束条件
+  	 *     if(x > 100) return false;
+  	 * }, 16); // 约60fps
+  	 * 
+  	 * // 带参数的动画
+  	 * graph.animate(function(speed) {
+  	 *     x += speed;
+  	 *     // ...
+  	 * }, 16, 5); // speed = 5
+  	 */
   	animate(...args) {
+  		// 只有 jmGraph 实例才真正处理动画调度
   		if(this.is('jmGraph')) {
+  			// 注册新的动画句柄
   			if(args.length > 1) {
   				if(!this.animateHandles) this.animateHandles = new jmList();
   				
+  				// 收集额外参数
   				const params = [];
   				if(args.length > 2) {
   					for(let i=2;i<args.length;i++) {
   						params.push(args[i]);
   					}
   				}
+  				// 添加动画句柄到列表
   				this.animateHandles.add({
-  					millisec: args[1] || 20, 
-  					handle: args[0], 
-  					params: params
+  					millisec: args[1] || 20,    // 执行间隔
+  					handle: args[0],             // 回调函数
+  					params: params               // 额外参数
   				});
   			}
+  			
+  			// 如果有动画句柄，启动调度循环
   			if(this.animateHandles) {
   				if(this.animateHandles.count() > 0) {
   					const self = this;
+  					// 使用 setTimeout 进行调度（避免 requestAnimationFrame 的固定帧率限制）
   					this.dispatcher = setTimeout(function(_this) {
   						_this = _this || self;
-  						const overduehandles = [];
+  						const overduehandles = [];  // 需要移除的句柄
   						const curTimes = Date.now();
+  						
+  						// 遍历执行所有动画句柄
   						_this.animateHandles.each(function(i,ani) {
   							try {
+  								// 检查是否到达执行时间
   								if(ani && ani.handle && (!ani.times || curTimes - ani.times >= ani.millisec)) {
+  									// 执行回调
   									const r = ani.handle.apply(_this, ani.params);
+  									// 返回 false 表示动画结束
   									if(r === false) {
   										overduehandles.push(ani);
   									}
+  									// 更新最后执行时间
   									ani.times = curTimes;
   								}
   							}
   							catch(e) {
+  								// 出错的句柄自动移除
   								if(ani) overduehandles.push(ani);
   							}
   						});
+  						
+  						// 移除已完成的动画句柄
   						for(const i in overduehandles) {
   							_this.animateHandles.remove(overduehandles[i]);
   						}
+  						
+  						// 继续下一轮调度
   						_this.animate();
   					},10,this);
   				}
   			}
   		}
   		else {
+  			// 非 jmGraph 对象委托给所属的 graph 处理
   			const graph = this.graph;
   			if(graph) {
   				graph.animate(...args);
@@ -2111,44 +2615,153 @@ define(['exports'], (function (exports) { 'use strict';
   	}
   }
 
+  /**
+   * 属性存储的 Symbol 键
+   * 使用 Symbol 确保属性存储的私有性和唯一性
+   * @type {Symbol}
+   * @private
+   */
   const PROPERTY_KEY = Symbol("properties");
 
+  /**
+   * jmGraph 属性管理基类
+   * 
+   * jmProperty 是 jmControl 的父类，为所有图形控件提供属性管理功能。
+   * 采用 Symbol + WeakMap 模式实现真正的私有属性存储，避免属性名冲突。
+   * 
+   * 核心特性：
+   * 1. **私有属性存储**：使用 Symbol 键确保属性不被外部直接访问
+   * 2. **属性变更通知**：设置属性时自动触发 'propertyChange' 事件
+   * 3. **渲染模式继承**：子控件自动继承所属 graph 的渲染模式
+   * 4. **脏标记传播**：子控件 needUpdate 会自动传播到 graph
+   * 
+   * @class jmProperty
+   * @extends jmObject
+   * 
+   * @example
+   * // 创建属性对象
+   * const prop = new jmProperty({ mode: 'webgl' });
+   * 
+   * // 设置和获取属性
+   * prop.property('customValue', 100);
+   * console.log(prop.property('customValue')); // 100
+   * 
+   * // 监听属性变更
+   * prop.on('propertyChange', (name, args) => {
+   *     console.log(`${name} changed from ${args.oldValue} to ${args.newValue}`);
+   * });
+   */
   class jmProperty extends jmObject {
+  	/**
+  	 * 构造函数
+  	 * 
+  	 * 初始化属性存储对象，并设置初始渲染模式。
+  	 * 
+  	 * @constructor
+  	 * @param {Object} [params] - 初始化参数
+  	 * @param {'2d'|'webgl'} [params.mode] - 渲染模式，默认 '2d'
+  	 * 
+  	 * @example
+  	 * // 创建使用 WebGL 渲染的属性对象
+  	 * const prop = new jmProperty({ mode: 'webgl' });
+  	 */
   	constructor(params) {
   		super();
+  		// 初始化私有属性存储对象
   		this[PROPERTY_KEY] = {};
+  		// 设置渲染模式
   		if(params && params.mode) this.mode = params.mode;
   	}
 
+  	/**
+  	 * 获取或设置属性值
+  	 * 
+  	 * 这是属性系统的核心方法，所有属性的存取都通过此方法。
+  	 * 设置属性时会自动触发 'propertyChange' 事件，便于实现响应式更新。
+  	 * 
+  	 * @method property
+  	 * @param {string} name - 属性名称
+  	 * @param {*} [value] - 属性值（设置时提供）
+  	 * @returns {*} 获取时返回属性值，设置时返回设置的值
+  	 * 
+  	 * @example
+  	 * // 获取属性
+  	 * const value = obj.property('myProp');
+  	 * 
+  	 * // 设置属性
+  	 * obj.property('myProp', 'newValue');
+  	 * 
+  	 * // 链式调用
+  	 * obj.property('a', 1).property('b', 2);
+  	 */
   	property(...pars) {
   		if(pars) {
   			const pros = this[PROPERTY_KEY];
   			const name = pars[0];
+  			
+  			// 设置属性
   			if(pars.length > 1) {
   				const value = pars[1];
   				const args = {oldValue: pros[name], newValue: value};
   				pros[name] = pars[1];
+  				// 触发属性变更事件（如果对象支持事件）
   				if(this.emit) this.emit('propertyChange', name, args);
   				return pars[1];
   			}
+  			// 获取属性
   			else if(name) {
   				return pros[name];
   			}
   		}
   	}
 
+  	/**
+  	 * 是否需要重绘标记
+  	 * 
+  	 * 当属性变化导致需要重新渲染时设置此标记。
+  	 * 设置为 true 时，会自动将所属 graph 的 needUpdate 设为 true，
+  	 * 从而触发画布重绘。
+  	 * 
+  	 * @type {boolean}
+  	 * 
+  	 * @example
+  	 * // 标记需要重绘
+  	 * control.needUpdate = true;
+  	 * 
+  	 * // 检查是否需要重绘
+  	 * if(control.needUpdate) {
+  	 *     control.redraw();
+  	 * }
+  	 */
   	get needUpdate() {
   		return this.property('needUpdate');
   	}
   	set needUpdate(v) {
   		this.property('needUpdate', v);
+  		// 传播脏标记到 graph（避免 jmGraph 自身循环）
   		if(v && !this.is('jmGraph') && this.graph) {
   			this.graph.needUpdate = true;
   		}
   	}
 
+  	/**
+  	 * 所属的画布实例
+  	 * 
+  	 * 获取或设置当前对象所属的 jmGraph 实例。
+  	 * 如果未显式设置，会自动向上查找父级链中的 jmGraph。
+  	 * 
+  	 * @type {jmGraph}
+  	 * 
+  	 * @example
+  	 * // 获取所属画布
+  	 * const graph = control.graph;
+  	 * 
+  	 * // 设置所属画布（通常由框架内部调用）
+  	 * control.graph = myGraph;
+  	 */
   	get graph() {
   		let g = this.property('graph');
+  		// 如果未设置，尝试从父级链查找
   		g = g || (this.property('graph', this.findParent('jmGraph')));
   		return g;
   	}
@@ -2156,20 +2769,74 @@ define(['exports'], (function (exports) { 'use strict';
   		return this.property('graph', v);
   	}
 
+  	/**
+  	 * 渲染模式
+  	 * 
+  	 * 获取当前渲染模式，支持 '2d' 和 'webgl' 两种模式。
+  	 * 渲染模式的查找优先级：
+  	 * 1. 当前对象设置的 mode
+  	 * 2. 如果是 jmGraph，默认 '2d'
+  	 * 3. 从所属 graph 继承 mode
+  	 * 
+  	 * @type {'2d'|'webgl'}
+  	 * @readonly
+  	 * 
+  	 * @example
+  	 * // 检查渲染模式
+  	 * if(control.mode === 'webgl') {
+  	 *     // 使用 WebGL 特性
+  	 * } else {
+  	 *     // 使用 Canvas 2D API
+  	 * }
+  	 */
   	get mode() {
   		let m = this.property('mode');
   		if(m) return m;
-  		else if(this.is('jmGraph')) return this.property('mode');
-  		return this.graph.mode;
+  		// 如果当前对象是jmGraph且没有设置mode，返回默认值
+  		if(this.is('jmGraph')) return this.property('mode') || '2d';
+  		// 否则从所属的graph获取mode
+  		return this.graph?.mode || '2d';
   	}
   	set mode(v) {
   		return this.property('mode', v);
   	}
 
+  	/**
+  	 * 请求动画帧
+  	 * 
+  	 * 封装 requestAnimationFrame，支持在不同环境下工作。
+  	 * 如果当前对象关联了 canvas，会使用 canvas 的 requestAnimationFrame。
+  	 * 
+  	 * @method requestAnimationFrame
+  	 * @param {Function} handler - 动画帧回调函数
+  	 * @returns {number} 动画帧请求ID，用于取消
+  	 * 
+  	 * @example
+  	 * // 请求下一帧动画
+  	 * const frameId = control.requestAnimationFrame(() => {
+  	 *     // 更新动画状态
+  	 *     control.redraw();
+  	 * });
+  	 * 
+  	 * // 取消动画帧
+  	 * control.cancelAnimationFrame(frameId);
+  	 */
   	requestAnimationFrame(handler) {
   		return jmUtils.requestAnimationFrame(handler, this.graph? this.graph.canvas: null);
   	}
 
+  	/**
+  	 * 取消动画帧请求
+  	 * 
+  	 * 取消之前通过 requestAnimationFrame 注册的回调。
+  	 * 
+  	 * @method cancelAnimationFrame
+  	 * @param {number} handler - 动画帧请求ID
+  	 * 
+  	 * @example
+  	 * // 取消动画帧
+  	 * control.cancelAnimationFrame(frameId);
+  	 */
   	cancelAnimationFrame(handler) {
   		return jmUtils.cancelAnimationFrame(handler, this.graph? this.graph.canvas: null);
   	}
@@ -2852,14 +3519,49 @@ define(['exports'], (function (exports) { 'use strict';
       return result;
   };
 
+  /**
+   * @fileoverview WebGL 渐变对象
+   * 
+   * 本模块提供了 WebGL 渐变功能，支持 GLSL 着色器直接计算渐变色，
+   * 无需 textureCanvas，性能更优。
+   * 
+   * 支持的渐变类型：
+   * - 线性渐变 (linear)
+   * - 径向渐变 (radial)
+   * 
+   * @module lib/webgl/gradient
+   * @author jmGraph Team
+   */
+
+  /** @constant {number} 最大颜色断点数量 */
   const MAX_STOPS = 16;
 
   /**
-   * WebGL 渐变对象
-   * 支持 GLSL 着色器直接计算渐变色，无需 textureCanvas
+   * WebGL 渐变类
+   * 支持 GLSL 着色器直接计算渐变色
+   * 
+   * @class WebglGradient
+   * @example
+   * const gradient = new WebglGradient('linear', { x1: 0, y1: 0, x2: 100, y2: 0 });
+   * gradient.addColorStop(0, '#ff0000');
+   * gradient.addColorStop(1, '#0000ff');
    */
   class WebglGradient {
+      /**
+       * 构造函数
+       * @param {string} [type='linear'] 渐变类型：'linear' 或 'radial'
+       * @param {Object} params 渐变参数
+       * @param {number} [params.x1=0] 起点/内圆中心X坐标
+       * @param {number} [params.y1=0] 起点/内圆中心Y坐标
+       * @param {number} [params.r1=0] 内圆半径（径向渐变）
+       * @param {number} [params.x2=0] 终点/外圆中心X坐标
+       * @param {number} [params.y2=0] 终点/外圆中心Y坐标
+       * @param {number} [params.r2=0] 外圆半径（径向渐变）
+       * @param {Object} [params.bounds] 渐变边界
+       * @param {Object} [params.control] 控制器对象
+       */
       constructor(type = 'linear', params = {}) {
+          /** @type {string} 渐变类型 */
           this.type = type || 'linear';
 
           this.x1 = params.x1 || 0;
@@ -2869,15 +3571,12 @@ define(['exports'], (function (exports) { 'use strict';
           this.y2 = params.y2 || 0;
           this.r2 = params.r2 || 0;
 
-          this.bounds = params.bounds || {
-              left: 0,
-              top: 0,
-              width: 0,
-              height: 0
-          };
+          /** @type {Object} 渐变边界 */
+          this.bounds = params.bounds || { left: 0, top: 0, width: 0, height: 0 };
 
           this.control = params.control;
 
+          /** @type {Array<{offset: number, color: string}>} 颜色断点数组 */
           this.stops = [];
           this._sortedStops = null;
           this._paramsHash = null;
@@ -2885,6 +3584,8 @@ define(['exports'], (function (exports) { 'use strict';
 
       /**
        * 添加颜色断点
+       * @param {number} offset 断点位置 (0-1)
+       * @param {string} color 颜色值
        */
       addColorStop(offset, color) {
           this.stops.push({
@@ -2896,7 +3597,9 @@ define(['exports'], (function (exports) { 'use strict';
       }
 
       /**
-       * 获取排序后的 stops（带解析后的颜色）
+       * 获取排序后的断点数组（带解析后的颜色）
+       * @private
+       * @returns {Array<{offset: number, r: number, g: number, b: number, a: number}>}
        */
       _getSortedStops() {
           if (this._sortedStops) return this._sortedStops;
@@ -2909,8 +3612,6 @@ define(['exports'], (function (exports) { 'use strict';
                       c = utils.hexToRGBA(c);
                   }
                   if (typeof c === 'object' && c !== null) {
-                      // hexToRGBA 返回 r/g/b 为 0~255，a 为 0~1
-                      // 但如果已经是 0~1 范围（由 rgbToDecimal 处理过），需要检测
                       const needNormalize = (c.r > 1 || c.g > 1 || c.b > 1) ? 255 : 1;
                       return {
                           offset: s.offset,
@@ -2928,14 +3629,13 @@ define(['exports'], (function (exports) { 'use strict';
       }
 
       /**
-       * 将渐变参数以 uniform 形式传递给着色器
-       * 返回 { type, start, end, stopCount, stops } 供着色器使用
+       * 将渐变参数转换为 uniform 格式，传递给着色器
+       * @returns {Object} uniform 参数对象
        */
       toUniformParams() {
           const stops = this._getSortedStops();
           const count = Math.min(stops.length, MAX_STOPS);
 
-          // 展平为 Float32Array: [offset, r, g, b, a, ...]
           const flatStops = new Float32Array(count * 5);
           for (let i = 0; i < count; i++) {
               const s = stops[i];
@@ -2963,9 +3663,7 @@ define(['exports'], (function (exports) { 'use strict';
           };
       }
 
-      /**
-       * 使缓存失效
-       */
+      /** 使缓存失效 */
       invalidateCache() {
           this._sortedStops = null;
           this._paramsHash = null;
@@ -2973,6 +3671,7 @@ define(['exports'], (function (exports) { 'use strict';
 
       /**
        * 转换为渐变的字符串表达
+       * @returns {string} 渐变字符串
        */
       toString() {
           let str = this.type + '-gradient(';
@@ -2989,17 +3688,42 @@ define(['exports'], (function (exports) { 'use strict';
       }
   }
 
-  // 生成着色器
-  // type: gl.VERTEX_SHADER 顶点着色器  , gl.FRAGMENT_SHADER  片段着色器
-  // src: 着色器代码
-  function createShader(gl, type, src) {
-      const shader = gl.createShader(type); // 创建一个顶点着色器
-      gl.shaderSource(shader, src); // 编写顶点着色器代码
-      gl.compileShader(shader); // 编译着色器
+  /**
+   * @fileoverview WebGL 着色器管理模块
+   * 
+   * 本模块提供了 WebGL 着色器的创建功能。
+   * 
+   * @module lib/webgl/core/shader
+   * @author jmGraph Team
+   */
 
+  /**
+   * 创建 WebGL 着色器
+   * @param {WebGLRenderingContext} gl WebGL 渲染上下文
+   * @param {number} type 着色器类型：gl.VERTEX_SHADER 或 gl.FRAGMENT_SHADER
+   * @param {string} src 着色器源码
+   * @returns {WebGLShader} 编译后的着色器对象
+   */
+  function createShader(gl, type, src) {
+      const shader = gl.createShader(type);
+      gl.shaderSource(shader, src);
+      gl.compileShader(shader);
       return shader;
   }
 
+  /**
+   * @fileoverview GLSL 类型大小映射模块
+   * 
+   * 本模块提供了 GLSL 类型到其元素数量的映射。
+   * 
+   * @module lib/webgl/core/mapSize
+   * @author jmGraph Team
+   */
+
+  /**
+   * GLSL 类型到元素数量的映射表
+   * @constant {Object.<string, number>}
+   */
   const GLSL_TO_SIZE = {
       'float':    1,
       'vec2':     2,
@@ -3024,40 +3748,59 @@ define(['exports'], (function (exports) { 'use strict';
   };
 
   /**
-   * @class
-   * @memberof PIXI.glCore.shader
-   * @param type {String}
-   * @return {Number}
+   * 根据 GLSL 类型名获取元素数量
+   * @param {string} type GLSL 类型名
+   * @returns {number} 元素数量
    */
   const mapSize = function(type) { 
       return GLSL_TO_SIZE[type];
   };
 
+  /**
+   * @fileoverview WebGL 类型到 GLSL 类型映射模块
+   * 
+   * 本模块提供了 WebGL 常量类型到 GLSL 类型名的映射。
+   * 
+   * @module lib/webgl/core/mapType
+   * @author jmGraph Team
+   */
+
+  /** @type {Object.<number, string>|null} 缓存的类型映射表 */
   var GL_TABLE = null;
 
+  /**
+   * WebGL 常量到 GLSL 类型的映射表
+   * @constant {Object.<string, string>}
+   */
   const GL_TO_GLSL_TYPES = {
-    'FLOAT':       'float',
-    'FLOAT_VEC2':  'vec2',
-    'FLOAT_VEC3':  'vec3',
-    'FLOAT_VEC4':  'vec4',
+      'FLOAT':       'float',
+      'FLOAT_VEC2':  'vec2',
+      'FLOAT_VEC3':  'vec3',
+      'FLOAT_VEC4':  'vec4',
 
-    'INT':         'int',
-    'INT_VEC2':    'ivec2',
-    'INT_VEC3':    'ivec3',
-    'INT_VEC4':    'ivec4',
-    
-    'BOOL':        'bool',
-    'BOOL_VEC2':   'bvec2',
-    'BOOL_VEC3':   'bvec3',
-    'BOOL_VEC4':   'bvec4',
-    
-    'FLOAT_MAT2':  'mat2',
-    'FLOAT_MAT3':  'mat3',
-    'FLOAT_MAT4':  'mat4',
-    
-    'SAMPLER_2D':  'sampler2D'  
+      'INT':         'int',
+      'INT_VEC2':    'ivec2',
+      'INT_VEC3':    'ivec3',
+      'INT_VEC4':    'ivec4',
+      
+      'BOOL':        'bool',
+      'BOOL_VEC2':   'bvec2',
+      'BOOL_VEC3':   'bvec3',
+      'BOOL_VEC4':   'bvec4',
+      
+      'FLOAT_MAT2':  'mat2',
+      'FLOAT_MAT3':  'mat3',
+      'FLOAT_MAT4':  'mat4',
+      
+      'SAMPLER_2D':  'sampler2D'  
   };
 
+  /**
+   * 将 WebGL 类型常量映射为 GLSL 类型名
+   * @param {WebGLRenderingContext} gl WebGL 渲染上下文
+   * @param {number} type WebGL 类型常量
+   * @returns {string} GLSL 类型名
+   */
   const mapType = function(gl, type) {
       if(!GL_TABLE) {
           const typeNames = Object.keys(GL_TO_GLSL_TYPES);
@@ -3068,28 +3811,42 @@ define(['exports'], (function (exports) { 'use strict';
           }
       }
 
-    return GL_TABLE[type];
+      return GL_TABLE[type];
   };
 
-  // 创建程序
+  /**
+   * @fileoverview WebGL 着色器程序管理模块
+   * 
+   * 本模块提供了 WebGL 着色器程序的创建和管理功能，包括：
+   * - 创建着色器程序
+   * - 提取属性和 uniform 变量
+   * - 顶点属性绑定
+   * 
+   * @module lib/webgl/core/program
+   * @author jmGraph Team
+   */
+
+  /**
+   * 创建着色器程序
+   * @param {WebGLRenderingContext} gl WebGL 渲染上下文
+   * @param {string} vertexSrc 顶点着色器源码
+   * @param {string} fragmentSrc 片段着色器源码
+   * @returns {Object} 程序对象 {program, attrs, uniforms}
+   */
   function createProgram(gl, vertexSrc, fragmentSrc) {
-      // 创建顶点着色器
       const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexSrc);
-      // 创建片段着色器
       const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentSrc);
 
-      const program = gl.createProgram(); // 创建一个程序
-      gl.attachShader(program, vertexShader); // 添加顶点着色器
-      gl.attachShader(program, fragmentShader); // 添加片元着色器
-      gl.linkProgram(program); // 连接 program 中的着色器
+      const program = gl.createProgram();
+      gl.attachShader(program, vertexShader);
+      gl.attachShader(program, fragmentShader);
+      gl.linkProgram(program);
 
-      // 检查程序链接状态
       if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
           console.error('PError: Could not initialize shader.');
           console.error('gl.VALIDATE_STATUS', gl.getProgramParameter(program, gl.VALIDATE_STATUS));
           console.error('gl.getError()', gl.getError());
 
-          // if there is a program info log, log it
           if (gl.getProgramInfoLog(program) !== '') {
               console.warn('Warning: gl.getProgramInfoLog()', gl.getProgramInfoLog(program));
           }
@@ -3099,28 +3856,32 @@ define(['exports'], (function (exports) { 'use strict';
 
       useProgram(gl, program);
 
-      // clean up some shaders
       gl.deleteShader(vertexShader);
       gl.deleteShader(fragmentShader);
 
       const attrs = extractAttributes(gl, program);
       const uniforms = extractUniforms(gl, program);
       
-      return {
-          program,
-          attrs,
-          uniforms
-      };
+      return { program, attrs, uniforms };
   }
 
-  // 采用program
+  /**
+   * 使用指定的着色器程序
+   * @param {WebGLRenderingContext} gl WebGL 渲染上下文
+   * @param {WebGLProgram} program 着色器程序
+   */
   function useProgram(gl, program) {
-      return gl.useProgram(program); // 告诉 webgl 用这个 program 进行渲染
+      return gl.useProgram(program);
   }
 
+  /**
+   * 提取着色器程序中的所有属性
+   * @param {WebGLRenderingContext} gl WebGL 渲染上下文
+   * @param {WebGLProgram} program 着色器程序
+   * @returns {Object} 属性对象字典
+   */
   function extractAttributes(gl, program) {
       const attributes = {};
-
       const count = gl.getProgramParameter(program, gl.ACTIVE_ATTRIBUTES);
 
       for (let i = 0; i < count; i++){
@@ -3137,141 +3898,212 @@ define(['exports'], (function (exports) { 'use strict';
       return attributes;
   }
 
+  /**
+   * 提取着色器程序中的所有 uniform 变量
+   * @param {WebGLRenderingContext} gl WebGL 渲染上下文
+   * @param {WebGLProgram} program 着色器程序
+   * @returns {Object} uniform 变量对象字典
+   */
   function extractUniforms(gl, program) {
-  	const uniforms = {};
-
+      const uniforms = {};
       const count = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
 
       for (let i = 0; i < count; i++) {
-      	const uniformData = gl.getActiveUniform(program, i);
-      	const name = uniformData.name.replace(/\[.*?\]/, "");
-          const type = mapType(gl, uniformData.type );
+          const uniformData = gl.getActiveUniform(program, i);
+          const name = uniformData.name.replace(/\[.*?\]/, "");
+          const type = mapType(gl, uniformData.type);
 
-      	uniforms[name] = {
+          uniforms[name] = {
               uniformData,
-      		type: type,
-      		size: uniformData.size,
-      		location: gl.getUniformLocation(program, name),
-      	};
+              type: type,
+              size: uniformData.size,
+              location: gl.getUniformLocation(program, name),
+          };
       }
 
-  	return uniforms;
+      return uniforms;
   }
 
-  // 把缓冲区的值写入变量
-  // size: 组成数量，必须是1，2，3或4.  每个单元由多少个数组成
-  // strip: 步长 数组中一行长度，0 表示数据是紧密的没有空隙，让OpenGL决定具体步长
-  // offset: 字节偏移量，必须是类型的字节长度的倍数。
-  // dataType: 每个元素的数据类型
+  /**
+   * 将缓冲区数据写入顶点属性
+   * @param {WebGLRenderingContext} gl WebGL 渲染上下文
+   * @param {Object} buffer 缓冲区对象
+   * @param {Object} attr 属性对象
+   * @param {number} [size=2] 每个顶点的分量数（1-4）
+   * @param {number} [strip=0] 步长，0 表示紧密排列
+   * @param {number} [offset=0] 字节偏移量
+   * @param {number} [dataType=gl.FLOAT] 数据类型
+   * @returns {Object} 缓冲区对象
+   */
   function writeVertexAttrib(gl, buffer, attr, size=2, strip=0, offset=0, dataType=gl.FLOAT) {
       gl.bindBuffer(buffer.type, buffer.buffer);
-      gl.vertexAttribPointer( // 告诉 OpenGL 如何从 Buffer 中获取数据
-              attr.location, // 顶点属性的索引
-              size, // 组成数量，必须是1，2，3或4。我们只提供了 x 和 y
-              dataType,
-              false, // 是否归一化到特定的范围，对 FLOAT 类型数据设置无效
-              strip * buffer.unitSize,
-              offset
-          );
+      gl.vertexAttribPointer(
+          attr.location,
+          size,
+          dataType,
+          false,
+          strip * buffer.unitSize,
+          offset
+      );
       gl.enableVertexAttribArray(attr.location);
       return buffer;
   }
 
+  /**
+   * 禁用顶点属性数组
+   * @param {WebGLRenderingContext} gl WebGL 渲染上下文
+   * @param {Object} attr 属性对象
+   */
   function disableVertexAttribArray(gl, attr) {
       return gl.disableVertexAttribArray(attr.location);
   }
 
-  // 创建缓冲区
+  /**
+   * @fileoverview WebGL 缓冲区管理模块
+   * 
+   * 本模块提供了 WebGL 缓冲区的创建和管理功能，包括：
+   * - 创建通用缓冲区
+   * - 创建 Float32 类型缓冲区
+   * - 创建 Uint16 类型缓冲区
+   * - 删除缓冲区
+   * 
+   * @module lib/webgl/core/buffer
+   * @author jmGraph Team
+   */
+
+  /**
+   * 创建 WebGL 缓冲区
+   * @param {WebGLRenderingContext} gl WebGL 渲染上下文
+   * @param {Array|TypedArray} data 缓冲区数据
+   * @param {number} [type=gl.ARRAY_BUFFER] 缓冲区类型
+   * @param {number} [drawType=gl.STATIC_DRAW] 绘制类型
+   * @returns {Object} 缓冲区对象 {type, drawType, buffer, unitSize}
+   */
   function createBuffer(gl, data, type=gl.ARRAY_BUFFER, drawType=gl.STATIC_DRAW) {
-      //先创建一个缓存对象
       const buffer = gl.createBuffer();
       if(!buffer) {
           throw Error('创建缓冲区对象失败');
       }
-      //说明缓存对象保存的类型
       gl.bindBuffer(type, buffer);
-      //写入坐标数据
-      // 因为会将数据发送到 GPU，为了省去数据解析，这里使用 Float32Array 直接传送数据
-      // data.buffer这里要使用data.buffer，否则在edge下可能导至数据发生较大的改变
-      gl.bufferData(type, data.buffer || data, drawType); // 表示缓冲区的内容不会经常更改
+      gl.bufferData(type, data.buffer || data, drawType);
       return {
           type,
           drawType,
           buffer,
-          // 获取到数组中单个元素的字节数
           unitSize: data.BYTES_PER_ELEMENT
       };
   }
 
-  // 创建float32的buffer
+  /**
+   * 创建 Float32 类型缓冲区
+   * @param {WebGLRenderingContext} gl WebGL 渲染上下文
+   * @param {Array} data 数据数组
+   * @param {number} [type=gl.ARRAY_BUFFER] 缓冲区类型
+   * @param {number} [drawType=gl.STATIC_DRAW] 绘制类型
+   * @returns {Object} 缓冲区对象
+   */
   function createFloat32Buffer(gl, data, type=gl.ARRAY_BUFFER, drawType=gl.STATIC_DRAW) {
       const vertices = new Float32Array(data);
       const buffer = createBuffer(gl, vertices, type, drawType);
       return buffer;
   }
 
-  // 创建uint16的bugger
+  /**
+   * 创建 Uint16 类型缓冲区
+   * @param {WebGLRenderingContext} gl WebGL 渲染上下文
+   * @param {Array} data 数据数组
+   * @param {number} [type=gl.ARRAY_BUFFER] 缓冲区类型
+   * @param {number} [drawType=gl.STATIC_DRAW] 绘制类型
+   * @returns {Object} 缓冲区对象
+   */
   function createUint16Buffer(gl, data, type=gl.ARRAY_BUFFER, drawType=gl.STATIC_DRAW) {
       const vertices = new Uint16Array(data);
       const buffer = createBuffer(gl, vertices, type, drawType);
       return buffer;
   }
 
-  // 释放
+  /**
+   * 删除缓冲区
+   * @param {WebGLRenderingContext} gl WebGL 渲染上下文
+   * @param {Object|WebGLBuffer} buffer 缓冲区对象或 WebGL 缓冲区
+   */
   function deleteBuffer(gl, buffer) {
       gl.deleteBuffer(buffer.buffer || buffer);
   }
 
-  // 生成纹理
+  /**
+   * @fileoverview WebGL 纹理管理模块
+   * 
+   * 本模块提供了 WebGL 纹理的创建和管理功能，包括：
+   * - 创建 2D 纹理
+   * - 创建图片纹理
+   * - 创建数据纹理
+   * - 删除纹理
+   * 
+   * @module lib/webgl/core/texture
+   * @author jmGraph Team
+   */
+
+  /**
+   * 创建 2D 纹理
+   * @param {WebGLRenderingContext} gl WebGL 渲染上下文
+   * @returns {WebGLTexture} 纹理对象
+   */
   function create2DTexture(gl) {
       const texture = gl.createTexture();
-      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1); // 图像反转Y轴
-      gl.activeTexture(gl.TEXTURE0); // 激活纹理单元
-      gl.bindTexture(gl.TEXTURE_2D, texture); // 绑定纹理对象
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, texture);
       
-      //gl.generateMipmap(gl.TEXTURE_2D);
-      gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST); // 放大处理方式  // LINEAR  / NEAREST
-      gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); // 缩小处理方式
-      gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); // 水平平铺方式
-      gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE); // 竖直平铺方式
-
+      gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+      gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
       
       return texture;
   }
 
-  // 创建图片纹理
+  /**
+   * 创建图片纹理
+   * @param {WebGLRenderingContext} gl WebGL 渲染上下文
+   * @param {Image|HTMLImageElement} img 图像对象
+   * @returns {Object} 纹理对象 {texture}
+   */
   function createImgTexture(gl, img) {
       const texture = create2DTexture(gl);
-
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img); // 配置纹理图像
-      return {
-          texture
-      };
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+      return { texture };
   }
 
-  // 用像素值来绘制纹理
+  /**
+   * 根据像素数据创建纹理
+   * @param {WebGLRenderingContext} gl WebGL 渲染上下文
+   * @param {ImageData|Object} pixels 像素数据 {data, width, height}
+   * @returns {Object} 纹理对象 {texture}
+   */
   function createDataTexture(gl, pixels) {
       const data = new Uint8Array(pixels.data || pixels);
-
       const texture = create2DTexture(gl);
 
       gl.texImage2D(
-          gl.TEXTURE_2D, // 纹理目标
-          0, // 细节级别,指定详细级别。0 级是基本图像等级，n 级是第 n 个金字塔简化级。
-          gl.RGBA, // 纹理内部格式
-          pixels.width || 1, // 指定纹理的宽度
-          pixels.height || 1, // 指定纹理的高度
-          0, // 指定纹理的边框宽度。必须为 0。
-          gl.RGBA, // 源图像数据格式
-          gl.UNSIGNED_BYTE, // 纹理数据类型
-          data // 数据
-        );
-      return {
-          texture
-      };
+          gl.TEXTURE_2D,
+          0,
+          gl.RGBA,
+          pixels.width || 1,
+          pixels.height || 1,
+          0,
+          gl.RGBA,
+          gl.UNSIGNED_BYTE,
+          data
+      );
+      return { texture };
   }
 
-  // 删除纹理
+  /**
+   * 删除纹理
+   * @param {WebGLRenderingContext} gl WebGL 渲染上下文
+   * @param {WebGLTexture} texture 纹理对象
+   */
   function deleteTexture(gl, texture) {
       return gl.deleteTexture(texture);
   }
@@ -3407,7 +4239,21 @@ define(['exports'], (function (exports) { 'use strict';
     }
 `;
 
+  /**
+   * WebGL 基础渲染类
+   * 提供 WebGL 渲染的核心功能，包括着色器、缓冲区、纹理管理等
+   * 
+   * @class WeblBase
+   * @example
+   * const base = new WeblBase(graph, { mode: 'webgl' });
+   * base.setStyle({ fillStyle: '#ff0000' });
+   */
   class WeblBase {
+      /**
+       * 构造函数
+       * @param {jmGraph} graph jmGraph 实例
+       * @param {Object} option 配置选项
+       */
       constructor(graph, option) {
           this.graph = graph;
           this.option = option || {};
@@ -3415,14 +4261,16 @@ define(['exports'], (function (exports) { 'use strict';
               globalAlpha: 1
           };
           this.stateStack = [];
-          this.transformMatrix = [1, 0, 0, 1, 0, 0]; // 2D 变换矩阵
+          /** @type {number[]} 2D 变换矩阵 [a, b, c, d, tx, ty] */
+          this.transformMatrix = [1, 0, 0, 1, 0, 0];
       }
 
+      /** @returns {WebGLRenderingContext} WebGL 渲染上下文 */
       get context() {
           if(this.graph) return this.graph.context;
       }
 
-      // 保存当前状态
+      /** 保存当前状态到状态栈 */
       save() {
           this.stateStack.push({
               transformMatrix: [...this.transformMatrix],
@@ -3430,7 +4278,7 @@ define(['exports'], (function (exports) { 'use strict';
           });
       }
 
-      // 恢复上一个状态
+      /** 从状态栈恢复上一个状态 */
       restore() {
           if (this.stateStack.length > 0) {
               const state = this.stateStack.pop();
@@ -3439,40 +4287,53 @@ define(['exports'], (function (exports) { 'use strict';
           }
       }
 
-      // 平移变换
+      /**
+       * 平移变换
+       * @param {number} x X 轴平移量
+       * @param {number} y Y 轴平移量
+       */
       translate(x, y) {
-          // 更新变换矩阵
           this.transformMatrix[4] += x * this.transformMatrix[0] + y * this.transformMatrix[2];
           this.transformMatrix[5] += x * this.transformMatrix[1] + y * this.transformMatrix[3];
       }
 
-      // 缩放变换
+      /**
+       * 缩放变换
+       * @param {number} sx X 轴缩放比例
+       * @param {number} sy Y 轴缩放比例
+       */
       scale(sx, sy) {
-          // 更新变换矩阵
           this.transformMatrix[0] *= sx;
           this.transformMatrix[1] *= sx;
           this.transformMatrix[2] *= sy;
           this.transformMatrix[3] *= sy;
       }
 
-      // 旋转变换
+      /**
+       * 旋转变换
+       * @param {number} angle 旋转角度（弧度）
+       */
       rotate(angle) {
           const cos = Math.cos(angle);
           const sin = Math.sin(angle);
           const [a, b, c, d] = this.transformMatrix;
-          
-          // 更新变换矩阵
           this.transformMatrix[0] = a * cos - b * sin;
           this.transformMatrix[1] = a * sin + b * cos;
           this.transformMatrix[2] = c * cos - d * sin;
           this.transformMatrix[3] = c * sin + d * cos;
       }
 
-      // 矩阵变换
+      /**
+       * 矩阵变换
+       * @param {number} a 水平缩放
+       * @param {number} b 垂直倾斜
+       * @param {number} c 水平倾斜
+       * @param {number} d 垂直缩放
+       * @param {number} e 水平移动
+       * @param {number} f 垂直移动
+       */
       transform(a, b, c, d, e, f) {
           const [currentA, currentB, currentC, currentD, currentE, currentF] = this.transformMatrix;
-          
-          // 矩阵乘法
           this.transformMatrix[0] = a * currentA + b * currentC;
           this.transformMatrix[1] = a * currentB + b * currentD;
           this.transformMatrix[2] = c * currentA + d * currentC;
@@ -3481,7 +4342,11 @@ define(['exports'], (function (exports) { 'use strict';
           this.transformMatrix[5] = e * currentB + f * currentD + currentF;
       }
 
-      // 应用变换到点
+      /**
+       * 应用变换到点
+       * @param {Object} point 点坐标 {x, y}
+       * @returns {Object} 变换后的点坐标 {x, y}
+       */
       applyTransform(point) {
           const [a, b, c, d, tx, ty] = this.transformMatrix;
           return {
@@ -3490,7 +4355,11 @@ define(['exports'], (function (exports) { 'use strict';
           };
       }
 
-      // 文本测量用的离屏 canvas context（1x1 单例缓存，不依赖 textureCanvas）
+      /**
+       * 文本测量用的离屏 canvas context
+       * @private
+       * @returns {CanvasRenderingContext2D|null}
+       */
       get _measureCtx() {
           if(!this.__measureCtx) {
               try {
@@ -3506,54 +4375,40 @@ define(['exports'], (function (exports) { 'use strict';
           return this.__measureCtx;
       }
 
-      // i当前程序
+      /**
+       * 获取当前着色器程序
+       * @returns {Object} 着色器程序对象
+       */
       get program() {
-          // 默认所有path用同一个编译好的program
           return this.graph.context.pathProgram || (this.graph.context.pathProgram=this.createProgram(pathVertexSource, pathFragmentSource));
       }
 
-      // 设置样式
+      /**
+       * 设置样式
+       * @param {Object|string} style 样式对象或样式属性名
+       * @param {string} [value] 样式值（当 style 为字符串时使用）
+       */
       setStyle(style = this.style, value = '') {
-
           if(typeof style === 'string') {
               const obj = {};
               obj[style] = value;
               style = obj;
           }
-         /*
-          // 设置线条颜色或填充色
-          if(style.strokeStyle) {
-              let color = style.strokeStyle;
-              if(typeof color === 'string') color = this.graph.utils.hexToRGBA(color);
-              this.style.strokeStyle = this.graph.utils.rgbToDecimal(color);
-              delete style.strokeStyle;
-          }
-          else if(style.fillStyle) {
-              let color = style.fillStyle;
-              if(this.isGradient(color)) {
-                  this.style.fillStyle = color;
-              }
-              else {
-                  if(typeof color === 'string') color = this.graph.utils.hexToRGBA(color);
-                  this.style.fillStyle =  this.graph.utils.rgbToDecimal(color);
-              }
-              delete style.fillStyle;
-          } */       
-
           this.style = {
               ...this.style,
               ...style
           };
       }
 
-      // 把传统颜色转为webgl识别的
+      /**
+       * 将颜色转换为 WebGL 可识别的格式
+       * @param {string|Object} color 颜色值
+       * @returns {Object} RGBA 对象 {r, g, b, a}，范围 0-1
+       */
       convertColor(color) {
           if(this.isGradient(color)) return color;
           if(typeof color === 'string') {
-              // 先尝试 hexToRGBA 解析
               color = this.graph.utils.hexToRGBA(color);
-              // hexToRGBA 对无法识别的格式（如 hsl）会原样返回字符串
-              // 利用离屏 canvas 将任意 CSS 颜色转为 rgba
               if(typeof color === 'string') {
                   color = this.__parseCSSColor(color);
               }
@@ -3564,7 +4419,12 @@ define(['exports'], (function (exports) { 'use strict';
           return color;
       }
 
-      // 利用离屏 canvas 解析任意 CSS 颜色（hsl/hsla/命名颜色等）
+      /**
+       * 利用离屏 canvas 解析任意 CSS 颜色
+       * @private
+       * @param {string} colorStr CSS 颜色字符串
+       * @returns {Object} RGBA 对象 {r, g, b, a}
+       */
       __parseCSSColor(colorStr) {
           const ctx = this._measureCtx;
           if(!ctx) return { r: 0, g: 0, b: 0, a: 0 };
@@ -3583,12 +4443,21 @@ define(['exports'], (function (exports) { 'use strict';
           }
       }
 
-      // 创建程序
+      /**
+       * 创建着色器程序
+       * @param {string} vertexSrc 顶点着色器源码
+       * @param {string} fragmentSrc 片段着色器源码
+       * @returns {Object} 着色器程序对象
+       */
       createProgram(vertexSrc, fragmentSrc) {        
           return createProgram(this.context, vertexSrc, fragmentSrc);
       }
 
-      // 指定使用某个程序
+      /**
+       * 使用指定的着色器程序
+       * @param {Object} [program] 着色器程序，默认使用当前程序
+       * @returns {Object} 着色器程序
+       */
       useProgram(program=this.program) {
           program = program.program || program;
           if(this.context.__curent_program === program) return program;
@@ -3597,26 +4466,44 @@ define(['exports'], (function (exports) { 'use strict';
           return program;
       }
 
+      /**
+       * 获取属性位置
+       * @param {string} name 属性名
+       * @returns {number} 属性位置
+       */
       getAttribLocation(name) {
           return this.context.getAttribLocation(this.program.program, name);
       }
       
+      /**
+       * 获取 uniform 位置
+       * @param {string} name uniform 变量名
+       * @returns {WebGLUniformLocation} uniform 位置
+       */
       getUniformLocation(name) {
           return this.context.getUniformLocation(this.program.program, name);
       }
 
-      // 把缓冲区的值写入变量
-      // buffer: 缓冲区
-      // size: 组成数量，必须是1，2，3或4.  每个单元由多少个数组成
-      // strip: 步长 数组中一行长度，0 表示数据是紧密的没有空隙，让OpenGL决定具体步长
-      // offset: 字节偏移量，必须是类型的字节长度的倍数。
-      // dataType: 每个元素的数据类型
+      /**
+       * 将缓冲区数据写入顶点属性
+       * @param {Object} buffer 缓冲区对象
+       * @param {Object} attr 属性对象
+       * @param {number} [size=2] 每个顶点的分量数（1-4）
+       * @param {number} [strip=0] 步长，0 表示紧密排列
+       * @param {number} [offset=0] 字节偏移量
+       * @param {number} [dataType=FLOAT] 数据类型
+       * @returns {Object} 缓冲区对象
+       */
       writeVertexAttrib(buffer, attr, size=2, strip=0, offset=0, dataType=this.context.FLOAT) {
           buffer.attr = attr;
           return writeVertexAttrib(this.context, buffer, attr, size, strip, offset, dataType);
       }
 
-      // 禁用attri
+      /**
+       * 禁用顶点属性数组
+       * @param {Object} attr 属性对象
+       * @returns {Object} 属性对象
+       */
       disableVertexAttribArray(attr) {
           try{
               if(!attr) return attr;
@@ -3628,24 +4515,35 @@ define(['exports'], (function (exports) { 'use strict';
           return attr;
       }
 
-      // 创建float32的buffer
+      /**
+       * 创建 Float32 缓冲区
+       * @param {Array} data 数据数组
+       * @param {number} [type=ARRAY_BUFFER] 缓冲区类型
+       * @param {number} [drawType=STATIC_DRAW] 绘制类型
+       * @returns {Object} 缓冲区对象
+       */
       createFloat32Buffer(data, type=this.context.ARRAY_BUFFER, drawType=this.context.STATIC_DRAW) {
           const buffer = createFloat32Buffer(this.context, data, type, drawType);
-          return {
-              data,
-              ...buffer
-          };
+          return { data, ...buffer };
       }
 
+      /**
+       * 创建 Uint16 缓冲区
+       * @param {Array} data 数据数组
+       * @param {number} [type=ARRAY_BUFFER] 缓冲区类型
+       * @param {number} [drawType=STATIC_DRAW] 绘制类型
+       * @returns {Object} 缓冲区对象
+       */
       createUint16Buffer(data, type=this.context.ARRAY_BUFFER, drawType=this.context.STATIC_DRAW) {
           const buffer = createUint16Buffer(this.context, data, type, drawType);
-          return {
-              data,
-              ...buffer
-          };
+          return { data, ...buffer };
       }
 
-      // 释放
+      /**
+       * 删除缓冲区
+       * @param {Object} buffer 缓冲区对象
+       * @returns {Object} 缓冲区对象
+       */
       deleteBuffer(buffer) {
           try {
               if(!buffer) return;
@@ -3659,22 +4557,34 @@ define(['exports'], (function (exports) { 'use strict';
           return buffer;
       }
 
-      // 生成纹理
+      /** @returns {WebGLTexture} 2D 纹理对象 */
       create2DTexture() { 
           return create2DTexture(this.context);
       }
 
-      // 创建图片纹理
+      /**
+       * 创建图片纹理
+       * @param {Image|HTMLImageElement} img 图像对象
+       * @returns {Object} 纹理对象
+       */
       createImgTexture(img) {
           return createImgTexture(this.context, img);
       }
 
-      // 根根像素值生成纹理
+      /**
+       * 根据像素数据创建纹理
+       * @param {ImageData|Uint8Array} data 像素数据
+       * @returns {Object} 纹理对象
+       */
       createDataTexture(data) {
           return createDataTexture(this.context, data);
       }
 
-      // 删除纹理
+      /**
+       * 删除纹理
+       * @param {Object} texture 纹理对象
+       * @returns {Object} 纹理对象
+       */
       deleteTexture(texture) {
           try {
               return deleteTexture(this.context, texture.texture || texture);
@@ -3685,43 +4595,55 @@ define(['exports'], (function (exports) { 'use strict';
           return texture;
       }
 
-      // 多边切割, 得到三角形顶点索引数组
-      // polygonIndices 顶点索引，
+      /**
+       * 多边形三角化，得到三角形顶点索引数组
+       * @param {Array<Object>} points 多边形顶点数组
+       * @returns {Array<number>} 三角形顶点索引数组
+       */
       earCutPoints(points) {
           const arr = this.pointsToArray(points);
-          const ps = earcut(arr);// 切割得到3角色顶点索引，
+          const ps = earcut(arr);
           return ps;
       }
 
-      // 多边切割, 得到三角形顶点
-      // polygonIndices 顶点索引，
+      /**
+       * 多边形三角化，得到三角形顶点数组
+       * @param {Array<Object>} points 多边形顶点数组
+       * @returns {Array<Array<Object>>} 三角形数组，每个三角形包含3个顶点
+       */
       earCutPointsToTriangles(points) {
           this.earCutCache = this.earCutCache || (this.earCutCache = {});
-          // 快速缓存 key：用长度和首尾点坐标
           const len = points.length;
           const key = len + '_' + points[0].x + '_' + points[0].y + '_' + points[len-1].x + '_' + points[len-1].y;
           if (this.earCutCache[key]) return this.earCutCache[key];
 
-          const ps = this.earCutPoints(points);// 切割得到3角色顶点索引，
+          const ps = this.earCutPoints(points);
           const triangles = [];
-          // 用顶点索引再组合成坐标数组
           for(let i=0;i<ps.length; i+=3) {
               const p1 = points[ps[i]];
               const p2 = points[ps[i+1]];
               const p3 = points[ps[i+2]];
-
-              triangles.push([p1, p2, p3]);// 每三个顶点构成一个三角
+              triangles.push([p1, p2, p3]);
           }
           
           this.earCutCache[key] = triangles;
           return triangles;
       }
 
-      // 点坐标数组转为一维数组
+      /**
+       * 点坐标数组转为一维数组
+       * @param {Array<Object>} points 点数组 [{x, y}, ...]
+       * @returns {Array<number>} 一维数组 [x1, y1, x2, y2, ...]
+       */
       pointsToArray(points) {
-          return [].concat(...points.map(p=>[p.x,p.y]));// 把x,y转为数组元素
+          return [].concat(...points.map(p=>[p.x,p.y]));
       }
-      // 每2位表示坐标x,y转为坐标点对象
+
+      /**
+       * 一维数组转为点坐标数组
+       * @param {Array<number>} arr 一维数组 [x1, y1, x2, y2, ...]
+       * @returns {Array<Object>} 点数组 [{x, y}, ...]
+       */
       arrayToPoints(arr) {
           const points = [];
           for(let i=0;i<arr.length; i+=2) {
@@ -3733,14 +4655,33 @@ define(['exports'], (function (exports) { 'use strict';
           return points;
       }
 
-      // 创建线性渐变
+      /**
+       * 创建线性渐变
+       * @param {number} x1 起点X坐标
+       * @param {number} y1 起点Y坐标
+       * @param {number} x2 终点X坐标
+       * @param {number} y2 终点Y坐标
+       * @param {Object} bounds 渐变边界
+       * @returns {WebglGradient} 渐变对象
+       */
       createLinearGradient(x1, y1, x2, y2, bounds) {
           return new WebglGradient('linear', {
               x1, y1, x2, y2, bounds,
               control: this
           });
       }
-      // 创建放射性渐变
+
+      /**
+       * 创建径向渐变
+       * @param {number} x1 内圆中心X坐标
+       * @param {number} y1 内圆中心Y坐标
+       * @param {number} r1 内圆半径
+       * @param {number} x2 外圆中心X坐标
+       * @param {number} y2 外圆中心Y坐标
+       * @param {number} r2 外圆半径
+       * @param {Object} bounds 渐变边界
+       * @returns {WebglGradient} 渐变对象
+       */
       createRadialGradient(x1, y1, r1, x2, y2, r2, bounds) {
           return new WebglGradient('radial', {
               x1, y1, r1,
@@ -3749,7 +4690,12 @@ define(['exports'], (function (exports) { 'use strict';
               control: this
           });
       }
-      // 判断是否是一个渐变对象
+
+      /**
+       * 判断是否为渐变对象
+       * @param {Object} obj 待检测对象
+       * @returns {boolean} 是否为渐变对象
+       */
       isGradient(obj) {
           return obj && obj instanceof WebglGradient;
       }
@@ -3773,22 +4719,59 @@ define(['exports'], (function (exports) { 'use strict';
   	}
   }
 
-  // path 绘制类
+  /**
+   * @fileoverview WebGL 路径绘制类
+   * 
+   * 本模块提供了 WebGL 路径绘制功能，包括：
+   * - 线条绘制（stroke）
+   * - 填充绘制（fill）
+   * - 纹理填充
+   * - 渐变填充
+   * - 文本绘制
+   * - 多边形三角化
+   * 
+   * @module lib/webgl/path
+   * @author jmGraph Team
+   */
+
+  /**
+   * WebGL 路径绘制类
+   * 继承自 WeblBase，提供路径绘制功能
+   * 
+   * @class WebglPath
+   * @extends WeblBase
+   * @example
+   * const path = new WebglPath(graph, { isRegular: false, needCut: true });
+   * path.draw(points);
+   * path.stroke(points, '#ff0000', 2);
+   */
   class WebglPath extends WeblBase {
+      /**
+       * 构造函数
+       * @param {jmGraph} graph jmGraph 实例
+       * @param {Object} option 配置选项
+       * @param {boolean} [option.isRegular=false] 是否为规则图形（凸多边形）
+       * @param {boolean} [option.needCut=false] 是否需要切割处理
+       * @param {Object} [option.control] 控制器对象
+       */
       constructor(graph, option) {
           super(graph, option);
-          // 是否是规则的，不规则的处理方式更为复杂和耗性能
+          /** @type {boolean} 是否为规则图形（凸多边形），规则图形处理更高效 */
           this.isRegular = option.isRegular || false;
+          /** @type {boolean} 是否需要切割处理 */
           this.needCut = option.needCut || false;
           this.control = option.control;
+          /** @type {Array<Object>} 路径点数组 */
           this.points = [];
-          // 缓存 buffer 和纹理，避免每帧创建/销毁
+          /** @type {Array} 缓存的缓冲区，避免每帧创建/销毁 */
           this.__cachedBuffers = [];
+          /** @type {Object} 缓存的纹理 */
           this.__cachedTexture = null;
+          /** @type {string} 缓存纹理的 key */
           this.__cachedTextureKey = null;
       }
 
-      // 释放缓存的 WebGL 资源
+      /** 释放缓存的 WebGL 资源 */
       dispose() {
           for(const buf of this.__cachedBuffers) {
               this.deleteBuffer(buf);
@@ -3801,7 +4784,12 @@ define(['exports'], (function (exports) { 'use strict';
           }
       }
 
-      // 获取或创建 buffer，优先复用缓存
+      /**
+       * 获取或创建缓冲区，优先复用缓存
+       * @param {Array} data 数据数组
+       * @param {Object} attr 属性对象
+       * @returns {Object} 缓冲区对象
+       */
       getOrCreateBuffer(data, attr) {
           let buffer = this.__cachedBuffers.find(b => b.attr === attr);
           if(buffer) {
@@ -3818,11 +4806,19 @@ define(['exports'], (function (exports) { 'use strict';
           return buffer;
       }
 
-      // 应用变换到点
+      /**
+       * 应用变换到点
+       * @param {Object} point 点坐标 {x, y}
+       * @returns {Object} 变换后的点坐标
+       */
       applyTransform(point) {
           return super.applyTransform(point);
       }
 
+      /**
+       * 设置父级边界
+       * @param {Object} [parentBounds] 父级边界 {left, top, width, height}
+       */
       setParentBounds(parentBounds = this.parentAbsoluteBounds) {
 
           //this.useProgram();
@@ -3876,16 +4872,16 @@ define(['exports'], (function (exports) { 'use strict';
       endDraw() {
           if(this.points) delete this.points;
           if(this.pathPoints) delete this.pathPoints;
+          this.needClose = false;
           // 缓存的纹理保留到下次绘制（渐变可能不变）
       }
 
-      // 图形封闭
+      /**
+       * 标记路径需要闭合（不修改原始 points 数组）
+       * 闭合逻辑由 stroke/fill 绘制方法自行处理
+       */
       closePath() {
-          if(this.points && this.points.length > 2 && this.points[0] !== this.points[this.points.length-1]) {
-              const start = this.points[0];
-              const end = this.points[this.points.length-1];
-              if(start != end && !(start.x === end.x && start.y === end.y)) this.points.push(start);
-          }
+          this.needClose = true;
       }
 
       // 绘制点数组（使用 DYNAMIC_DRAW 复用 buffer，避免每帧 create/delete）
@@ -4688,51 +5684,164 @@ define(['exports'], (function (exports) { 'use strict';
       }
   }
 
+  /**
+   * 样式名称映射表
+   * 
+   * 将简化的样式名称映射到 Canvas API 的标准属性名。
+   * 例如：'fill' -> 'fillStyle', 'stroke' -> 'strokeStyle'
+   * 
+   * @constant {Object.<string, string>}
+   * @private
+   */
   const jmStyleMap = {
-  	'fill':'fillStyle',
-  	'fillImage':'fillImage',
-  	'stroke':'strokeStyle',
-  	'shadow.blur':'shadowBlur',
-  	'shadow.x':'shadowOffsetX',
-  	'shadow.y':'shadowOffsetY',
-  	'shadow.color':'shadowColor',
-  	'lineWidth' : 'lineWidth',
-  	'miterLimit': 'miterLimit',
-  	'fillStyle' : 'fillStyle',
-  	'strokeStyle' : 'strokeStyle',
-  	'font' : 'font',
-  	'opacity' : 'globalAlpha',
-  	'textAlign' : 'textAlign',
-  	'textBaseline' : 'textBaseline',
-  	'shadowBlur' : 'shadowBlur',
-  	'shadowOffsetX' : 'shadowOffsetX',
-  	'shadowOffsetY' : 'shadowOffsetY',
-  	'shadowColor' : 'shadowColor',
-  	'lineJoin': 'lineJoin',
-  	'lineCap':'lineCap',
-  	'lineDashOffset': 'lineDashOffset',
-  	'globalCompositeOperation': 'globalCompositeOperation'
+  	'fill':'fillStyle',           // 填充颜色
+  	'fillImage':'fillImage',      // 填充图片
+  	'stroke':'strokeStyle',       // 描边颜色
+  	'shadow.blur':'shadowBlur',   // 阴影模糊度
+  	'shadow.x':'shadowOffsetX',   // 阴影X偏移
+  	'shadow.y':'shadowOffsetY',   // 阴影Y偏移
+  	'shadow.color':'shadowColor', // 阴影颜色
+  	'lineWidth' : 'lineWidth',    // 线宽
+  	'miterLimit': 'miterLimit',   // 斜接限制
+  	'fillStyle' : 'fillStyle',    // 填充样式
+  	'strokeStyle' : 'strokeStyle',// 描边样式
+  	'font' : 'font',              // 字体
+  	'opacity' : 'globalAlpha',    // 透明度
+  	'textAlign' : 'textAlign',    // 文本对齐
+  	'textBaseline' : 'textBaseline', // 文本基线
+  	'shadowBlur' : 'shadowBlur',  // 阴影模糊
+  	'shadowOffsetX' : 'shadowOffsetX', // 阴影X偏移
+  	'shadowOffsetY' : 'shadowOffsetY', // 阴影Y偏移
+  	'shadowColor' : 'shadowColor', // 阴影颜色
+  	'lineJoin': 'lineJoin',       // 线条连接样式
+  	'lineCap':'lineCap',          // 线条端点样式
+  	'lineDashOffset': 'lineDashOffset', // 虚线偏移
+  	'globalCompositeOperation': 'globalCompositeOperation' // 合成操作
   };
 
+  /**
+   * jmGraph 控件基类
+   * 
+   * jmControl 是所有可视化图形控件的基类，提供了完整的图形渲染和交互能力。
+   * 
+   * **核心功能：**
+   * 
+   * 1. **样式系统**
+   *    - 支持填充色、描边色、渐变、图片填充
+   *    - 支持阴影、滤镜、混合模式
+   *    - 支持虚线、线宽、线帽等线条样式
+   * 
+   * 2. **变换系统**
+   *    - 支持 translate（平移）
+   *    - 支持 rotation（旋转）
+   *    - 支持 transform（矩阵变换）
+   * 
+   * 3. **事件系统**
+   *    - 鼠标事件：mousedown, mouseup, mousemove, click, dblclick
+   *    - 触摸事件：touchstart, touchmove, touchend
+   *    - 焦点事件：mouseover, mouseleave, touchover, touchleave
+   *    - 自定义事件：支持任意事件类型
+   * 
+   * 4. **渲染系统**
+   *    - 自动选择 Canvas 2D 或 WebGL 渲染器
+   *    - 支持脏矩形优化
+   *    - 支持层级排序（zIndex）
+   * 
+   * 5. **碰撞检测**
+   *    - 支持点在多边形内判断
+   *    - 支持自定义命中区域
+   *    - 支持旋转后的碰撞检测
+   * 
+   * @class jmControl
+   * @extends jmProperty
+   * 
+   * @example
+   * // 创建自定义控件
+   * class MyShape extends jmControl {
+   *     constructor(params) {
+   *         super(params, 'myShape');
+   *     }
+   *     
+   *     // 重写绘制方法
+   *     draw() {
+   *         // 自定义绘制逻辑
+   *     }
+   * }
+   * 
+   * // 使用控件
+   * const shape = new MyShape({
+   *     position: { x: 100, y: 100 },
+   *     width: 50,
+   *     height: 50,
+   *     style: {
+   *         fill: 'red',
+   *         stroke: 'black',
+   *         lineWidth: 2
+   *     }
+   * });
+   * graph.children.add(shape);
+   */
   class jmControl extends jmProperty {
 
+  	/**
+  	 * 构造函数
+  	 * 
+  	 * 创建一个新的控件实例。子类应该调用 super(params, 'typeName') 来设置类型名称。
+  	 * 
+  	 * @constructor
+  	 * @param {Object} [params] - 控件初始化参数
+  	 * @param {Object} [params.style] - 样式对象，包含填充、描边等属性
+  	 * @param {number} [params.width=0] - 控件宽度
+  	 * @param {number} [params.height=0] - 控件高度
+  	 * @param {Object} [params.position] - 控件位置 {x, y}
+  	 * @param {jmGraph} [params.graph] - 所属画布实例
+  	 * @param {number} [params.zIndex=0] - 层级顺序
+  	 * @param {boolean} [params.interactive=false] - 是否响应交互事件
+  	 * @param {Object} [params.hitArea] - 自定义命中区域 {x, y, width, height}
+  	 * @param {boolean} [params.isRegular] - 是否为规则图形（WebGL优化）
+  	 * @param {boolean} [params.needCut] - 是否需要裁剪（WebGL）
+  	 * @param {string} [t] - 控件类型名称，默认使用类名
+  	 * 
+  	 * @example
+  	 * // 创建矩形控件
+  	 * const rect = new jmControl({
+  	 *     position: { x: 10, y: 10 },
+  	 *     width: 100,
+  	 *     height: 50,
+  	 *     style: {
+  	 *         fill: '#ff0000',
+  	 *         stroke: '#000000',
+  	 *         lineWidth: 2
+  	 *     },
+  	 *     interactive: true
+  	 * }, 'jmRect');
+  	 */
   	constructor(params, t) {
   		params = params||{};
   		super(params);
+  		// 设置控件类型标识
   		this.property('type', t || new.target.name);
+  		// 初始化样式对象
   		this.style = params && params.style ? params.style : {};
+  		// 设置尺寸
   		this.width = params.width || 0;
   		this.height = params.height  || 0;
+  		// 自定义命中区域（用于点击测试）
   		this.hitArea = params.hitArea || null;
 
+  		// 设置位置
   		if(params.position) {
   			this.position = params.position;
   		}
 
+  		// 关联画布
   		this.graph = params.graph || null;
+  		// 层级顺序（用于排序）
   		this.zIndex = params.zIndex || 0;
+  		// 是否响应交互事件
   		this.interactive = typeof params.interactive == 'undefined'? false : params.interactive;
 
+  		// WebGL 模式下创建对应的渲染控制器
   		if(this.mode === 'webgl') {
   			this.webglControl = new WebglPath(this.graph, {
   				style: this.style,
@@ -4742,17 +5851,47 @@ define(['exports'], (function (exports) { 'use strict';
   			});
   		}
 
+  		// 执行初始化
   		this.initializing();
   		
+  		// 别名：on 等同于 bind
   		this.on = this.bind;
   		
+  		// 保存原始参数
   		this.option = params;
   	}
 
+  	/**
+  	 * 控件类型标识
+  	 * 
+  	 * 用于类型检查和调试，由构造函数自动设置。
+  	 * 
+  	 * @type {string}
+  	 * @readonly
+  	 * 
+  	 * @example
+  	 * console.log(rect.type); // 'jmRect'
+  	 * if(control.type === 'jmCircle') { ... }
+  	 */
   	get type() {
   		return this.property('type');
   	}
 
+  	/**
+  	 * 绘图上下文
+  	 * 
+  	 * 获取当前控件的 Canvas 2D 或 WebGL 渲染上下文。
+  	 * 如果控件本身不是 jmGraph，会返回所属 graph 的上下文。
+  	 * 
+  	 * @type {CanvasRenderingContext2D|WebGLRenderingContext}
+  	 * @readonly
+  	 * 
+  	 * @example
+  	 * // 获取上下文并绘制
+  	 * const ctx = control.context;
+  	 * ctx.fillStyle = 'red';
+  	 * ctx.fillRect(0, 0, 100, 100);
+  	 */
   	get context() {
   		let s = this.property('context');
   		if(s) return s;
@@ -4767,6 +5906,35 @@ define(['exports'], (function (exports) { 'use strict';
   		return this.property('context', v);
   	}
 
+  	/**
+  	 * 样式对象
+  	 * 
+  	 * 控件的视觉样式配置，包括：
+  	 * - fill: 填充颜色或渐变
+  	 * - stroke: 描边颜色
+  	 * - lineWidth: 线宽
+  	 * - shadow: 阴影配置
+  	 * - font: 字体（文本控件）
+  	 * - opacity: 透明度
+  	 * 
+  	 * 设置新样式会触发 needUpdate。
+  	 * 
+  	 * @type {Object}
+  	 * 
+  	 * @example
+  	 * // 设置样式
+  	 * control.style = {
+  	 *     fill: '#ff0000',
+  	 *     stroke: '#000000',
+  	 *     lineWidth: 2,
+  	 *     shadow: {
+  	 *         blur: 10,
+  	 *         x: 5,
+  	 *         y: 5,
+  	 *         color: 'rgba(0,0,0,0.5)'
+  	 *     }
+  	 * };
+  	 */
   	get style() {
   		let s = this.property('style');
   		if(!s) s = this.property('style', {});
@@ -4777,6 +5945,22 @@ define(['exports'], (function (exports) { 'use strict';
   		return this.property('style', v);
   	}
 
+  	/**
+  	 * 是否可见
+  	 * 
+  	 * 控制控件是否参与渲染和事件响应。
+  	 * 不可见的控件不会被绘制，也不会响应鼠标/触摸事件。
+  	 * 
+  	 * @type {boolean}
+  	 * @default true
+  	 * 
+  	 * @example
+  	 * // 隐藏控件
+  	 * control.visible = false;
+  	 * 
+  	 * // 显示控件
+  	 * control.visible = true;
+  	 */
   	get visible() {
   		let s = this.property('visible');
   		if(typeof s == 'undefined') s = this.property('visible', true);
@@ -4787,6 +5971,22 @@ define(['exports'], (function (exports) { 'use strict';
   		return this.property('visible', v);
   	}
 
+  	/**
+  	 * 是否响应交互事件
+  	 * 
+  	 * 设置为 true 时，控件会响应鼠标和触摸事件。
+  	 * 设置为 false 时，事件会穿透到下层控件。
+  	 * 
+  	 * @type {boolean}
+  	 * @default false
+  	 * 
+  	 * @example
+  	 * // 启用交互
+  	 * control.interactive = true;
+  	 * control.bind('click', (evt) => {
+  	 *     console.log('clicked!');
+  	 * });
+  	 */
   	get interactive() {
   		const s = this.property('interactive');
   		return s;
@@ -4795,6 +5995,23 @@ define(['exports'], (function (exports) { 'use strict';
   		return this.property('interactive', v);
   	}
 
+  	/**
+  	 * 自定义命中区域
+  	 * 
+  	 * 用于点击测试的自定义区域，格式为 {x, y, width, height}。
+  	 * 如果设置，点击测试会使用此区域而非实际图形边界。
+  	 * 
+  	 * @type {Object|null}
+  	 * 
+  	 * @example
+  	 * // 设置更大的点击区域
+  	 * control.hitArea = {
+  	 *     x: -10,
+  	 *     y: -10,
+  	 *     width: control.width + 20,
+  	 *     height: control.height + 20
+  	 * };
+  	 */
   	get hitArea() {
   		const s = this.property('hitArea');
   		return s;
@@ -4803,6 +6020,26 @@ define(['exports'], (function (exports) { 'use strict';
   		return this.property('hitArea', v);
   	}
   		
+  	/**
+  	 * 子控件列表
+  	 * 
+  	 * 当前控件的所有子控件。子控件会按 zIndex 排序后绘制。
+  	 * 添加子控件时会自动建立父子关系。
+  	 * 
+  	 * @type {jmList}
+  	 * 
+  	 * @example
+  	 * // 添加子控件
+  	 * parent.children.add(child);
+  	 * 
+  	 * // 移除子控件
+  	 * parent.children.remove(child);
+  	 * 
+  	 * // 遍历子控件
+  	 * parent.children.each((i, child) => {
+  	 *     console.log(child);
+  	 * });
+  	 */
   	get children() {
   		let s = this.property('children');
   		if(!s) s = this.property('children', new jmList());
@@ -4813,6 +6050,21 @@ define(['exports'], (function (exports) { 'use strict';
   		return this.property('children', v);
   	}
 
+  	/**
+  	 * 控件宽度
+  	 * 
+  	 * 可以是具体数值或百分比字符串（如 '50%'）。
+  	 * 百分比会相对于父容器宽度计算。
+  	 * 
+  	 * @type {number|string}
+  	 * 
+  	 * @example
+  	 * // 设置固定宽度
+  	 * control.width = 100;
+  	 * 
+  	 * // 设置百分比宽度
+  	 * control.width = '50%';
+  	 */
   	get width() {
   		let s = this.property('width');
   		if(typeof s == 'undefined') s = this.property('width', 0);
@@ -4823,6 +6075,21 @@ define(['exports'], (function (exports) { 'use strict';
   		return this.property('width', v);
   	}
 
+  	/**
+  	 * 控件高度
+  	 * 
+  	 * 可以是具体数值或百分比字符串（如 '50%'）。
+  	 * 百分比会相对于父容器高度计算。
+  	 * 
+  	 * @type {number|string}
+  	 * 
+  	 * @example
+  	 * // 设置固定高度
+  	 * control.height = 100;
+  	 * 
+  	 * // 设置百分比高度
+  	 * control.height = '50%';
+  	 */
   	get height() {
   		let s = this.property('height');
   		if(typeof s == 'undefined') s = this.property('height', 0);
@@ -4833,6 +6100,22 @@ define(['exports'], (function (exports) { 'use strict';
   		return this.property('height', v);
   	}
 
+  	/**
+  	 * 层级顺序
+  	 * 
+  	 * 控制控件的绘制顺序，值越大越靠上。
+  	 * 设置 zIndex 会触发子控件重新排序。
+  	 * 
+  	 * @type {number}
+  	 * @default 0
+  	 * 
+  	 * @example
+  	 * // 将控件置于最上层
+  	 * control.zIndex = 100;
+  	 * 
+  	 * // 将控件置于最下层
+  	 * control.zIndex = -1;
+  	 */
   	get zIndex() {
   		let s = this.property('zIndex');
   		if(!s) s = this.property('zIndex', 0);
@@ -4845,6 +6128,21 @@ define(['exports'], (function (exports) { 'use strict';
   		return v;
   	}
 
+  	/**
+  	 * 鼠标样式
+  	 * 
+  	 * 鼠标悬停在控件上时显示的光标样式。
+  	 * 常用值：'default', 'pointer', 'move', 'text', 'crosshair'
+  	 * 
+  	 * @type {string}
+  	 * 
+  	 * @example
+  	 * // 设置为手型指针
+  	 * control.cursor = 'pointer';
+  	 * 
+  	 * // 设置为移动样式
+  	 * control.cursor = 'move';
+  	 */
   	set cursor(cur) {
   		const graph = this.graph;
   		if(graph) {
@@ -4858,18 +6156,35 @@ define(['exports'], (function (exports) { 'use strict';
   		}
   	}
 
+  	/**
+  	 * 初始化控件
+  	 * 
+  	 * 在构造函数末尾调用，用于设置子控件管理逻辑。
+  	 * 重写了 children 的 add、remove、sort、clear 方法，
+  	 * 实现自动的父子关系维护和脏标记传播。
+  	 * 
+  	 * @method initializing
+  	 * @protected
+  	 */
   	initializing() {
 
   		const self = this;
   		this.children = this.children || new jmList();
   		const oadd = this.children.add;
   		
+  		/**
+  		 * 重写 add 方法，自动建立父子关系
+  		 * @param {jmControl} obj - 要添加的子控件
+  		 * @returns {jmControl} 添加的子控件
+  		 */
   		this.children.add = function(obj) {
   			if(typeof obj === 'object') {
+  				// 如果对象已有父级，先从原父级移除
   				if(obj.parent && obj.parent != self && obj.parent.children) {
   					obj.parent.children.remove(obj);
   				}
   				obj.parent = self;
+  				// 如果已存在，先移除再添加
   				if(this.contain(obj)) {
   					this.oremove(obj);
   				}
@@ -4877,6 +6192,7 @@ define(['exports'], (function (exports) { 'use strict';
   				obj.emit('add', obj);
 
   				self.needUpdate = true;
+  				// 传播 graph 引用
   				if(self.graph) obj.graph = self.graph;
   				this.sort();
   				return obj;
@@ -4884,6 +6200,10 @@ define(['exports'], (function (exports) { 'use strict';
   		};
   		this.children.oremove= this.children.remove;
   		
+  		/**
+  		 * 重写 remove 方法，清理父子关系
+  		 * @param {jmControl} obj - 要移除的子控件
+  		 */
   		this.children.remove = function(obj) {
   			if(typeof obj === 'object') {
   				obj.parent = null;
@@ -4894,6 +6214,9 @@ define(['exports'], (function (exports) { 'use strict';
   			}
   		};
   		
+  		/**
+  		 * 按 zIndex 排序子控件
+  		 */
   		this.children.sort = function() {
   			const levelItems = {};
   			this.each(function(i, obj) {
@@ -4913,6 +6236,10 @@ define(['exports'], (function (exports) { 'use strict';
   				oadd.call(this, levelItems[index]);
   			}
   		};
+  		
+  		/**
+  		 * 清空所有子控件
+  		 */
   		this.children.clear = function() {
   			this.each(function(i,obj) {
   				this.remove(obj);
@@ -4921,15 +6248,55 @@ define(['exports'], (function (exports) { 'use strict';
   		this.needUpdate = true;
   	} 
 
+  	/**
+  	 * 设置控件样式到绘图上下文
+  	 * 
+  	 * 将样式对象应用到 Canvas 上下文，支持：
+  	 * - 基础样式：fill, stroke, lineWidth, opacity 等
+  	 * - 阴影效果：shadow.blur, shadow.x, shadow.y, shadow.color
+  	 * - 渐变填充：支持线性渐变和径向渐变
+  	 * - 变换效果：rotation（旋转）、translate（平移）、transform（矩阵变换）
+  	 * - 高级效果：lineDash（虚线）、filter（滤镜）、clipPath（裁剪）、mask（遮罩）
+  	 * 
+  	 * @method setStyle
+  	 * @param {Object} [style] - 要应用的样式对象，默认使用 this.style
+  	 * 
+  	 * @example
+  	 * // 应用样式
+  	 * control.setStyle({
+  	 *     fill: '#ff0000',
+  	 *     stroke: '#000000',
+  	 *     lineWidth: 2,
+  	 *     shadow: {
+  	 *         blur: 10,
+  	 *         x: 5,
+  	 *         y: 5,
+  	 *         color: 'rgba(0,0,0,0.5)'
+  	 *     }
+  	 * });
+  	 * 
+  	 * // 使用渐变
+  	 * control.setStyle({
+  	 *     fill: 'linear-gradient(0,0,100,0,#ff0000,#0000ff)'
+  	 * });
+  	 */
   	setStyle(style) {
   		if(!style) {
   			style = this.style;
   		}
   		if(!style) return;
 
+  		/**
+  		 * 内部样式设置函数
+  		 * @param {*} styleValue - 样式值
+  		 * @param {string} name - 样式名称
+  		 * @param {string} [mpkey] - 映射键名
+  		 * @private
+  		 */
   		const __setStyle = (style, name, mpkey) => {
   			if(style) {
   				let styleValue = style;
+  				// 支持函数形式的样式值
   				if(typeof styleValue === 'function') {
   					try {
   						styleValue = styleValue.call(this);
@@ -4942,12 +6309,14 @@ define(['exports'], (function (exports) { 'use strict';
   				let t = typeof styleValue;
   				let mpname = jmStyleMap[mpkey || name];
 
+  				// 处理渐变
   				if((styleValue instanceof jmGradient) || (t == 'string' && styleValue.indexOf('-gradient') > -1)) {
   					if(t == 'string' && styleValue.indexOf('-gradient') > -1) {
   						styleValue = new jmGradient(styleValue);
   					}
   					__setStyle(styleValue.toGradient(this), mpname||name);
   				}
+  				// 处理标准样式映射
   				else if(mpname) {
   					if(this.webglControl) {
   						this.webglControl.setStyle(mpname, styleValue);
@@ -4959,8 +6328,10 @@ define(['exports'], (function (exports) { 'use strict';
   						this.context[mpname] = styleValue;
   					}
   				}
+  				// 处理特殊样式
   				else {
   					switch(name) {
+  						// 阴影样式
   						case 'shadow' : {
   							if(t == 'string') {
   								__setStyle(new jmShadow(styleValue), name);
@@ -4971,9 +6342,11 @@ define(['exports'], (function (exports) { 'use strict';
   							}
   							break;
   						}
+  						// 平移变换
   						case 'translate' : {
   							break;
   						}
+  						// 旋转变换
   						case 'rotation' : {
   							if(typeof styleValue.angle === 'undefined' || isNaN(styleValue.angle)) break;
   							styleValue = this.getRotation(styleValue);
@@ -4987,6 +6360,7 @@ define(['exports'], (function (exports) { 'use strict';
   							this.context.translate && this.context.translate(-this.__translateAbsolutePosition.x, -this.__translateAbsolutePosition.y);
   							break;
   						}
+  						// 矩阵变换
   						case 'transform' : {
   							if(!this.context.transform) break;
   							if(Array.isArray(styleValue)) {
@@ -5004,13 +6378,19 @@ define(['exports'], (function (exports) { 'use strict';
   							}
   							break;
   						}
+  						// 鼠标样式
   						case 'cursor' : {
   							this.cursor = styleValue;
   							break;
   						}
   						// ===== 新增样式特性 =====
 
-  						// 虚线样式：支持自定义lineDash模式 (如 [5, 3, 2] 或 "5,3,2")
+  						/**
+  						 * 虚线样式
+  						 * 支持数组格式 [5, 3, 2] 或字符串格式 "5,3,2"
+  						 * @example
+  						 * style: { lineDash: [5, 3] } // 5px实线，3px空白
+  						 */
   						case 'lineDash' : {
   							if(!this.context.setLineDash) break;
   							let dash;
@@ -5034,7 +6414,14 @@ define(['exports'], (function (exports) { 'use strict';
   							this.context.lineDashOffset = Number(styleValue) || 0;
   							break;
   						}
-  						// CSS滤镜效果 (blur, grayscale, sepia, brightness, contrast, saturate, hue-rotate, invert, opacity)
+  						/**
+  						 * CSS滤镜效果
+  						 * 支持 blur, grayscale, sepia, brightness, contrast, saturate, hue-rotate, invert, opacity
+  						 * @example
+  						 * style: { filter: 'blur(5px) grayscale(50%)' }
+  						 * // 或使用对象
+  						 * style: { filter: { blur: 5, grayscale: 0.5 } }
+  						 */
   						case 'filter' : {
   							if(this.context.filter === undefined) break;
   							if(styleValue instanceof jmFilter) {
@@ -5048,13 +6435,23 @@ define(['exports'], (function (exports) { 'use strict';
   							}
   							break;
   						}
-  						// 混合模式 (source-over, multiply, screen, overlay, darken, lighten, etc.)
+  						/**
+  						 * 混合模式
+  						 * 常用值：source-over, multiply, screen, overlay, darken, lighten
+  						 * @example
+  						 * style: { globalCompositeOperation: 'multiply' }
+  						 */
   						case 'globalCompositeOperation' : {
   							if(!this.context.globalCompositeOperation) break;
   							this.context.globalCompositeOperation = styleValue;
   							break;
   						}
-  						// 裁剪路径：通过canvas clip实现
+  						/**
+  						 * 裁剪路径
+  						 * 通过 canvas clip 实现裁剪效果
+  						 * @example
+  						 * style: { clipPath: clipShape } // clipShape 是一个图形控件
+  						 */
   						case 'clipPath' : {
   							if(!this.context.clip) break;
   							// clipPath可以是一个图形控件实例
@@ -5077,7 +6474,12 @@ define(['exports'], (function (exports) { 'use strict';
   							}
   							break;
   						}
-  						// 遮罩效果：通过globalCompositeOperation + destination-in实现
+  						/**
+  						 * 遮罩效果
+  						 * 通过 globalCompositeOperation + destination-in 实现
+  						 * @example
+  						 * style: { mask: maskShape } // maskShape 是一个图形控件
+  						 */
   						case 'mask' : {
   							if(!this.context.globalCompositeOperation) break;
   							// mask是一个图形控件实例，在绘制前需要先应用mask
@@ -5085,7 +6487,7 @@ define(['exports'], (function (exports) { 'use strict';
   							this.__mask = styleValue;
   							break;
   						}
-  						// 图片阴影描边阴影（WebGL纹理canvas用）
+  						// 阴影相关样式（WebGL兼容）
   						case 'shadowColor' : {
   							if(this.webglControl) {
   								this.webglControl.setStyle('shadowColor', styleValue);
@@ -5127,21 +6529,27 @@ define(['exports'], (function (exports) { 'use strict';
   			}
   		};
 
+  		// 应用平移变换
   		if(this.translate) {
   			__setStyle(this.translate, 'translate');
   		}
+  		// 应用矩阵变换
   		if(this.transform) {
   			__setStyle(this.transform, 'transform');
   		}
+  		// 遍历应用所有样式
   		for(let k in style) {
   			if(k === 'constructor') continue;
   			let t = typeof style[k];
+  			// 自动转换渐变字符串
   			if(t == 'string' && style[k].indexOf('-gradient') > -1) {
   				style[k] = new jmGradient(style[k]);
   			}
+  			// 自动转换阴影字符串
   			else if(t == 'string' && k == 'shadow') {
   				style[k] = new jmShadow(style[k]);
   			}
+  			// 自动转换滤镜字符串
   			else if(t == 'string' && k == 'filter') {
   				style[k] = new jmFilter(style[k]);
   			}
@@ -5150,13 +6558,29 @@ define(['exports'], (function (exports) { 'use strict';
   	}
 
   	/**
-  	 * 获取当前控件的边界
-  	 * 通过分析控件的描点或位置加宽高得到为方形的边界
-  	 *
+  	 * 获取当前控件的边界矩形
+  	 * 
+  	 * 通过分析控件的描点或位置加宽高得到边界矩形。
+  	 * 对于 jmGraph，边界为画布尺寸。
+  	 * 对于有 points 的控件，边界为所有点的最小包围矩形。
+  	 * 
   	 * @method getBounds
-  	 * @for jmControl
-  	 * @param {boolean} [isReset=false] 是否强制重新计算
-  	 * @return {object} 控件的边界描述对象(left,top,right,bottom,width,height)
+  	 * @param {boolean} [isReset=false] - 是否强制重新计算（忽略缓存）
+  	 * @returns {Object} 边界对象
+  	 * @returns {number} returns.left - 左边界 X 坐标
+  	 * @returns {number} returns.top - 上边界 Y 坐标
+  	 * @returns {number} returns.right - 右边界 X 坐标
+  	 * @returns {number} returns.bottom - 下边界 Y 坐标
+  	 * @returns {number} returns.width - 宽度
+  	 * @returns {number} returns.height - 高度
+  	 * 
+  	 * @example
+  	 * // 获取边界
+  	 * const bounds = control.getBounds();
+  	 * console.log(`宽: ${bounds.width}, 高: ${bounds.height}`);
+  	 * 
+  	 * // 强制重新计算
+  	 * const newBounds = control.getBounds(true);
   	 */
   	getBounds(isReset) {
   		//如果当次计算过，则不重复计算
@@ -5179,6 +6603,7 @@ define(['exports'], (function (exports) { 'use strict';
   				rect.bottom = this.height;
   			}
   		}
+  		// 根据 points 计算边界
   		else if(this.points && this.points.length > 0) {		
   			for(const p of this.points) {
   				if(typeof rect.left === 'undefined' || rect.left > p.x) {
@@ -5196,6 +6621,7 @@ define(['exports'], (function (exports) { 'use strict';
   				}
   			}
   		}
+  		// 根据位置和尺寸计算边界
   		else if(this.getLocation) {
   			let p = this.getLocation();
   			if(p) {
@@ -5205,10 +6631,10 @@ define(['exports'], (function (exports) { 'use strict';
   				rect.bottom = p.top + p.height;
   			}		
   		}
-  		if(!rect.left) rect.left = 0; 
-  		if(!rect.top) rect.top = 0; 
-  		if(!rect.right) rect.right = 0; 
-  		if(!rect.bottom) rect.bottom = 0; 
+  		if(rect.left === undefined) rect.left = 0; 
+  		if(rect.top === undefined) rect.top = 0; 
+  		if(rect.right === undefined) rect.right = 0; 
+  		if(rect.bottom === undefined) rect.bottom = 0; 
   		rect.width = rect.right - rect.left;
   		rect.height = rect.bottom - rect.top;
   		
@@ -5216,7 +6642,23 @@ define(['exports'], (function (exports) { 'use strict';
   	}
 
   	/**
-  	 * 获取被旋转后的边界
+  	 * 获取旋转后的边界矩形
+  	 * 
+  	 * 计算控件旋转后的最小包围矩形。
+  	 * 当控件有旋转变换时，实际占据的空间会发生变化。
+  	 * 
+  	 * @method getRotationBounds
+  	 * @param {Object} [rotation] - 旋转参数，默认使用 style.rotation
+  	 * @param {number} rotation.x - 旋转中心 X（相对于控件）
+  	 * @param {number} rotation.y - 旋转中心 Y（相对于控件）
+  	 * @param {number} rotation.angle - 旋转角度（弧度）
+  	 * @param {Object} [bounds] - 基础边界，默认使用 getBounds()
+  	 * @returns {Object} 旋转后的边界对象
+  	 * 
+  	 * @example
+  	 * // 获取旋转后的边界
+  	 * const bounds = control.getRotationBounds();
+  	 * console.log(`旋转后宽度: ${bounds.width}`);
   	 */
   	getRotationBounds(rotation=null) {
   		rotation = rotation || this.getRotation();
@@ -5283,11 +6725,26 @@ define(['exports'], (function (exports) { 'use strict';
   	}
 
   	/**
-  	 * 获取当前控件的位置相关参数
-  	 * 解析百分比和margin参数
-  	 *
+  	 * 获取当前控件的位置参数
+  	 * 
+  	 * 解析百分比和 margin 参数，返回标准化的位置信息。
+  	 * 支持百分比定位（如 '50%'）和 margin 偏移。
+  	 * 
   	 * @method getLocation
-  	 * @return {object} 当前控件位置参数，包括中心点坐标，右上角坐标，宽高
+  	 * @returns {Object} 位置参数对象
+  	 * @returns {number} returns.left - 左边距
+  	 * @returns {number} returns.top - 上边距
+  	 * @returns {number} returns.width - 宽度
+  	 * @returns {number} returns.height - 高度
+  	 * @returns {Object} [returns.position] - 位置对象 {x, y}
+  	 * @returns {Object} [returns.center] - 中心点
+  	 * @returns {Object} [returns.start] - 起点（线条类）
+  	 * @returns {Object} [returns.end] - 终点（线条类）
+  	 * @returns {number} [returns.radius] - 半径（圆形类）
+  	 * 
+  	 * @example
+  	 * const loc = control.getLocation();
+  	 * console.log(`位置: (${loc.left}, ${loc.top})`);
   	 */
   	getLocation() {
   		//如果已经计算过则直接返回
@@ -5363,8 +6820,26 @@ define(['exports'], (function (exports) { 'use strict';
   	}
 
   	/**
-  	 * 获取当前控制的旋转信息
-  	 * @returns {object} 旋转中心和角度
+  	 * 获取当前控件的旋转信息
+  	 * 
+  	 * 解析旋转参数，支持百分比形式的旋转中心。
+  	 * 如果控件本身没有旋转，会继承父级的旋转。
+  	 * 
+  	 * @method getRotation
+  	 * @param {Object} [rotation] - 旋转参数，默认使用 style.rotation
+  	 * @param {Object} [bounds] - 基础边界
+  	 * @returns {Object} 旋转信息
+  	 * @returns {number} returns.x - 旋转中心 X（相对于控件）
+  	 * @returns {number} returns.y - 旋转中心 Y（相对于控件）
+  	 * @returns {number} returns.angle - 旋转角度（弧度）
+  	 * @returns {Object} returns.bounds - 控件边界
+  	 * 
+  	 * @example
+  	 * // 获取旋转信息
+  	 * const rot = control.getRotation();
+  	 * if(rot.angle) {
+  	 *     console.log(`旋转角度: ${rot.angle} 弧度`);
+  	 * }
   	 */
   	getRotation(rotation, bounds = null) {
   		rotation = rotation || jmUtils.clone(this.style.rotation);
@@ -5397,7 +6872,20 @@ define(['exports'], (function (exports) { 'use strict';
 
   	}
 
-  	// 计算位移偏移量
+  	/**
+  	 * 计算位移偏移量
+  	 * 
+  	 * 解析 translate 样式，支持百分比形式。
+  	 * 
+  	 * @method getTranslate
+  	 * @param {Object} [translate] - 平移参数，默认使用 style.translate
+  	 * @param {Object} [bounds] - 参考边界
+  	 * @returns {Object} 平移信息 {x, y}
+  	 * 
+  	 * @example
+  	 * const trans = control.getTranslate();
+  	 * console.log(`平移: (${trans.x}, ${trans.y})`);
+  	 */
   	getTranslate(translate, bounds = null) {
   		translate = translate || this.style.translate;
   		if(!translate) return {x: 0, y: 0};
@@ -5419,9 +6907,15 @@ define(['exports'], (function (exports) { 'use strict';
 
   	/**
   	 * 移除当前控件
-  	 * 如果是VML元素，则调用其删除元素
-  	 *
-  	 * @method remove 
+  	 * 
+  	 * 从父控件的子控件列表中移除当前控件。
+  	 * 移除后会触发 needUpdate 重绘。
+  	 * 
+  	 * @method remove
+  	 * 
+  	 * @example
+  	 * // 移除控件
+  	 * control.remove();
   	 */
   	remove() {	
   		if(this.parent) {
@@ -5431,13 +6925,19 @@ define(['exports'], (function (exports) { 'use strict';
 
   	/**
   	 * 对控件进行平移
+  	 * 
   	 * 遍历控件所有描点或位置，设置其偏移量。
-  	 *
+  	 * 支持移动 position、center、start、end、points 等属性。
+  	 * 
   	 * @method offset
-  	 * @param {number} x x轴偏移量
-  	 * @param {number} y y轴偏移量
-  	 * @param {boolean} [trans] 是否传递,监听者可以通过此属性是否决定是否响应移动事件,默认=true
-  	 * @param {object} [evt] 如果是事件触发，则传递move事件参数
+  	 * @param {number} x - X 轴偏移量
+  	 * @param {number} y - Y 轴偏移量
+  	 * @param {boolean} [trans=true] - 是否传递给监听者
+  	 * @param {Object} [evt] - 如果是事件触发，传递 move 事件参数
+  	 * 
+  	 * @example
+  	 * // 向右移动 10px，向下移动 5px
+  	 * control.offset(10, 5);
   	 */
   	offset(x, y, trans, evt) {
   		trans = trans === false?false:true;	
@@ -5505,11 +7005,17 @@ define(['exports'], (function (exports) { 'use strict';
   	}
 
   	/**
-  	 * 获取控件相对于画布的绝对边界，
-  	 * 与getBounds不同的是：getBounds获取的是相对于父容器的边界.
-  	 *
+  	 * 获取控件相对于画布的绝对边界
+  	 * 
+  	 * 与 getBounds 不同的是：getBounds 获取的是相对于父容器的边界，
+  	 * 而 getAbsoluteBounds 获取的是相对于画布的边界。
+  	 * 
   	 * @method getAbsoluteBounds
-  	 * @return {object} 边界对象(left,top,right,bottom,width,height)
+  	 * @returns {Object} 绝对边界对象
+  	 * 
+  	 * @example
+  	 * const absBounds = control.getAbsoluteBounds();
+  	 * console.log(`画布上的位置: (${absBounds.left}, ${absBounds.top})`);
   	 */
   	getAbsoluteBounds() {
   		//当前控件的边界，
@@ -5531,10 +7037,14 @@ define(['exports'], (function (exports) { 'use strict';
   	}
 
   	/**
-  	 * 把当前控制内部坐标转为canvas绝对定位坐标
+  	 * 把当前控件内部坐标转为画布绝对坐标
   	 * 
   	 * @method toAbsolutePoint
-  	 * @param {x: number, y: number} 内部坐标
+  	 * @param {Object} point - 内部坐标 {x, y}
+  	 * @returns {Object} 绝对坐标
+  	 * 
+  	 * @example
+  	 * const absPoint = control.toAbsolutePoint({x: 10, y: 10});
   	 */
   	toAbsolutePoint(point) {
   		if(point.x || point.y) {
@@ -5547,8 +7057,14 @@ define(['exports'], (function (exports) { 'use strict';
   	}
 
   	/**
-  	 * 把绝对定位坐标转为当前控件坐标系内
-  	 * @param {*} point 
+  	 * 把画布绝对坐标转为当前控件坐标系内
+  	 * 
+  	 * @method toLocalPosition
+  	 * @param {Object} point - 绝对坐标
+  	 * @returns {Object|false} 相对坐标，如果无法转换返回 false
+  	 * 
+  	 * @example
+  	 * const localPoint = control.toLocalPosition({x: 100, y: 100});
   	 */
   	toLocalPosition(point) {
   		
@@ -5562,9 +7078,21 @@ define(['exports'], (function (exports) { 'use strict';
 
   	/**
   	 * 画控件前初始化
-  	 * 执行beginPath开始控件的绘制
+  	 * 
+  	 * 执行 beginPath 开始控件的绘制路径。
+  	 * 重置位置信息缓存，确保使用最新的位置数据。
   	 * 
   	 * @method beginDraw
+  	 * @protected
+  	 * 
+  	 * @example
+  	 * // 子类重写时需要调用父类方法
+  	 * class MyShape extends jmControl {
+  	 *     beginDraw() {
+  	 *         super.beginDraw();
+  	 *         // 自定义初始化逻辑
+  	 *     }
+  	 * }
   	 */
   	beginDraw() {	
   		this.getLocation(true);//重置位置信息
@@ -5574,8 +7102,18 @@ define(['exports'], (function (exports) { 'use strict';
 
   	/**
   	 * 结束控件绘制
-  	 *
+  	 * 
+  	 * 根据样式执行 fill 或 stroke 操作。
+  	 * 如果设置了 close 样式，会先闭合路径。
+  	 * 
   	 * @method endDraw
+  	 * @protected
+  	 * 
+  	 * @example
+  	 * // 绘制流程
+  	 * control.beginDraw();
+  	 * control.draw();
+  	 * control.endDraw();
   	 */
   	endDraw() {
   		//如果当前为封闭路径
@@ -5612,10 +7150,24 @@ define(['exports'], (function (exports) { 'use strict';
   	}
 
   	/**
-  	 * 绘制控件
-  	 * 在画布上描点
+  	 * 绘制控件路径
+  	 * 
+  	 * 在画布上绘制控件的路径点。
+  	 * 子类应该重写此方法实现自定义绘制逻辑。
   	 * 
   	 * @method draw
+  	 * @protected
+  	 * 
+  	 * @example
+  	 * // 子类重写绘制方法
+  	 * class MyShape extends jmControl {
+  	 *     draw() {
+  	 *         const ctx = this.context;
+  	 *         ctx.moveTo(0, 0);
+  	 *         ctx.lineTo(100, 100);
+  	 *         // ... 更多绘制逻辑
+  	 *     }
+  	 * }
   	 */
   	draw() {	
   		if(this.points && this.points.length > 0) {
@@ -5643,10 +7195,23 @@ define(['exports'], (function (exports) { 'use strict';
   	}
 
   	/**
-  	 * 绘制当前控件
-  	 * 协调控件的绘制，先从其子控件开始绘制，再往上冒。
-  	 *
+  	 * 绘制当前控件及其子控件
+  	 * 
+  	 * 协调控件的绘制流程：
+  	 * 1. 检查可见性
+  	 * 2. 初始化点数据
+  	 * 3. 计算边界
+  	 * 4. 应用样式
+  	 * 5. 绘制自身
+  	 * 6. 绘制子控件
+  	 * 7. 触发事件
+  	 * 
   	 * @method paint
+  	 * @param {boolean} [v] - 是否可见，false 时跳过绘制
+  	 * 
+  	 * @example
+  	 * // 手动触发重绘
+  	 * control.paint();
   	 */
   	paint(v) {
   		if(v !== false && this.visible !== false) {		
@@ -5721,23 +7286,50 @@ define(['exports'], (function (exports) { 'use strict';
   	}
 
   	/**
-  	 * 获取指定事件的集合
-  	 * 比如mousedown,mouseup等
-  	 *
+  	 * 获取指定事件的监听器集合
+  	 * 
+  	 * 返回绑定到指定事件名称的所有事件处理函数。
+  	 * 
   	 * @method getEvent
-  	 * @param {string} name 事件名称
-  	 * @return {list} 事件委托的集合
+  	 * @param {string} name - 事件名称（如 'click', 'mousedown'）
+  	 * @returns {jmList|null} 事件处理函数集合，不存在则返回 null
+  	 * 
+  	 * @example
+  	 * const handlers = control.getEvent('click');
+  	 * if(handlers) {
+  	 *     console.log(`有 ${handlers.count()} 个点击事件处理器`);
+  	 * }
   	 */
   	getEvent(name) {		
   		return this.__events?this.__events[name]:null;
   	}
 
   	/**
-  	 * 绑定控件的事件
-  	 *
+  	 * 绑定控件事件
+  	 * 
+  	 * 为控件添加事件监听器。支持同时绑定多个事件（用空格分隔）。
+  	 * 同一个处理函数不会被重复添加。
+  	 * 
   	 * @method bind
-  	 * @param {string} name 事件名称
-  	 * @param {function} handle 事件委托
+  	 * @param {string} name - 事件名称，多个事件用空格分隔
+  	 * @param {Function} handle - 事件处理函数
+  	 * @returns {void}
+  	 * 
+  	 * @example
+  	 * // 绑定单个事件
+  	 * control.bind('click', (evt) => {
+  	 *     console.log('被点击了', evt);
+  	 * });
+  	 * 
+  	 * // 绑定多个事件
+  	 * control.bind('mousedown mouseup', (evt) => {
+  	 *     console.log('鼠标事件', evt);
+  	 * });
+  	 * 
+  	 * // 使用 on 别名
+  	 * control.on('mousemove', (evt) => {
+  	 *     console.log('鼠标移动', evt.position);
+  	 * });
   	 */
   	bind(name, handle) {	
   		if(name && name.indexOf(' ') > -1) {
@@ -5764,11 +7356,23 @@ define(['exports'], (function (exports) { 'use strict';
   	}
 
   	/**
-  	 * 移除控件的事件
-  	 *
-  	 * @method unbind 
-  	 * @param {string} name 事件名称
-  	 * @param {function} handle 从控件中移除事件的委托
+  	 * 移除控件事件
+  	 * 
+  	 * 移除已绑定的事件处理函数。如果不指定处理函数，则移除该事件的所有处理函数。
+  	 * 
+  	 * @method unbind
+  	 * @param {string} name - 事件名称，多个事件用空格分隔
+  	 * @param {Function} [handle] - 要移除的事件处理函数，不指定则移除所有
+  	 * 
+  	 * @example
+  	 * // 移除特定处理函数
+  	 * control.unbind('click', myHandler);
+  	 * 
+  	 * // 移除所有点击事件
+  	 * control.unbind('click');
+  	 * 
+  	 * // 移除多个事件
+  	 * control.unbind('mousedown mouseup');
   	 */
   	unbind(name, handle) {	
   		if(name && name.indexOf(' ') > -1) {
@@ -5787,12 +7391,22 @@ define(['exports'], (function (exports) { 'use strict';
 
 
   	/**
-  	 * 执行监听回调
+  	 * 触发事件
+  	 * 
+  	 * 执行指定事件的所有监听器。
+  	 * 支持传递多个参数给事件处理函数。
   	 * 
   	 * @method emit
-  	 * @for jmControl
-  	 * @param {string} name 触发事件的名称
-  	 * @param {array} args 事件参数数组
+  	 * @param {string} name - 事件名称
+  	 * @param {...*} args - 传递给事件处理函数的参数
+  	 * @returns {jmControl} 返回 this 以支持链式调用
+  	 * 
+  	 * @example
+  	 * // 触发自定义事件
+  	 * control.emit('customEvent', { data: 'value' });
+  	 * 
+  	 * // 触发带多个参数的事件
+  	 * control.emit('dataChange', oldValue, newValue);
   	 */
   	emit(...args) {			
   		// 避免每帧 args.slice(1) 分配临时数组
@@ -5808,15 +7422,21 @@ define(['exports'], (function (exports) { 'use strict';
   	}
 
   	/**
-  	 * 独立执行事件委托
-  	 *
+  	 * 执行事件处理函数
+  	 * 
+  	 * 内部方法，用于执行指定事件的所有监听器。
+  	 * 如果任一处理函数返回 false，会设置 args.cancel = true。
+  	 * 
   	 * @method runEventHandle
-  	 * @param {string} 将执行的事件名称
-  	 * @param {object} 事件执行的参数，包括触发事件的对象和位置
+  	 * @param {string} name - 事件名称
+  	 * @param {Array|Object} args - 事件参数
+  	 * @returns {boolean} 是否被取消
+  	 * @protected
   	 */
   	runEventHandle(name, args) {
   		let events = this.getEvent(name);		
   		if(events) {
+  		
   			var self = this;
   			if(!Array.isArray(args)) args = [args];	
   			events.each(function(i, handle) {
@@ -5830,25 +7450,35 @@ define(['exports'], (function (exports) { 'use strict';
   	}
 
   	/**
-  	 * 检 查坐标是否落在当前控件区域中..true=在区域内
-  	 *
+  	 * 检查坐标是否落在当前控件区域中
+  	 * 
+  	 * 用于点击测试和碰撞检测。
+  	 * 支持旋转后的碰撞检测，以及自定义命中区域。
+  	 * 
   	 * @method checkPoint
-  	 * @param {point} p 位置参数
-  	 * @param {number} [pad] 可选参数，表示线条多远内都算在线上
-  	 * @return {boolean} 当前位置如果在区域内则为true,否则为false。
+  	 * @param {Object} p - 要检测的点坐标
+  	 * @param {number} p.x - X 坐标
+  	 * @param {number} p.y - Y 坐标
+  	 * @param {number} [pad] - 容差范围，默认使用 lineWidth 或 1
+  	 * @returns {boolean} 点是否在控件区域内
+  	 * 
+  	 * @example
+  	 * // 检查点击位置
+  	 * graph.bind('click', (evt) => {
+  	 *     if(control.checkPoint(evt.position)) {
+  	 *         console.log('点击了控件');
+  	 *     }
+  	 * });
   	 */
   	checkPoint(p, pad) {
   		//jmGraph 需要判断dom位置
   		if(this.type == 'jmGraph') {
   			//获取dom位置
-  			let position = this.getPosition();
-  			// 由于高清屏会有放大坐标，所以这里用pagex就只能用真实的canvas大小
-  			const right = position.left + this.width;
-  			const bottom = position.top + this.height;
-  			if(p.x > right || p.x < position.left) {
+  			const position = this.getPosition();
+  			if(p.pageX > position.right || p.pageX < position.left) {
   				return false;
   			}
-  			if(p.y > bottom || p.y < position.top) {
+  			if(p.pageY > position.bottom || p.pageY < position.top) {
   				return false;
   			}	
   			return true;
@@ -5935,15 +7565,23 @@ define(['exports'], (function (exports) { 'use strict';
 
 
   	/**
-  	 * 触发控件事件，组合参数并按控件层级关系执行事件冒泡。
-  	 *
+  	 * 触发控件事件并执行事件冒泡
+  	 * 
+  	 * 组合事件参数，按控件层级关系执行事件冒泡。
+  	 * 事件从最上层的子控件开始触发，向上冒泡到父控件。
+  	 * 
   	 * @method raiseEvent
-  	 * @param {string} name 事件名称
-  	 * @param {object} args 事件执行参数
-  	 * @return {boolean} 如果事件被组止冒泡则返回false,否则返回true
+  	 * @param {string} name - 事件名称
+  	 * @param {Object} args - 原生事件对象
+  	 * @returns {boolean} 如果事件被阻止冒泡则返回 false，否则返回 true
+  	 * 
+  	 * @example
+  	 * // 通常由框架内部调用，用户一般不需要直接调用
+  	 * // 框架会自动处理鼠标/触摸事件
   	 */
   	raiseEvent(name, args) {
   		if(this.visible === false) return ;//如果不显示则不响应事件	
+  		
   		if(!args.position) {		
   			const graph = this.graph;
   			args.isWXMiniApp = graph.isWXMiniApp;
@@ -5991,6 +7629,10 @@ define(['exports'], (function (exports) { 'use strict';
 
   		// 是否在当前控件内操作
   		const inpos = this.interactive !== false && this.checkPoint(args.position);
+
+  		if(name === 'mousemove' && this.type == 'jmGraph' && !inpos) {
+  			console.log('mousemove out', args.position, abounds);
+  		}
   		
   		//事件发生在边界内或健盘事件发生在画布中才触发
   		if(inpos) {
@@ -6021,9 +7663,14 @@ define(['exports'], (function (exports) { 'use strict';
   	}
 
   	/**
-  	 * 执行事件，并进行冒泡
-  	 * @param {string} name 事件名称 
-  	 * @param {object} args 事件参数
+  	 * 执行事件并进行冒泡
+  	 * 
+  	 * 内部方法，用于执行事件处理并添加到事件路径。
+  	 * 
+  	 * @method runEventAndPopEvent
+  	 * @param {string} name - 事件名称
+  	 * @param {Object} args - 事件参数
+  	 * @protected
   	 */
   	runEventAndPopEvent(name, args) {	
 
@@ -6049,23 +7696,38 @@ define(['exports'], (function (exports) { 'use strict';
 
   	/**
   	 * 清空控件指定事件
-  	 *
+  	 * 
+  	 * 移除指定事件名称下的所有事件处理函数。
+  	 * 
   	 * @method clearEvents
-  	 * @param {string} name 需要清除的事件名称
+  	 * @param {string} name - 需要清除的事件名称
+  	 * 
+  	 * @example
+  	 * // 清除所有点击事件
+  	 * control.clearEvents('click');
   	 */
   	clearEvents(name) {
-  		var eventCollection = this.getEvent(name) ;		
+  		var eventCollection = this.getEvent(name);		
   		if(eventCollection) {
-  			eventCollection.clear;
+  			eventCollection.clear();
   		}
   	}
 
   	/**
-  	 * 查找其父级类型为type的元素，直到找到指定的对象或到最顶级控件后返回空。
-  	 *
-  	 * @method findParent 
-  	 * @param {object} 类型名称或类型对象
-  	 * @return {object} 指定类型的实例
+  	 * 查找指定类型的父级控件
+  	 * 
+  	 * 沿着父级链向上查找，直到找到指定类型的控件或到达最顶级。
+  	 * 
+  	 * @method findParent
+  	 * @param {string|Function} type - 类型名称（字符串）或类构造函数
+  	 * @returns {jmControl|null} 找到的父级控件实例，未找到返回 null
+  	 * 
+  	 * @example
+  	 * // 查找 jmGraph 实例
+  	 * const graph = control.findParent('jmGraph');
+  	 * 
+  	 * // 查找特定类的实例
+  	 * const parent = control.findParent(MyCustomControl);
   	 */
   	findParent(type) {
   		//如果为类型名称，则返回名称相同的类型对象
@@ -6083,12 +7745,26 @@ define(['exports'], (function (exports) { 'use strict';
   	}
 
   	/**
-  	 * 设定是否可以移动
-  	 * 此方法需指定jmgraph或在控件添加到jmgraph后再调用才能生效。
-  	 *
+  	 * 设置控件是否可拖动
+  	 * 
+  	 * 启用或禁用控件的拖动功能。
+  	 * 拖动时会触发 movestart、move、moveend 事件。
+  	 * 
   	 * @method canMove
-  	 * @param {boolean} m true=可以移动，false=不可移动或清除移动。
-  	 * @param {jmGraph} [graph] 当前画布，如果为空的话必需是已加入画布的控件，否则得指定画布。
+  	 * @param {boolean} m - true 启用拖动，false 禁用拖动
+  	 * @param {jmGraph} [graph] - 画布实例，如果控件已添加到画布可省略
+  	 * @returns {jmControl} 返回 this 以支持链式调用
+  	 * 
+  	 * @example
+  	 * // 启用拖动
+  	 * control.canMove(true);
+  	 * 
+  	 * // 禁用拖动
+  	 * control.canMove(false);
+  	 * 
+  	 * // 监听拖动事件
+  	 * control.on('movestart', (evt) => console.log('开始拖动'));
+  	 * control.on('moveend', (evt) => console.log('结束拖动'));
   	 */
   	canMove(m, graph) {
   		if(!this.__mvMonitor) {
@@ -6114,7 +7790,6 @@ define(['exports'], (function (exports) { 'use strict';
   				//if(evt.path && evt.path.indexOf(_this)>-1) {
   				//	_this.cursor('move');	
   				//}
-
   				if(_this.__mvMonitor.mouseDown) {
   					_this.parent.bounds = null;
   					//let parentbounds = _this.parent.getAbsoluteBounds();		
@@ -6148,7 +7823,7 @@ define(['exports'], (function (exports) { 'use strict';
   						_this.offset(offsetx, offsety, true, evt);
   						if(offsetx) _this.__mvMonitor.curposition.x = evt.position.offsetX;
   						if(offsety) _this.__mvMonitor.curposition.y = evt.position.offsetY;	
-  						//console.log(offsetx + '.' + offsety);
+  						//console.log('mouse move',offsetx + '.' + offsety);
   					}
   					return false;
   				}
@@ -6233,14 +7908,51 @@ define(['exports'], (function (exports) { 'use strict';
   }
 
   /**
-   * 基础路径,大部分图型的基类
-   * 指定一系列点，画出图形
-   *
-   * @class jmPath
-   * @extends jmControl
-   * @param {object} params 路径参数 points=所有描点
+   * @fileoverview jmPath 路径基类
+   * 
+   * jmPath 是大部分图形的基类，提供了基于点序列的路径绘制能力。
+   * 所有需要通过点序列定义形状的图形（如多边形、线条、贝塞尔曲线等）
+   * 都可以继承此类。
+   * 
+   * 主要功能：
+   * - 点序列管理（points 属性）
+   * - SVG 导出支持（toSVG 方法）
+   * - 路径闭合控制
+   * 
+   * @module jmPath
+   * @author jmGraph Team
+   * @license MIT
    */
 
+  /**
+   * 基础路径类
+   * 
+   * 大部分图形的基类，通过指定一系列点来画出图形。
+   * 支持开放路径和闭合路径，支持 SVG 导出。
+   * 
+   * @class jmPath
+   * @extends jmControl
+   * 
+   * @param {Object} params 路径参数
+   * @param {Array<Object>} [params.points] 点序列，每个点格式：{x:0, y:0, m:false}
+   * @param {string} [t='jmPath'] 类型标识
+   * 
+   * @example
+   * // 创建自定义路径
+   * const path = new jmPath({
+   *     points: [
+   *         {x: 0, y: 0},
+   *         {x: 100, y: 0},
+   *         {x: 100, y: 100},
+   *         {x: 0, y: 100}
+   *     ],
+   *     style: {
+   *         fill: '#ff0000',
+   *         stroke: '#000000',
+   *         close: true  // 闭合路径
+   *     }
+   * });
+   */
   class jmPath extends jmControl {	
 
   	constructor(params, t='jmPath') {
@@ -6321,11 +8033,57 @@ define(['exports'], (function (exports) { 'use strict';
   }
 
   /**
-   * 圆弧图型 继承自jmPath
+   * @fileoverview jmArc 圆弧类
+   * 
+   * jmArc 提供了圆弧图形的绘制功能。
+   * 可以绘制完整的圆、部分圆弧或扇形。
+   * 
+   * 主要功能：
+   * - 圆弧绘制
+   * - 扇形绘制（isFan=true）
+   * - 顺时针/逆时针绘制
+   * - 支持 WebGL 和 Canvas 2D 模式
+   * 
+   * @module jmArc
+   * @author jmGraph Team
+   * @license MIT
+   */
+
+  /**
+   * 圆弧类
+   * 
+   * 绘制圆弧或扇形图形，继承自 jmPath。
+   * 支持设置圆心、半径、起始角度和结束角度。
    *
    * @class jmArc
    * @extends jmPath
-   * @param {object} params center=当前圆弧中心,radius=圆弧半径,start=圆弧起始角度,end=圆弧结束角度,anticlockwise=  false  顺时针，true 逆时针
+   * @param {object} params 圆弧参数
+   * @param {object} [params.center] 圆弧中心点 {x, y}
+   * @param {number} [params.radius] 圆弧半径
+   * @param {number} [params.start=0] 圆弧起始角度（弧度）
+   * @param {number} [params.end=Math.PI*2] 圆弧结束角度（弧度）
+   * @param {boolean} [params.anticlockwise=false] 绘制方向：false=顺时针，true=逆时针
+   * @param {boolean} [params.isFan=false] 是否绘制为扇形
+   * 
+   * @example
+   * // 创建圆弧
+   * const arc = graph.createShape('arc', {
+   *     center: {x: 200, y: 200},
+   *     radius: 50,
+   *     start: 0,
+   *     end: Math.PI,
+   *     style: { stroke: '#000' }
+   * });
+   * 
+   * // 创建扇形
+   * const fan = graph.createShape('arc', {
+   *     center: {x: 200, y: 200},
+   *     radius: 50,
+   *     start: 0,
+   *     end: Math.PI / 2,
+   *     isFan: true,
+   *     style: { fill: '#ff0000' }
+   * });
    */
   class jmArc extends jmPath {
 
@@ -6488,11 +8246,43 @@ define(['exports'], (function (exports) { 'use strict';
   }
 
   /**
-   * 画箭头,继承自jmPath
+   * @fileoverview jmArrow 箭头类
+   * 
+   * jmArrow 提供了箭头图形的绘制功能。
+   * 可以单独使用，也可以与直线组合使用。
+   * 
+   * 主要功能：
+   * - 箭头绘制
+   * - 支持空心和实心箭头
+   * - 自定义箭头大小和角度
+   * 
+   * @module jmArrow
+   * @author jmGraph Team
+   * @license MIT
+   */
+
+  /**
+   * 箭头类
+   * 
+   * 绘制箭头图形，支持空心和实心两种样式。
+   * 箭头方向由起点和终点决定。
    *
    * @class jmArrow
    * @extends jmPath
-   * @param {object} 生成箭头所需的参数
+   * @param {object} params 箭头参数
+   * @param {object} [params.start] 箭头起始点 {x, y}
+   * @param {object} [params.end] 箭头终点（箭头尖端）{x, y}
+   * @param {number} [params.angle] 箭头角度（弧度），不指定则自动计算
+   * @param {number} [params.offsetX=5] 箭头X方向偏移量
+   * @param {number} [params.offsetY=8] 箭头Y方向偏移量
+   * 
+   * @example
+   * // 创建箭头
+   * const arrow = graph.createShape('arrow', {
+   *     start: {x: 100, y: 100},
+   *     end: {x: 200, y: 100},
+   *     style: { fill: '#ff0000', stroke: '#000' }
+   * });
    */
   class jmArrow extends jmPath {	
 
@@ -6645,18 +8435,63 @@ define(['exports'], (function (exports) { 'use strict';
   }
 
   /**
-   * 贝塞尔曲线,继承jmPath
-   * N阶，参数points中为控制点
+   * @fileoverview jmBezier 贝塞尔曲线类
+   * 
+   * jmBezier 提供了 N 阶贝塞尔曲线的绘制功能。
+   * 通过控制点定义曲线形状，支持任意阶数的贝塞尔曲线。
+   * 
+   * 主要功能：
+   * - N 阶贝塞尔曲线
+   * - 控制点管理
+   * - 曲线平移
+   * 
+   * @module jmBezier
+   * @author jmGraph Team
+   * @license MIT
+   */
+
+  /**
+   * 贝塞尔曲线类
+   * 
+   * 绘制 N 阶贝塞尔曲线，参数 points 中为控制点。
+   * 支持 2 阶（二次贝塞尔）、3 阶（三次贝塞尔）及更高阶曲线。
    *
    * @class jmBezier
    * @extends jmPath
    * @param {object} params 参数
+   * @param {array} [params.points] 控制点数组 [{x, y}, ...]
+   * 
+   * @example
+   * // 创建二次贝塞尔曲线（3个控制点）
+   * const quadBezier = graph.createShape('bezier', {
+   *     points: [
+   *         {x: 100, y: 100},  // 起点
+   *         {x: 200, y: 50},   // 控制点
+   *         {x: 300, y: 100}   // 终点
+   *     ],
+   *     style: { stroke: '#000', lineWidth: 2 }
+   * });
+   * 
+   * // 创建三次贝塞尔曲线（4个控制点）
+   * const cubicBezier = graph.createShape('bezier', {
+   *     points: [
+   *         {x: 100, y: 100},  // 起点
+   *         {x: 150, y: 50},   // 控制点1
+   *         {x: 250, y: 50},   // 控制点2
+   *         {x: 300, y: 100}   // 终点
+   *     ],
+   *     style: { stroke: '#ff0000' }
+   * });
    */ 
   class jmBezier extends jmPath {	
   	
   	constructor(params, t='jmBezier') {
-  		// 典线默认不封闭
-  		if(params.style && typeof params.style.close !== true) {
+  		// 参数初始化
+  		params = params || {};
+  		
+  		// 曲线默认不封闭
+  		if(!params.style) params.style = {};
+  		if(typeof params.style.close !== true) {
   			params.style.close = false;
   		}
 
@@ -6754,11 +8589,43 @@ define(['exports'], (function (exports) { 'use strict';
   }
 
   /**
-   * 画规则的圆弧
+   * @fileoverview jmCircle 圆形类
+   * 
+   * jmCircle 提供了圆形图形的绘制功能。
+   * 继承自 jmArc，可以绘制完整的圆或部分圆弧。
+   * 
+   * 主要功能：
+   * - 圆形绘制
+   * - 支持填充和描边
+   * - 支持 WebGL 和 Canvas 2D 模式
+   * 
+   * @module jmCircle
+   * @author jmGraph Team
+   * @license MIT
+   */
+
+  /**
+   * 圆形类
+   * 
+   * 绘制圆形图形，继承自 jmArc。
+   * 可以通过 center 和 radius 指定圆心和半径，
+   * 也可以通过 width 和 height 指定圆的尺寸。
    *
    * @class jmCircle
    * @extends jmArc
-   * @param {object} params 圆的参数:center=圆中心,radius=圆半径,优先取此属性，如果没有则取宽和高,width=圆宽,height=圆高
+   * @param {object} params 圆的参数
+   * @param {object} [params.center] 圆心坐标 {x, y}
+   * @param {number} [params.radius] 圆半径（优先使用）
+   * @param {number} [params.width] 圆宽度（无 radius 时使用）
+   * @param {number} [params.height] 圆高度（无 radius 时使用）
+   * 
+   * @example
+   * // 创建圆形
+   * const circle = graph.createShape('circle', {
+   *     center: {x: 200, y: 200},
+   *     radius: 50,
+   *     style: { fill: '#ff0000', stroke: '#000' }
+   * });
    */
   class jmCircle extends jmArc {		
   	
@@ -6813,11 +8680,47 @@ define(['exports'], (function (exports) { 'use strict';
   }
 
   /**
-   * 画空心圆弧,继承自jmPath
+   * @fileoverview jmHArc 空心圆弧类
+   * 
+   * jmHArc 提供了空心圆弧（圆环弧）的绘制功能。
+   * 由内圆和外圆两个半径定义，形成一个环形的弧。
+   * 
+   * 主要功能：
+   * - 空心圆弧绘制
+   * - 支持顺时针/逆时针绘制
+   * - 支持填充和描边
+   * 
+   * @module jmHArc
+   * @author jmGraph Team
+   * @license MIT
+   */
+
+  /**
+   * 空心圆弧类
+   * 
+   * 绘制空心圆弧（圆环弧），继承自 jmArc。
+   * 由内圆半径和外圆半径定义环形区域。
    *
    * @class jmHArc
    * @extends jmArc
-   * @param {object} params 空心圆参数:minRadius=中心小圆半径,maxRadius=大圆半径,start=起始角度,end=结束角度,anticlockwise=false  顺时针，true 逆时针
+   * @param {object} params 空心圆弧参数
+   * @param {object} [params.center] 圆弧中心点 {x, y}
+   * @param {number} [params.minRadius] 内圆半径
+   * @param {number} [params.maxRadius] 外圆半径
+   * @param {number} [params.start=0] 起始角度（弧度）
+   * @param {number} [params.end=Math.PI*2] 结束角度（弧度）
+   * @param {boolean} [params.anticlockwise=false] 是否逆时针绘制
+   * 
+   * @example
+   * // 创建空心圆弧
+   * const hArc = graph.createShape('hArc', {
+   *     center: {x: 200, y: 200},
+   *     minRadius: 30,
+   *     maxRadius: 50,
+   *     start: 0,
+   *     end: Math.PI,
+   *     style: { fill: '#ff0000' }
+   * });
    */
 
   class jmHArc extends jmArc {
@@ -6923,11 +8826,50 @@ define(['exports'], (function (exports) { 'use strict';
   }
 
   /**
-   * 画一条直线
+   * @fileoverview jmLine 直线类
+   * 
+   * jmLine 提供了直线图形的绘制功能，支持实线和虚线。
+   * 虚线支持自定义间隔长度。
+   * 
+   * 主要功能：
+   * - 直线绘制
+   * - 虚线模式
+   * - 自定义虚线间隔
+   * 
+   * @module jmLine
+   * @author jmGraph Team
+   * @license MIT
+   */
+
+  /**
+   * 直线类
+   * 
+   * 绘制从起点到终点的直线，支持实线和虚线两种模式。
    *
    * @class jmLine
    * @extends jmPath
-   * @param {object} params 直线参数:start=起始点,end=结束点,lineType=线类型(solid=实线，dotted=虚线),dashLength=虚线间隔(=4)
+   * @param {object} params 直线参数
+   * @param {object} [params.start] 起始点 {x, y}
+   * @param {object} [params.end] 结束点 {x, y}
+   * @param {string} [params.lineType='solid'] 线类型：'solid'=实线，'dotted'=虚线
+   * @param {number} [params.dashLength=4] 虚线间隔长度
+   * 
+   * @example
+   * // 创建实线
+   * const line = graph.createShape('line', {
+   *     start: {x: 0, y: 0},
+   *     end: {x: 100, y: 100},
+   *     style: { stroke: '#000', lineWidth: 2 }
+   * });
+   * 
+   * // 创建虚线
+   * const dottedLine = graph.createShape('line', {
+   *     start: {x: 0, y: 0},
+   *     end: {x: 100, y: 100},
+   *     lineType: 'dotted',
+   *     dashLength: 5,
+   *     style: { stroke: '#000' }
+   * });
    */
   class jmLine extends jmPath {	
   	
@@ -7017,11 +8959,42 @@ define(['exports'], (function (exports) { 'use strict';
   }
 
   /**
-   * 画棱形
+   * @fileoverview jmPrismatic 棱形类
+   * 
+   * jmPrismatic 提供了棱形（菱形）图形的绘制功能。
+   * 棱形是一个四边形，其对角线互相垂直平分。
+   * 
+   * 主要功能：
+   * - 棱形绘制
+   * - 支持填充和描边
+   * - 自定义宽高
+   * 
+   * @module jmPrismatic
+   * @author jmGraph Team
+   * @license MIT
+   */
+
+  /**
+   * 棱形类
+   * 
+   * 绘制棱形（菱形）图形，继承自 jmPath。
+   * 棱形由中心点、宽度和高度定义。
    *
    * @class jmPrismatic
    * @extends jmPath
-   * @param {object} params 参数 center=棱形中心点，width=棱形宽,height=棱形高
+   * @param {object} params 参数
+   * @param {object} [params.center] 棱形中心点 {x, y}
+   * @param {number} [params.width] 棱形宽度
+   * @param {number} [params.height] 棱形高度
+   * 
+   * @example
+   * // 创建棱形
+   * const prismatic = graph.createShape('prismatic', {
+   *     center: {x: 200, y: 200},
+   *     width: 100,
+   *     height: 80,
+   *     style: { fill: '#ff0000', stroke: '#000' }
+   * });
    */
   class jmPrismatic extends jmPath {	
   	
@@ -7073,12 +9046,54 @@ define(['exports'], (function (exports) { 'use strict';
   }
 
   /**
-   * 画矩形
+   * @fileoverview jmRect 矩形类
+   * 
+   * jmRect 提供了矩形图形的绘制功能，支持圆角矩形。
+   * 圆角支持四角独立设置，可以创建各种样式的矩形。
+   * 
+   * 主要功能：
+   * - 矩形绘制
+   * - 圆角矩形（支持四角独立圆角）
+   * - 虚线边框
+   * - 填充和描边样式
+   * 
+   * @module jmRect
+   * @author jmGraph Team
+   * @license MIT
+   */
+
+  /**
+   * 矩形类
+   * 
+   * 绘制矩形图形，支持圆角和虚线边框。
+   * 圆角可以统一设置或四角独立设置。
    *
    * @class jmRect
    * @extends jmPath
-   * @param {object} params 参数 position=矩形左上角顶点坐标,width=宽，height=高,radius=边角弧度
-   *   radius支持数字(四角相同)或对象 { topLeft, topRight, bottomRight, bottomLeft }
+   * @param {object} params 参数
+   * @param {object} [params.position] 矩形左上角顶点坐标 {x, y}
+   * @param {number} [params.width] 矩形宽度
+   * @param {number} [params.height] 矩形高度
+   * @param {number|object} [params.radius] 边角弧度，支持数字(四角相同)或对象 { topLeft, topRight, bottomRight, bottomLeft }
+   * 
+   * @example
+   * // 创建普通矩形
+   * const rect = graph.createShape('rect', {
+   *     position: {x: 100, y: 100},
+   *     width: 200,
+   *     height: 150,
+   *     style: { fill: '#ff0000', stroke: '#000' }
+   * });
+   * 
+   * // 创建圆角矩形
+   * const roundedRect = graph.createShape('rect', {
+   *     position: {x: 100, y: 100},
+   *     width: 200,
+   *     height: 150,
+   *     radius: 10,  // 四角统一圆角
+   *     // 或 radius: { topLeft: 5, topRight: 10, bottomRight: 15, bottomLeft: 20 }
+   *     style: { fill: '#00ff00' }
+   * });
    */ 
   class jmRect extends jmPath {		
 
@@ -7322,11 +9337,41 @@ define(['exports'], (function (exports) { 'use strict';
   }
 
   /**
-   * 带箭头的直线,继承jmPath
+   * @fileoverview jmArrowLine 带箭头的直线类
+   * 
+   * jmArrowLine 提供了带箭头直线的绘制功能。
+   * 继承自 jmLine，在直线末端添加箭头。
+   * 
+   * 主要功能：
+   * - 带箭头的直线绘制
+   * - 支持虚线模式
+   * - 可控制箭头显示
+   * 
+   * @module jmArrowLine
+   * @author jmGraph Team
+   * @license MIT
+   */
+
+  /**
+   * 带箭头的直线类
+   * 
+   * 绘制带箭头的直线，继承自 jmLine。
+   * 箭头位于直线的末端。
    *
    * @class jmArrowLine
    * @extends jmLine
-   * @param {object} params 生成当前直线的参数对象，(style=当前线条样式,start=直线起始点,end=直线终结点)
+   * @param {object} params 直线参数
+   * @param {object} [params.start] 直线起始点 {x, y}
+   * @param {object} [params.end] 直线终结点 {x, y}
+   * @param {boolean} [params.arrowVisible=true] 是否显示箭头
+   * 
+   * @example
+   * // 创建带箭头的直线
+   * const arrowLine = graph.createShape('arrowLine', {
+   *     start: {x: 100, y: 100},
+   *     end: {x: 200, y: 100},
+   *     style: { stroke: '#000', lineWidth: 2 }
+   * });
    */	
   class jmArrowLine extends jmLine {	
 
@@ -7356,13 +9401,58 @@ define(['exports'], (function (exports) { 'use strict';
   }
 
   /**
-   * 图片控件，继承自jmControl
-   * params参数中image为指定的图片源地址或图片img对象，
-   * postion=当前控件的位置，width=其宽度，height=高度，sourcePosition=从当前图片中展示的位置，sourceWidth=从图片中截取的宽度,sourceHeight=从图片中截取的高度。
+   * @fileoverview jmImage 图片类
    * 
+   * jmImage 提供了图片显示功能。
+   * 支持从 URL 或 Image 对象加载图片，支持图片裁剪和缩放。
+   * 
+   * 主要功能：
+   * - 图片加载和显示
+   * - 图片裁剪
+   * - 图片缩放
+   * - 支持 WebGL 和 Canvas 2D 模式
+   * 
+   * @module jmImage
+   * @author jmGraph Team
+   * @license MIT
+   */
+
+  /**
+   * 图片类
+   * 
+   * 显示图片控件，支持从 URL 或 Image 对象加载图片。
+   * 支持图片裁剪和缩放功能。
+   *
    * @class jmImage
    * @extends jmControl
    * @param {object} params 控件参数
+   * @param {string|HTMLImageElement} [params.image] 图片源地址或图片对象
+   * @param {object} [params.position] 图片位置 {x, y}
+   * @param {number} [params.width] 图片显示宽度
+   * @param {number} [params.height] 图片显示高度
+   * @param {object} [params.sourcePosition] 图片裁剪起始位置 {x, y}
+   * @param {number} [params.sourceWidth] 图片裁剪宽度
+   * @param {number} [params.sourceHeight] 图片裁剪高度
+   * 
+   * @example
+   * // 从 URL 加载图片
+   * const img = graph.createShape('image', {
+   *     image: 'path/to/image.png',
+   *     position: {x: 100, y: 100},
+   *     width: 200,
+   *     height: 150
+   * });
+   * 
+   * // 裁剪图片
+   * const croppedImg = graph.createShape('image', {
+   *     image: 'path/to/sprite.png',
+   *     position: {x: 100, y: 100},
+   *     sourcePosition: {x: 0, y: 0},
+   *     sourceWidth: 50,
+   *     sourceHeight: 50,
+   *     width: 100,
+   *     height: 100
+   * });
    */
   class jmImage extends jmControl {
 
@@ -7599,11 +9689,49 @@ define(['exports'], (function (exports) { 'use strict';
   }
 
   /**
-   * 显示文字控件
+   * @fileoverview jmLabel 文本标签类
+   * 
+   * jmLabel 提供了文本显示功能。
+   * 支持单行和多行文本，支持自动换行。
+   * 
+   * 主要功能：
+   * - 文本绘制
+   * - 自动换行
+   * - 文本对齐（水平/垂直）
+   * - 字体样式设置
+   * 
+   * @module jmLabel
+   * @author jmGraph Team
+   * @license MIT
+   */
+
+  /**
+   * 文本标签类
+   * 
+   * 显示文字控件，支持多种文本样式和对齐方式。
    *
    * @class jmLabel
    * @extends jmControl
-   * @param {object} params params参数:style=样式，value=显示的文字
+   * @param {object} params 参数
+   * @param {string} [params.text=''] 显示的文字内容
+   * @param {object} [params.center] 文本中心点坐标
+   * @param {object} [params.style] 样式对象
+   * @param {string} [params.style.font] 字体样式
+   * @param {string} [params.style.textAlign='left'] 水平对齐方式
+   * @param {string} [params.style.textBaseline='middle'] 垂直对齐方式
+   * @param {number} [params.style.maxWidth] 最大宽度（用于自动换行）
+   * 
+   * @example
+   * // 创建文本标签
+   * const label = graph.createShape('label', {
+   *     position: {x: 100, y: 100},
+   *     text: 'Hello World',
+   *     style: {
+   *         fill: '#000',
+   *         font: '20px Arial',
+   *         textAlign: 'center'
+   *     }
+   * });
    */
   class jmLabel extends jmControl {
 
@@ -7920,12 +10048,49 @@ define(['exports'], (function (exports) { 'use strict';
   }
 
   /**
-   * 可拉伸的缩放控件
-   * 继承jmRect
-   * 如果此控件加入到了当前控制的对象的子控件中，请在参数中加入movable:false，否则导致当前控件会偏离被控制的控件。
+   * @fileoverview jmResize 可缩放控件类
+   * 
+   * jmResize 提供了可缩放的矩形控件功能。
+   * 在矩形四边和四角添加可拖拽的控制点，实现图形的缩放和调整。
+   * 
+   * 主要功能：
+   * - 8个方向的控制点
+   * - 鼠标拖拽缩放
+   * - 支持旋转后的缩放
+   * - 自定义最小尺寸
+   * 
+   * @module jmResize
+   * @author jmGraph Team
+   * @license MIT
+   */
+
+  /**
+   * 可缩放控件类
+   * 
+   * 继承自 jmRect，在矩形四边和四角添加可拖拽的控制点。
+   * 用于实现图形的缩放和调整功能。
    *
    * @class jmResize
    * @extends jmRect
+   * @param {object} params 控件参数
+   * @param {boolean} [params.resizable=true] 是否可缩放
+   * @param {boolean} [params.movable] 是否可移动
+   * @param {number} [params.rectSize=8] 控制点大小
+   * 
+   * @example
+   * // 创建可缩放矩形
+   * const resize = graph.createShape('resize', {
+   *     position: {x: 100, y: 100},
+   *     width: 200,
+   *     height: 150,
+   *     resizable: true,
+   *     movable: true
+   * });
+   * 
+   * // 监听缩放事件
+   * resize.on('resize', (px, py, dx, dy) => {
+   *     console.log('缩放中', px, py, dx, dy);
+   * });
    */
   class jmResize extends jmRect {	
 
@@ -8235,7 +10400,7 @@ define(['exports'], (function (exports) { 'use strict';
   					break;
   				}
   				case 6: {
-  					r.position.x = (newLocation.width - r.height) / 2;
+  					r.position.x = (newLocation.width - r.width) / 2;
   					r.position.y = newLocation.height - r.height / 2;
   					break;
   				}
@@ -8251,9 +10416,26 @@ define(['exports'], (function (exports) { 'use strict';
   }
 
   /**
-   * 画椭圆
-   * 椭圆是通过缩放圆形来实现的，支持完整的椭圆和椭圆弧
-   * 可以指定起始角度和结束角度来绘制椭圆弧
+   * @fileoverview jmEllipse 椭圆类
+   * 
+   * jmEllipse 提供了椭圆图形的绘制功能。
+   * 椭圆是通过缩放圆形来实现的，支持完整的椭圆和椭圆弧。
+   * 
+   * 主要功能：
+   * - 椭圆绘制
+   * - 椭圆弧绘制
+   * - 支持 WebGL 和 Canvas 2D 模式
+   * 
+   * @module jmEllipse
+   * @author jmGraph Team
+   * @license MIT
+   */
+
+  /**
+   * 椭圆类
+   * 
+   * 绘制椭圆图形，继承自 jmArc。
+   * 可以指定起始角度和结束角度来绘制椭圆弧。
    *
    * @class jmEllipse
    * @extends jmArc
@@ -8264,6 +10446,15 @@ define(['exports'], (function (exports) { 'use strict';
    * @param {number} [params.startAngle=0] 起始角度（弧度）
    * @param {number} [params.endAngle=Math.PI*2] 结束角度（弧度）
    * @param {boolean} [params.anticlockwise=false] 是否逆时针绘制
+   * 
+   * @example
+   * // 创建椭圆
+   * const ellipse = graph.createShape('ellipse', {
+   *     center: {x: 200, y: 200},
+   *     width: 200,
+   *     height: 100,
+   *     style: { fill: '#ff0000', stroke: '#000' }
+   * });
    */
   class jmEllipse extends jmArc {
   	
@@ -8339,9 +10530,27 @@ define(['exports'], (function (exports) { 'use strict';
   }
 
   /**
-   * 画多边形
-   * 支持规则多边形（正多边形）和自定义多边形
-   * 规则多边形通过边数和半径自动计算顶点，自定义多边形通过顶点数组定义
+   * @fileoverview jmPolygon 多边形类
+   * 
+   * jmPolygon 提供了多边形图形的绘制功能。
+   * 支持规则多边形（正多边形）和自定义多边形。
+   * 
+   * 主要功能：
+   * - 规则多边形（正三角形、正方形、正五边形等）
+   * - 自定义多边形（通过顶点数组定义）
+   * - 填充和描边样式
+   * 
+   * @module jmPolygon
+   * @author jmGraph Team
+   * @license MIT
+   */
+
+  /**
+   * 多边形类
+   * 
+   * 绘制多边形图形，支持规则多边形和自定义多边形。
+   * 规则多边形通过边数和半径自动计算顶点，
+   * 自定义多边形通过顶点数组定义。
    *
    * @class jmPolygon
    * @extends jmPath
@@ -8350,6 +10559,27 @@ define(['exports'], (function (exports) { 'use strict';
    * @param {number} [params.sides=3] 多边形边数（3-100）
    * @param {number} [params.radius=50] 多边形半径（像素）
    * @param {object} [params.center={x:0,y:0}] 多边形中心点坐标
+   * 
+   * @example
+   * // 创建正六边形
+   * const hexagon = graph.createShape('polygon', {
+   *     center: {x: 200, y: 200},
+   *     sides: 6,
+   *     radius: 50,
+   *     style: { fill: '#ff0000', stroke: '#000' }
+   * });
+   * 
+   * // 创建自定义多边形
+   * const polygon = graph.createShape('polygon', {
+   *     points: [
+   *         {x: 100, y: 100},
+   *         {x: 200, y: 50},
+   *         {x: 300, y: 100},
+   *         {x: 250, y: 200},
+   *         {x: 150, y: 200}
+   *     ],
+   *     style: { fill: '#00ff00' }
+   * });
    */
   class jmPolygon extends jmPath {
   	
@@ -8465,18 +10695,52 @@ define(['exports'], (function (exports) { 'use strict';
   }
 
   /**
-   * 画星形
-   * 支持自定义顶点数和内外半径，创建各种星形图案
-   * 星形由交替的外半径和内半径顶点组成
+   * @fileoverview jmStar 星形类
+   * 
+   * jmStar 提供了星形图形的绘制功能。
+   * 支持自定义顶点数和内外半径，创建各种星形图案。
+   * 
+   * 主要功能：
+   * - 星形绘制
+   * - 自定义角数
+   * - 自定义内外半径
+   * 
+   * @module jmStar
+   * @author jmGraph Team
+   * @license MIT
+   */
+
+  /**
+   * 星形类
+   * 
+   * 绘制星形图形，支持自定义顶点数和内外半径。
+   * 星形由交替的外半径和内半径顶点组成。
    *
    * @class jmStar
    * @extends jmPath
    * @param {object} params 星形的参数
-   * @param {array} [params.points] 自定义顶点数组，如果提供则忽略其他参数
    * @param {number} [params.points=5] 星形顶点数（角数，3-50）
    * @param {number} [params.radius=50] 星形外半径（从中心到尖角的距离）
    * @param {number} [params.innerRadius=25] 星形内半径（从中心到凹陷处的距离）
    * @param {object} [params.center={x:0,y:0}] 星形中心点坐标
+   * 
+   * @example
+   * // 创建五角星
+   * const star = graph.createShape('star', {
+   *     center: {x: 200, y: 200},
+   *     points: 5,
+   *     radius: 50,
+   *     innerRadius: 25,
+   *     style: { fill: '#ff0000', stroke: '#000' }
+   * });
+   * 
+   * // 创建六角星
+   * const hexStar = graph.createShape('star', {
+   *     center: {x: 200, y: 200},
+   *     points: 6,
+   *     radius: 60,
+   *     innerRadius: 30
+   * });
    */
   class jmStar extends jmPath {
   	
@@ -8621,15 +10885,76 @@ define(['exports'], (function (exports) { 'use strict';
   	}
   }
 
+  /**
+   * @fileoverview jmEvents 事件处理系统
+   * 
+   * jmEvents 是 jmGraph 库的事件处理模块，负责管理所有用户交互事件。
+   * 包括鼠标事件、触摸事件和键盘事件的绑定、分发和销毁。
+   * 
+   * 主要功能：
+   * - 鼠标事件：mousedown, mousemove, mouseup, click, dblclick 等
+   * - 触摸事件：touchstart, touchmove, touchend, touchcancel, tap
+   * - 键盘事件：keydown, keyup, keypress
+   * - 事件冒泡和委托机制
+   * 
+   * @module jmEvents
+   * @author jmGraph Team
+   * @license MIT
+   */
+
+  /**
+   * jmEvents 事件处理类
+   * 
+   * 统一管理画布上的所有交互事件，包括鼠标、触摸和键盘事件。
+   * 支持事件冒泡机制，可以将事件传递给子控件处理。
+   * 
+   * @class jmEvents
+   * 
+   * @param {jmGraph} container jmGraph 实例
+   * @param {HTMLElement} target 事件目标元素（通常是 canvas 元素）
+   * 
+   * @example
+   * // 通常由 jmGraph 内部创建，不需要手动实例化
+   * const events = new jmEvents(graph, canvasElement);
+   */
   class jmEvents {
 
+  	/**
+  	 * 构造函数
+  	 * 
+  	 * @param {jmGraph} container jmGraph 实例
+  	 * @param {HTMLElement} target 事件目标元素
+  	 */
   	constructor(container, target) {
+  		/**
+  		 * jmGraph 实例
+  		 * @type {jmGraph}
+  		 */
   		this.container = container;
+  		/**
+  		 * 事件目标元素
+  		 * @type {HTMLElement}
+  		 */
   		this.target = target || container;
+  		/**
+  		 * 鼠标事件处理器
+  		 * @type {jmMouseEvent}
+  		 */
   		this.mouseHandler = new jmMouseEvent(this, container, target);
+  		/**
+  		 * 键盘事件处理器
+  		 * @type {jmKeyEvent}
+  		 */
   		this.keyHandler = new jmKeyEvent(this, container, target);
   	}
 
+  	/**
+  	 * 触摸开始事件处理
+  	 * 
+  	 * @method touchStart
+  	 * @param {TouchEvent} evt 触摸事件对象
+  	 * @return {boolean} 如果事件目标为画布本身则返回 false
+  	 */
   	touchStart(evt) {
   		evt = evt || window.event;
   		evt.eventName = 'touchstart';
@@ -8640,6 +10965,13 @@ define(['exports'], (function (exports) { 'use strict';
   		}
   	};
 
+  	/**
+  	 * 触摸移动事件处理
+  	 * 
+  	 * @method touchMove
+  	 * @param {TouchEvent} evt 触摸事件对象
+  	 * @return {boolean} 如果事件目标为画布本身则返回 false
+  	 */
   	touchMove(evt) {
   		evt = evt || window.event;
   		evt.eventName = 'touchmove';
@@ -8650,6 +10982,13 @@ define(['exports'], (function (exports) { 'use strict';
   		}
   	};
 
+  	/**
+  	 * 触摸结束事件处理
+  	 * 
+  	 * @method touchEnd
+  	 * @param {TouchEvent} evt 触摸事件对象
+  	 * @return {boolean} 如果事件目标为画布本身则返回 false
+  	 */
   	touchEnd(evt) {
   		evt = evt || window.event;
   		evt.eventName = 'touchend';
@@ -8661,6 +11000,13 @@ define(['exports'], (function (exports) { 'use strict';
   		}
   	};
 
+  	/**
+  	 * 触摸取消事件处理
+  	 * 
+  	 * @method touchCancel
+  	 * @param {TouchEvent} evt 触摸事件对象
+  	 * @return {boolean} 如果事件目标为画布本身则返回 false
+  	 */
   	touchCancel(evt) {
   		evt = evt || window.event;
   		evt.eventName = 'touchcancel';
@@ -8672,6 +11018,13 @@ define(['exports'], (function (exports) { 'use strict';
   		}
   	};
 
+  	/**
+  	 * 轻触事件处理
+  	 * 
+  	 * @method tap
+  	 * @param {Event} evt 事件对象
+  	 * @return {boolean} 如果事件目标为画布本身则返回 false
+  	 */
   	tap(evt) {
   		evt = evt || window.event;
   		evt.eventName = 'tap';
@@ -8683,23 +11036,56 @@ define(['exports'], (function (exports) { 'use strict';
   		}
   	};
 
+  	/**
+  	 * 销毁事件处理器
+  	 * 
+  	 * 移除所有绑定的事件监听器，释放资源。
+  	 * 
+  	 * @method destroy
+  	 */
   	destroy() {
   		this.mouseHandler.destroy();
   		this.keyHandler.destroy();
   	}
   }
 
+  /**
+   * 鼠标事件处理器
+   * 
+   * @class jmMouseEvent
+   * @private
+   */
   class jmMouseEvent {
+  	/**
+  	 * 构造函数
+  	 * 
+  	 * @param {jmEvents} instance jmEvents 实例
+  	 * @param {jmGraph} container jmGraph 实例
+  	 * @param {HTMLElement} target 事件目标元素
+  	 */
   	constructor(instance, container, target) {
   		this.instance = instance;
   		this.container = container;
   		this.target = target || container;
 
+  		/**
+  		 * 已绑定的事件映射表
+  		 * @type {Object}
+  		 */
   		this.eventEvents = {};
 
   		this.init(instance, container, target);
   	}
   	
+  	/**
+  	 * 初始化鼠标事件绑定
+  	 * 
+  	 * @method init
+  	 * @private
+  	 * @param {jmEvents} instance jmEvents 实例
+  	 * @param {jmGraph} container jmGraph 实例
+  	 * @param {HTMLElement} target 事件目标元素
+  	 */
   	init(instance, container, target) {
   		const canvas = this.target;
   		const doc = typeof document != 'undefined'? document: null;
@@ -8784,6 +11170,13 @@ define(['exports'], (function (exports) { 'use strict';
   		},{ passive: false }));
   	}
 
+  	/**
+  	 * 销毁鼠标事件处理器
+  	 * 
+  	 * 移除所有绑定的鼠标事件监听器。
+  	 * 
+  	 * @method destroy
+  	 */
   	destroy() {
   		for(const name in this.eventEvents) {
   			const event = this.eventEvents[name];
@@ -8793,17 +11186,42 @@ define(['exports'], (function (exports) { 'use strict';
   	}
   }
 
+  /**
+   * 键盘事件处理器
+   * 
+   * @class jmKeyEvent
+   * @private
+   */
   class jmKeyEvent {
+  	/**
+  	 * 构造函数
+  	 * 
+  	 * @param {jmEvents} instance jmEvents 实例
+  	 * @param {jmGraph} container jmGraph 实例
+  	 * @param {HTMLElement} target 事件目标元素
+  	 */
   	constructor(instance, container,target) {
   		this.instance = instance;
   		this.container = container;
   		this.target = target || container;
 
+  		/**
+  		 * 已绑定的事件映射表
+  		 * @type {Object}
+  		 */
   		this.eventEvents = {};
 
   		this.init(container, target);
   	}
 
+  	/**
+  	 * 初始化键盘事件绑定
+  	 * 
+  	 * @method init
+  	 * @private
+  	 * @param {jmGraph} container jmGraph 实例
+  	 * @param {HTMLElement} target 事件目标元素
+  	 */
   	init(container, target) {
   		const doc = typeof document != 'undefined'? document: null;
 
@@ -8859,15 +11277,59 @@ define(['exports'], (function (exports) { 'use strict';
   }
 
   /**
-   * jmGraph画图类库
-   * 对canvas画图api进行二次封装，使其更易调用，省去很多重复的工作。
-   *
+   * @fileoverview jmGraph 主画布类
+   * 
+   * jmGraph 是 jmGraph 库的核心类，代表一个完整的画布实例。
+   * 它继承自 jmControl，提供了完整的图形渲染、事件处理、缩放平移等功能。
+   * 
+   * 主要功能：
+   * - Canvas/WebGL 双渲染模式支持
+   * - 图形创建与管理（createShape, createLine, createPath 等）
+   * - 渐变和阴影效果（createLinearGradient, createRadialGradient, createShadow）
+   * - 缩放和平移（setZoom, pan, resetTransform）
+   * - 导出功能（toDataURL, exportToPNG, exportToJPEG, exportToSVG）
+   * - 自动刷新动画循环（autoRefresh）
+   * - 微信小程序支持
+   * 
    * @module jmGraph
+   * @author jmGraph Team
+   * @license MIT
+   */
+
+  /**
+   * jmGraph 画图类
+   * 
+   * 对 Canvas 画图 API 进行二次封装，使其更易调用，省去很多重复的工作。
+   * 支持多种图形的创建、渲染、交互和导出。
+   * 
    * @class jmGraph
    * @extends jmControl
-   * @param {element} canvas 标签canvas
-   * @param {object} option 参数：{width:宽,height:高}
-   * @param {function} callback 初始化后的回调
+   * 
+   * @param {HTMLElement|string} canvas Canvas 元素或元素 ID
+   * @param {Object} [option] 配置选项
+   * @param {number} [option.width] 画布宽度
+   * @param {number} [option.height] 画布高度
+   * @param {string} [option.mode='2d'] 渲染模式：'2d' 或 'webgl'
+   * @param {boolean} [option.autoRefresh=false] 是否自动刷新
+   * @param {Object} [option.shapes] 自定义图形类型映射
+   * @param {function} [callback] 初始化完成后的回调函数
+   * 
+   * @example
+   * // 创建画布实例
+   * const graph = new jmGraph('canvasId', {
+   *     width: 800,
+   *     height: 600,
+   *     mode: '2d'
+   * });
+   * 
+   * // 创建一个矩形
+   * const rect = graph.createShape('rect', {
+   *     x: 100, y: 100,
+   *     width: 200, height: 150,
+   *     style: { fill: '#ff0000' }
+   * });
+   * graph.children.add(rect);
+   * graph.refresh();
    */
   class jmGraph extends jmControl {
 
@@ -10780,7 +13242,7 @@ define(['exports'], (function (exports) { 'use strict';
     /**
     * 获取或设置当前轴最小值
     *
-    * @method max
+    * @method min
     * @param {number/date/string} 当前轴的最小值
     * @return 当前轴的最小值
     */
@@ -10917,121 +13379,120 @@ define(['exports'], (function (exports) { 'use strict';
        */
       _defineProperty(this, "legendPosition", '');
     }
-  }
-
-  /**
-   * 添加图例
-   *
-   * @method append
-   * @param {jmSeries} series 当前图序列
-   * @param {jmControl} shape 当前图例的图形对象
-   */
-  jmLegend.prototype.append = function (series, shape, options = {}) {
-    // 如果不显示图例，就不处理
-    if (this.visible === false) return;
-    const panel = this.graph.createShape('rect', {
-      style: this.graph.utils.clone(this.style.item),
-      position: {
-        x: 0,
-        y: 0
-      }
-    });
-    this.children.add(panel);
-    panel.children.add(shape);
-    shape.width = panel.style.shape.width;
-    shape.height = panel.style.shape.height;
-    let name = options.name || series.legendLabel;
-    name = series.option.legendFormat ? series.option.legendFormat.call(series, options) : name;
-    if (name) {
-      //生成图例名称
-      const label = this.graph.createShape('label', {
-        style: panel.style.label,
-        text: name || ''
+    /**
+     * 添加图例
+     *
+     * @method append
+     * @param {jmSeries} series 当前图序列
+     * @param {jmControl} shape 当前图例的图形对象
+     */
+    append(series, shape, options = {}) {
+      // 如果不显示图例，就不处理
+      if (this.visible === false) return;
+      const panel = this.graph.createShape('rect', {
+        style: this.graph.utils.clone(this.style.item),
+        position: {
+          x: 0,
+          y: 0
+        }
       });
-      label.height = shape.height;
-      label.position = {
-        x: shape.width + 4,
-        y: 0
-      };
-      panel.children.add(label);
-      panel.width = shape.width + label.testSize().width;
-    } else {
-      panel.width = shape.width;
+      this.children.add(panel);
+      panel.children.add(shape);
+      shape.width = panel.style.shape.width;
+      shape.height = panel.style.shape.height;
+      let name = options.name || series.legendLabel;
+      name = series.option.legendFormat ? series.option.legendFormat.call(series, options) : name;
+      if (name) {
+        //生成图例名称
+        const label = this.graph.createShape('label', {
+          style: panel.style.label,
+          text: name || ''
+        });
+        label.height = shape.height;
+        label.position = {
+          x: shape.width + 4,
+          y: 0
+        };
+        panel.children.add(label);
+        panel.width = shape.width + label.testSize().width;
+      } else {
+        panel.width = shape.width;
+      }
+      panel.height = shape.height;
+
+      //执行进入事件
+      options.hover && panel.bind('mouseover touchover', options.hover);
+      options.leave && panel.bind('mouseleave touchleave', options.leave);
+      const legendPosition = this.legendPosition || this.style.legendPosition || 'right';
+      if (legendPosition == 'top' || legendPosition == 'bottom') {
+        //顶部和底部图例横排，每次右移位一个单位图例
+        panel.position.x = this.width + 15;
+        this.width = panel.position.x + panel.width; // 把容器宽指定为所有图例宽和
+        this.height = Math.max(panel.height, this.height);
+      } else {
+        //右边和左边图例竖排
+        panel.position.y += this.height + 5;
+        this.height = panel.position.y + panel.height;
+        this.width = Math.max(panel.width, this.width);
+      }
+      this.needUpdate = true;
     }
-    panel.height = shape.height;
 
-    //执行进入事件
-    options.hover && panel.bind('mouseover touchover', options.hover);
-    options.leave && panel.bind('mouseleave touchleave', options.leave);
-    const legendPosition = this.legendPosition || this.style.legendPosition || 'right';
-    if (legendPosition == 'top' || legendPosition == 'bottom') {
-      //顶部和底部图例横排，每次右移位一个单位图例
-      panel.position.x = this.width + 15;
-      this.width = panel.position.x + panel.width; // 把容器宽指定为所有图例宽和
-      this.height = Math.max(panel.height, this.height);
-    } else {
-      //右边和左边图例竖排
-      panel.position.y += this.height + 5;
-      this.height = panel.position.y + panel.height;
-      this.width = Math.max(panel.width, this.width);
+    /**
+     * 初始化图例
+     *
+     * @method init
+     */
+    init() {
+      this.position.x = 0;
+      this.position.y = 0;
+      this.width = 0;
+      this.height = 0;
+      this.style.lineWidth = 0;
+      this.children.clear();
     }
-    this.needUpdate = true;
-  };
 
-  /**
-   * 初始化图例
-   *
-   * @method init
-   */
-  jmLegend.prototype.init = function () {
-    this.position.x = 0;
-    this.position.y = 0;
-    this.width = 0;
-    this.height = 0;
-    this.style.lineWidth = 0;
-    this.children.clear();
-  };
-
-  /**
-   * 重置图例属性,根据图例内容计算期大小并更新画图区域大小
-   *
-   * @method reset
-   */
-  jmLegend.prototype.reset = function () {
-    if (this.visible !== false) {
-      this.position.x = this.graph.chartArea.position.x;
-      this.position.y = this.graph.chartArea.position.y;
-      var legendPosition = this.legendPosition || this.style.legendPosition;
-      switch (legendPosition) {
-        case 'left':
-          {
-            this.graph.chartArea.width = this.graph.chartArea.width - this.width;
-            //画图区域向右偏移
-            this.graph.chartArea.position.x = this.position.x + this.width + this.style.margin.right;
-            break;
-          }
-        case 'top':
-          {
-            this.graph.chartArea.height = this.graph.chartArea.height - this.height;
-            this.graph.chartArea.position.y = this.position.y + this.height + this.style.margin.bottom;
-            break;
-          }
-        case 'bottom':
-          {
-            this.graph.chartArea.height = this.graph.chartArea.height - this.height;
-            this.position.y = this.graph.chartArea.position.y + this.graph.chartArea.height + this.style.margin.top;
-            break;
-          }
-        case 'right':
-        default:
-          {
-            this.graph.chartArea.width = this.graph.chartArea.width - this.width;
-            this.position.x = this.graph.chartArea.position.x + this.graph.chartArea.width + this.style.margin.left;
-            break;
-          }
+    /**
+     * 重置图例属性,根据图例内容计算期大小并更新画图区域大小
+     *
+     * @method reset
+     */
+    reset() {
+      if (this.visible !== false) {
+        this.position.x = this.graph.chartArea.position.x;
+        this.position.y = this.graph.chartArea.position.y;
+        const legendPosition = this.legendPosition || this.style.legendPosition;
+        switch (legendPosition) {
+          case 'left':
+            {
+              this.graph.chartArea.width = this.graph.chartArea.width - this.width;
+              //画图区域向右偏移
+              this.graph.chartArea.position.x = this.position.x + this.width + this.style.margin.right;
+              break;
+            }
+          case 'top':
+            {
+              this.graph.chartArea.height = this.graph.chartArea.height - this.height;
+              this.graph.chartArea.position.y = this.position.y + this.height + this.style.margin.bottom;
+              break;
+            }
+          case 'bottom':
+            {
+              this.graph.chartArea.height = this.graph.chartArea.height - this.height;
+              this.position.y = this.graph.chartArea.position.y + this.graph.chartArea.height + this.style.margin.top;
+              break;
+            }
+          case 'right':
+          default:
+            {
+              this.graph.chartArea.width = this.graph.chartArea.width - this.width;
+              this.position.x = this.graph.chartArea.position.x + this.graph.chartArea.width + this.style.margin.left;
+              break;
+            }
+        }
       }
     }
-  };
+  }
 
   var utils = {
     /**
@@ -11050,7 +13511,7 @@ define(['exports'], (function (exports) { 'use strict';
         }
         return false;
       }
-      return source != target;
+      return source !== target;
     }
   };
 
@@ -11654,9 +14115,9 @@ define(['exports'], (function (exports) { 'use strict';
       } = this.initDataPoint();
       const len = points.length;
       this.initWidth(len);
-      const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0) && len < 100;
+      const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0) && len < ANIMATION_DATA_THRESHOLD;
       let aniIsEnd = true;
-      const aniCount = this.style.aniCount || 10;
+      const aniCount = this.style.aniCount || DEFAULT_ANIMATION_COUNT;
       for (let i = 0; i < len; i++) {
         const point = points[i];
         let topStartY = this.baseY;
@@ -11866,7 +14327,7 @@ define(['exports'], (function (exports) { 'use strict';
       const anticlockwise = this.option.anticlockwise || false;
       // 每项之间的间隔角度  顺时钟为正，否则为负
       const marginAngle = Number(this.style.marginAngle) || 0;
-      for (var i = 0; i < this.data.length; i++) {
+      for (let i = 0; i < this.data.length; i++) {
         const s = this.data[i];
         const yv = s[this.field];
 
@@ -11929,6 +14390,7 @@ define(['exports'], (function (exports) { 'use strict';
               startAngle: p.startAngle,
               endAngle: p.endAngle,
               anticlockwise: anticlockwise,
+              interactive: true,
               isFan: true,
               // 表示画扇形
               center: p.center,
@@ -11960,6 +14422,9 @@ define(['exports'], (function (exports) { 'use strict';
             this.addShape(p.shape);
 
             // 如果有点击事件
+            if (this.option.onClick || this.option.onOver || this.option.onLeave) {
+              p.shape.interactive = true;
+            }
             if (this.option.onClick) {
               p.shape.on('click', e => {
                 return this.option.onClick.call(this, p, e);
@@ -12040,39 +14505,43 @@ define(['exports'], (function (exports) { 'use strict';
       });
       point.shape.children.add(label);
     }
-  }
 
-  /**
-   * 生成图例
-   *
-   * @method createLegend	 
-   */
-  jmPieSeries.prototype.createLegend = function () {
-    const points = this.createPoints();
-    if (!points || !points.length) return;
-    for (let k = 0; k < points.length; k++) {
-      const p = points[k];
-      if (!p) continue;
-
-      //生成图例前的图标
-      const style = this.graph.utils.clone(p.style);
-      style.fill = style.fill;
-      //delete style.stroke;
-      const shape = this.graph.createShape('rect', {
-        style: style,
-        position: {
-          x: 0,
-          y: 0
+    /**
+     * 生成图例
+     *
+     * @method createLegend	 
+     */
+    createLegend() {
+      if (!this.data || !this.data.length) return;
+      const len = this.data.length;
+      for (let k = 0; k < len; k++) {
+        const s = this.data[k];
+        if (!s) continue;
+        const yv = s[this.field];
+        if (yv == null || typeof yv === 'undefined') continue;
+        const style = this.graph.utils.clone(this.style);
+        if (style.color && typeof style.color === 'function') {
+          style.fill = style.color.call(this, {
+            data: s,
+            index: k
+          });
+        } else {
+          style.fill = this.graph.getColor(k);
         }
-      });
-      //shape.targetShape = p.shape;
-      //此处重写图例事件
-      this.graph.legend.append(this, shape, {
-        name: this.legendLabel,
-        data: this.data[k]
-      });
+        const shape = this.graph.createShape('rect', {
+          style: style,
+          position: {
+            x: 0,
+            y: 0
+          }
+        });
+        this.graph.legend.append(this, shape, {
+          name: this.legendLabel,
+          data: s
+        });
+      }
     }
-  };
+  }
 
   /**
    * 雷达图
@@ -12178,7 +14647,6 @@ define(['exports'], (function (exports) { 'use strict';
       let aniIsEnd = true; // 当次是否结束动画
       const len = points.length;
       const shapeMap = {};
-      const self = this;
       for (let i = 0; i < len; i++) {
         const p = points[i];
         let shape = shapeMap[p.index];
@@ -12191,19 +14659,22 @@ define(['exports'], (function (exports) { 'use strict';
           this.addShape(shape);
 
           // 如果有点击事件
+          if (this.option.onClick || this.option.onOver || this.option.onLeave) {
+            shape.interactive = true;
+          }
           if (this.option.onClick) {
-            shape.on('click', function (e) {
-              return self.option.onClick.call(this, e);
+            shape.on('click', e => {
+              return this.option.onClick.call(this, e);
             });
           }
           if (this.option.onOver) {
-            shape.on('mouseover touchover', function (e) {
-              return self.option.onOver.call(this, e);
+            shape.on('mouseover touchover', e => {
+              return this.option.onOver.call(this, e);
             });
           }
           if (this.option.onLeave) {
-            shape.on('mouseleave touchleave', function (e) {
-              return self.option.onLeave.call(this, e);
+            shape.on('mouseleave touchleave', e => {
+              return this.option.onLeave.call(this, e);
             });
           }
           this.createLegend(p);
@@ -12250,7 +14721,7 @@ define(['exports'], (function (exports) { 'use strict';
       if (!this.data || !this.axises) return [];
       center = center || this.center;
       const points = [];
-      for (var i = 0; i < this.data.length; i++) {
+      for (let i = 0; i < this.data.length; i++) {
         const s = this.data[i];
         let strokeColor;
         if (this.style.color && typeof this.style.color === 'function') {
@@ -12320,54 +14791,37 @@ define(['exports'], (function (exports) { 'use strict';
         this.addShape(text);
         return text;
       }
-      const self = this;
       const label = this.graph.createShape('label', {
-        style: this.style.label,
-        text: text,
-        point,
-        position: function () {
-          const p = {
-            x: this.option.point.x,
-            y: this.option.point.y
-          };
-          if (p.x < self.center.x) {
-            p.x -= this.width;
-          }
-          if (p.y < self.center.y) {
-            p.y -= this.height;
-          }
-          return p;
+        style: this.style.label || {},
+        text: text
+      });
+      label.position = {
+        x: point.x,
+        y: point.y
+      };
+      this.addShape(label);
+      return label;
+    }
+
+    /**
+     * 生成图例
+     */
+    createLegend(point) {
+      if (!point) return;
+      const style = this.graph.utils.clone(point.style);
+      const shape = this.graph.createShape('rect', {
+        style: style,
+        position: {
+          x: 0,
+          y: 0
         }
       });
-      this.addShape(label);
+      this.graph.legend.append(this, shape, {
+        name: this.legendLabel,
+        data: point.data
+      });
     }
   }
-
-  /**
-   * 生成图例
-   *
-   * @method createLegend	 
-   */
-  jmRadarSeries.prototype.createLegend = function (point) {
-    if (!point) return;
-
-    //生成图例前的图标
-    const style = this.graph.utils.clone(point.style);
-
-    //delete style.stroke;
-    const shape = this.graph.createShape('rect', {
-      style: style,
-      position: {
-        x: 0,
-        y: 0
-      }
-    });
-    //此处重写图例事件
-    this.graph.legend.append(this, shape, {
-      name: this.legendLabel,
-      data: point.data
-    });
-  };
 
   /**
    * 线图
@@ -12497,9 +14951,9 @@ define(['exports'], (function (exports) { 'use strict';
      */
     createLegend() {
       //生成图例前的图标
-      var style = this.graph.utils.clone(this.style);
+      const style = this.graph.utils.clone(this.style);
       style.stroke = style.color;
-      var shape = this.graph.createShape('path', {
+      const shape = this.graph.createShape('path', {
         style: style
       });
       if (this.curve || this.style.curve) {
@@ -12764,7 +15218,8 @@ define(['exports'], (function (exports) { 'use strict';
       }
       if (endShapePoints.length) endShapePoints[0].m = true;
       this.points = startShapePoints.concat(endShapePoints);
-      const areaPoints = startShapePoints.concat(endShapePoints.reverse());
+      const reversedEndPoints = endShapePoints.slice().reverse();
+      const areaPoints = startShapePoints.concat(reversedEndPoints);
       const areaEnd = areaPoints[areaPoints.length - 1] = this.graph.utils.clone(areaPoints[areaPoints.length - 1]);
       areaEnd.m = false;
       this.createArea(areaPoints, false);
@@ -12774,25 +15229,25 @@ define(['exports'], (function (exports) { 'use strict';
      * 生成图例
      */
     createLegend() {
-      var style = this.graph.utils.clone(this.style);
+      const style = this.graph.utils.clone(this.style);
       style.stroke = style.color;
-      var shape = this.graph.createShape('path', {
+      const shape = this.graph.createShape('path', {
         style: style
       });
       if (this.curve || this.style.curve) {
-        var p1 = {
+        const p1 = {
           x: 0,
           y: this.graph.style.legend.item.shape.height
         };
-        var p2 = {
+        const p2 = {
           x: this.graph.style.legend.item.shape.width / 3,
           y: this.graph.style.legend.item.shape.height / 3
         };
-        var p3 = {
+        const p3 = {
           x: this.graph.style.legend.item.shape.width / 3 * 2,
           y: this.graph.style.legend.item.shape.height / 3 * 2
         };
-        var p4 = {
+        const p4 = {
           x: this.graph.style.legend.item.shape.width,
           y: 0
         };
@@ -12856,7 +15311,7 @@ define(['exports'], (function (exports) { 'use strict';
 
   class jmCandlestickSeries extends jmSeries {
     constructor(options) {
-      options.style = options.style || options.graph.style.line;
+      options.style = options.style || options.graph.style.candlestick || options.graph.style.line;
       super(options);
     }
 
@@ -13028,11 +15483,10 @@ define(['exports'], (function (exports) { 'use strict';
      * @for jmScatterSeries
      */
     createLegend() {
-      // 生成图例前的图标
-      var style = this.graph.utils.clone(this.style);
+      const style = this.graph.utils.clone(this.style);
       style.stroke = style.color;
       style.fill = style.color;
-      var shape = this.graph.createShape('circle', {
+      const shape = this.graph.createShape('circle', {
         style: style,
         center: {
           x: this.graph.style.legend.item.shape.width / 2,
@@ -13138,12 +15592,11 @@ define(['exports'], (function (exports) { 'use strict';
      * @for jmBubbleSeries
      */
     createLegend() {
-      // 生成图例前的图标
-      var style = this.graph.utils.clone(this.style);
+      const style = this.graph.utils.clone(this.style);
       style.stroke = style.color;
       style.fill = style.color;
       style.opacity = style.opacity || 0.6;
-      var shape = this.graph.createShape('circle', {
+      const shape = this.graph.createShape('circle', {
         style: style,
         center: {
           x: this.graph.style.legend.item.shape.width / 2,
@@ -13293,11 +15746,10 @@ define(['exports'], (function (exports) { 'use strict';
      * @for jmHeatmapSeries
      */
     createLegend() {
-      // 生成图例前的图标
-      var style = this.graph.utils.clone(this.style);
+      const style = this.graph.utils.clone(this.style);
       style.stroke = style.color;
       style.fill = style.color;
-      var shape = this.graph.createShape('rect', {
+      const shape = this.graph.createShape('rect', {
         style: style,
         position: {
           x: 0,
@@ -13554,10 +16006,10 @@ define(['exports'], (function (exports) { 'use strict';
      * 生成图例
      */
     createLegend() {
-      var style = this.graph.utils.clone(this.style);
+      const style = this.graph.utils.clone(this.style);
       style.stroke = style.color;
       style.fill = style.color;
-      var shape = this.graph.createShape('arc', {
+      const shape = this.graph.createShape('arc', {
         style: style,
         center: {
           x: this.graph.style.legend.item.shape.width / 2,
@@ -13591,26 +16043,26 @@ define(['exports'], (function (exports) { 'use strict';
      * 生成图例
      */
     createLegend() {
-      var style = this.graph.utils.clone(this.style);
+      const style = this.graph.utils.clone(this.style);
       style.stroke = style.color;
       style.fill = style.color;
-      var shape = this.graph.createShape('path', {
+      const shape = this.graph.createShape('path', {
         style: style
       });
       if (this.curve || this.style.curve) {
-        var p1 = {
+        const p1 = {
           x: 0,
           y: this.graph.style.legend.item.shape.height
         };
-        var p2 = {
+        const p2 = {
           x: this.graph.style.legend.item.shape.width / 3,
           y: this.graph.style.legend.item.shape.height / 3
         };
-        var p3 = {
+        const p3 = {
           x: this.graph.style.legend.item.shape.width / 3 * 2,
           y: this.graph.style.legend.item.shape.height / 3 * 2
         };
-        var p4 = {
+        const p4 = {
           x: this.graph.style.legend.item.shape.width,
           y: 0
         };
@@ -13828,7 +16280,7 @@ define(['exports'], (function (exports) { 'use strict';
       const field = this.field || 'value';
       const xField = this.option.xField || 'name';
       const values = data.map(item => Math.abs(item[field] || 0));
-      const maxValue = Math.max(...values);
+      const maxValue = values.reduce((a, b) => Math.max(a, b));
       if (maxValue === 0) return;
       const align = this.style.align || 'center';
       const gap = this.style.gap || 2;
@@ -14199,8 +16651,8 @@ define(['exports'], (function (exports) { 'use strict';
         }
       }
       if (allValues.length === 0) return;
-      const minValue = Math.min(...allValues);
-      const maxValue = Math.max(...allValues);
+      const minValue = allValues.reduce((a, b) => Math.min(a, b));
+      const maxValue = allValues.reduce((a, b) => Math.max(a, b));
       const valueRange = maxValue - minValue || 1;
       const boxWidth = this.style.boxWidth || chartWidth / data.length * 0.5;
       const whiskerWidth = this.style.whiskerWidth || 1;
@@ -14454,8 +16906,8 @@ define(['exports'], (function (exports) { 'use strict';
       const field = this.field || 'weight';
       const xField = this.option.xField || 'word';
       const weights = data.map(item => Math.abs(item[field] || 0));
-      const maxWeight = Math.max(...weights);
-      const minWeight = Math.min(...weights);
+      const maxWeight = weights.reduce((a, b) => Math.max(a, b));
+      const minWeight = weights.reduce((a, b) => Math.min(a, b));
       if (maxWeight === 0) return;
       const minFontSize = this.style.minFontSize || 12;
       const maxFontSize = this.style.maxFontSize || 60;
@@ -14623,7 +17075,7 @@ define(['exports'], (function (exports) { 'use strict';
   /**
    * 轴
    *
-   * @class jmAxis
+   * @class jmMarkLine
    * @module jmChart
    * @param {jmChart} chart 当前图表
    * @param {string} [type] 轴类型(x/y/radar),默认为x
@@ -14682,7 +17134,8 @@ define(['exports'], (function (exports) { 'use strict';
             // 锁定在有数据点的X轴上
             // 如果在操作图层上， 点的X轴需要加上图表图层区域偏移量
             this.start.x = this.end.x = isTocuhGraph ? point.x + graph.chartArea.position.x : point.x;
-            for (const p of point.points) {
+            const points = point.points || (point.y !== undefined ? [point] : []);
+            for (const p of points) {
               if (!p || typeof p.y === 'undefined') continue;
               this.markArc = graph.createShape('circle', {
                 style: this.style,
@@ -14802,6 +17255,8 @@ define(['exports'], (function (exports) { 'use strict';
 
     // 初始化
     init(chart) {
+      // 没有坐标系的图表不需要标线
+      if (!chart.xAxis || !chart.yAxises) return;
       const graph = chart.touchGraph || chart;
       graph.on('beginDraw', () => {
         // 重置标线，会处理小圆圈问题
@@ -14969,7 +17424,7 @@ define(['exports'], (function (exports) { 'use strict';
       const enableAnimate = !!options.enableAnimate;
       options.autoRefresh = typeof options.autoRefresh === 'undefined' ? enableAnimate : options.autoRefresh;
       if (enableAnimate && !options.autoRefresh) {
-        console.warn('开启了动画，却没有开户自动刷新');
+        console.warn('开启了动画，却没有开启自动刷新');
       }
       options.style = jmUtils.clone(defaultStyle, options.style, true);
       super(container, options);
@@ -15306,7 +17761,7 @@ define(['exports'], (function (exports) { 'use strict';
       if (typeof this.option.maxYValue !== 'undefined') {
         options.maxYValue = typeof options.maxYValue === 'undefined' ? this.option.maxYValue : Math.max(this.option.maxYValue, options.maxYValue);
       }
-      var yaxis = this.yAxises[options.index] || (this.yAxises[options.index] = this.createAxis(options));
+      const yaxis = this.yAxises[options.index] || (this.yAxises[options.index] = this.createAxis(options));
       return yaxis;
     }
 

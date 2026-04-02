@@ -107,13 +107,12 @@ export default class jmBubbleSeries extends jmSeries {
 	 * @for jmBubbleSeries
 	 */
 	createLegend() {
-		// 生成图例前的图标
-		var style = this.graph.utils.clone(this.style);
+		const style = this.graph.utils.clone(this.style);
 		style.stroke = style.color;
 		style.fill = style.color;
 		style.opacity = style.opacity || 0.6;
-		
-		var shape = this.graph.createShape('circle', {
+
+		const shape = this.graph.createShape('circle', {
 			style: style,
 			center: {
 				x: this.graph.style.legend.item.shape.width / 2,
@@ -124,8 +123,4 @@ export default class jmBubbleSeries extends jmSeries {
 		
 		this.graph.legend.append(this, shape);
 	}
-}
-
-export {
-	jmBubbleSeries
 }

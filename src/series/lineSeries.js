@@ -161,9 +161,9 @@ export default class jmLineSeries extends jmSeries {
 	createLegend() {
 		
 		//生成图例前的图标
-		var style = this.graph.utils.clone(this.style);
+		const style = this.graph.utils.clone(this.style);
 		style.stroke = style.color;
-		var shape = this.graph.createShape('path',{style:style});
+		const shape = this.graph.createShape('path',{style:style});
 		
 		if(this.curve || this.style.curve) {
 			var p1 = {x:0,y: this.graph.style.legend.item.shape.height};
@@ -331,8 +331,4 @@ export default class jmLineSeries extends jmSeries {
 			this._createAreaSegment(seg.points, seg.above, axisY);
 		}
 	}
-}
-
-export {
-	jmLineSeries
 }

@@ -50,7 +50,7 @@ export default class jmFunnelSeries extends jmSeries {
 		const xField = this.option.xField || 'name';
 
 		const values = data.map(item => Math.abs(item[field] || 0));
-		const maxValue = Math.max(...values);
+		const maxValue = values.reduce((a, b) => Math.max(a, b));
 
 		if(maxValue === 0) return;
 
@@ -186,5 +186,3 @@ export default class jmFunnelSeries extends jmSeries {
 		this.graph.legend.append(this, shape);
 	}
 }
-
-export { jmFunnelSeries };

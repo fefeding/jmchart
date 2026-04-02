@@ -199,7 +199,7 @@ export default class jmAxis extends jmArrowLine {
 				const index = this.index || 1;	
 				// 如果是雷达图，则画发散的线
 				if(this.radarOption) {
-					this.end.x = this.radarOption.center.x + this.radarOption.cos * this.radarOption.radius + bounds.left;;
+					this.end.x = this.radarOption.center.x + this.radarOption.cos * this.radarOption.radius + bounds.left;
 					this.end.y = this.radarOption.center.y - this.radarOption.sin * this.radarOption.radius + bounds.top; 
 					this.start.x = this.radarOption.center.x + bounds.left;
 					this.start.y = this.radarOption.center.y + bounds.top;
@@ -602,7 +602,7 @@ export default class jmAxis extends jmArrowLine {
 	/**
 	* 获取或设置当前轴最小值
 	*
-	* @method max
+	* @method min
 	* @param {number/date/string} 当前轴的最小值
 	* @return 当前轴的最小值
 	*/

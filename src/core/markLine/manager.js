@@ -20,6 +20,8 @@ export default class jmMarkLineManager {
     
     // 初始化
     init(chart) {
+        // 没有坐标系的图表不需要标线
+        if(!chart.xAxis || !chart.yAxises) return;
         const graph = chart.touchGraph || chart;
 
         graph.on('beginDraw', () => {

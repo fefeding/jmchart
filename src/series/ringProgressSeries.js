@@ -189,5 +189,3 @@ export default class jmRingProgressSeries extends jmSeries {
 		this.graph.legend.append(this, shape);
 	}
 }
-
-export { jmRingProgressSeries };

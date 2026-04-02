@@ -116,7 +116,6 @@ export default class jmRadarSeries extends jmSeries {
         let aniIsEnd = true;// 当次是否结束动画
         const len = points.length;
         const shapeMap = {};
-        const self = this;
 
         for(let i=0; i<len; i++) {
             const p = points[i];
@@ -130,19 +129,22 @@ export default class jmRadarSeries extends jmSeries {
                 this.addShape(shape);
     
                 // 如果有点击事件
+                if(this.option.onClick || this.option.onOver || this.option.onLeave) {
+                    shape.interactive = true;
+                }
                 if(this.option.onClick) {
-                    shape.on('click', function(e) {
-                        return self.option.onClick.call(this, e);
+                    shape.on('click', (e) => {
+                        return this.option.onClick.call(this, e);
                     });
                 }
                 if(this.option.onOver) {
-                    shape.on('mouseover touchover', function(e) {
-                        return self.option.onOver.call(this, e);
+                    shape.on('mouseover touchover', (e) => {
+                        return this.option.onOver.call(this, e);
                     });
                 }
                 if(this.option.onLeave) {
-                    shape.on('mouseleave touchleave', function(e) {
-                        return self.option.onLeave.call(this, e);
+                    shape.on('mouseleave touchleave', (e) => {
+                        return this.option.onLeave.call(this, e);
                     });
                 }
                 this.createLegend(p);
@@ -194,7 +196,7 @@ export default class jmRadarSeries extends jmSeries {
         center = center || this.center;
         const points = [];
 
-		for(var i=0;i< this.data.length;i++) {
+		for(let i=0;i< this.data.length;i++) {
 			const s = this.data[i];
             let strokeColor;
 			if(this.style.color && typeof this.style.color === 'function') {
@@ -268,53 +270,30 @@ export default class jmRadarSeries extends jmSeries {
 			this.addShape(text);
 			return text;
 		}
-		const self = this;
-		const label = this.graph.createShape('label', {
-			style: this.style.label,
-			text: text,            
-            point,
-			position: function() {
-                const p = {
-                    x: this.option.point.x,
-                    y: this.option.point.y
-                }
-                if(p.x < self.center.x) {
-                    p.x -= this.width;
-                }
-                
-                if(p.y < self.center.y) {
-                    p.y -= this.height;
-                }
-				return p;
-			}
-		});
 
+		const label = this.graph.createShape('label', {
+			style: this.style.label || {},
+			text: text
+		});
+		label.position = { x: point.x, y: point.y };
 		this.addShape(label);
+		return label;
+	}
+
+	/**
+	 * 生成图例
+	 */
+	createLegend(point) {
+		if(!point) return;
+	
+		const style = this.graph.utils.clone(point.style);
+		const shape = this.graph.createShape('rect',{
+			style: style,
+			position : {x: 0, y: 0}
+		});
+		this.graph.legend.append(this, shape, {
+			name: this.legendLabel,
+			data: point.data
+		});
 	}
 }
-
-
-
-/**
- * 生成图例
- *
- * @method createLegend	 
- */
- jmRadarSeries.prototype.createLegend = function(point) {
-	if(!point) return;
-	
-    //生成图例前的图标
-    const style = this.graph.utils.clone(point.style);
-    
-    //delete style.stroke;
-    const shape = this.graph.createShape('rect',{
-        style: style,
-        position : {x: 0, y: 0}
-    });
-    //此处重写图例事件
-    this.graph.legend.append(this, shape, {
-        name: this.legendLabel, 
-        data: point.data
-    });
-}
-

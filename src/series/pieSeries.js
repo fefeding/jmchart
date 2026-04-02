@@ -122,7 +122,7 @@ export default class jmPieSeries extends jmSeries {
 		// 每项之间的间隔角度  顺时钟为正，否则为负
 		const marginAngle = (Number(this.style.marginAngle) || 0);
 
-		for(var i=0;i< this.data.length;i++) {
+		for(let i=0;i< this.data.length;i++) {
 			const s = this.data[i];
 			
 			const yv = s[this.field];
@@ -186,6 +186,7 @@ export default class jmPieSeries extends jmSeries {
 						startAngle: p.startAngle,
 						endAngle: p.endAngle,
 						anticlockwise: anticlockwise,
+						interactive: true,
 						isFan: true, // 表示画扇形
 						center: p.center,
 						radius: p.radius,
@@ -219,6 +220,9 @@ export default class jmPieSeries extends jmSeries {
 					this.addShape(p.shape);
 
 					// 如果有点击事件
+					if(this.option.onClick || this.option.onOver || this.option.onLeave) {
+						p.shape.interactive = true;
+					}
 					if(this.option.onClick) {
 						p.shape.on('click', (e) => {
 							return this.option.onClick.call(this, p, e);
@@ -302,38 +306,39 @@ export default class jmPieSeries extends jmSeries {
 
 		point.shape.children.add(label);
 	}
-}
 
+	/**
+	 * 生成图例
+	 *
+	 * @method createLegend	 
+	 */
+	createLegend() {
+		if(!this.data || !this.data.length) return;
 
+		const len = this.data.length;
+		for(let k = 0; k < len; k++) {
+			const s = this.data[k];
+			if(!s) continue;
+			const yv = s[this.field];
+			if(yv == null || typeof yv === 'undefined') continue;
 
-/**
- * 生成图例
- *
- * @method createLegend	 
- */
-jmPieSeries.prototype.createLegend = function() {
-	
-	const points = this.createPoints();
-	if(!points || !points.length) return;
-	
-	for(let k=0; k < points.length; k++) {
-		const p = points[k];
-		if(!p) continue;
+			const style = this.graph.utils.clone(this.style);
+			if(style.color && typeof style.color === 'function') {
+				style.fill = style.color.call(this, { data: s, index: k });
+			}
+			else {
+				style.fill = this.graph.getColor(k);
+			}
 
-		//生成图例前的图标
-		const style = this.graph.utils.clone(p.style);
-		style.fill = style.fill;	
-		//delete style.stroke;
-		const shape = this.graph.createShape('rect',{
-			style: style,
-			position : {x: 0, y: 0}
-		});
-		//shape.targetShape = p.shape;
-		//此处重写图例事件
-		this.graph.legend.append(this, shape, {
-			name: this.legendLabel, 
-			data: this.data[k]
-		});
-	}	
+			const shape = this.graph.createShape('rect',{
+				style: style,
+				position : {x: 0, y: 0}
+			});
+			this.graph.legend.append(this, shape, {
+				name: this.legendLabel,
+				data: s
+			});
+		}
+	}
 }
 

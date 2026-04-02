@@ -55,8 +55,8 @@ export default class jmWordCloudSeries extends jmSeries {
 		const xField = this.option.xField || 'word';
 
 		const weights = data.map(item => Math.abs(item[field] || 0));
-		const maxWeight = Math.max(...weights);
-		const minWeight = Math.min(...weights);
+		const maxWeight = weights.reduce((a, b) => Math.max(a, b));
+		const minWeight = weights.reduce((a, b) => Math.min(a, b));
 
 		if(maxWeight === 0) return;
 
@@ -230,5 +230,3 @@ export default class jmWordCloudSeries extends jmSeries {
 		this.graph.legend.append(this, shape);
 	}
 }
-
-export { jmWordCloudSeries };

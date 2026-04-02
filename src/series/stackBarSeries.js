@@ -1,3 +1,4 @@
+import jmSeries, { ANIMATION_DATA_THRESHOLD, DEFAULT_ANIMATION_COUNT } from './series.js';
 import jmBarSeries from './barSeries.js';
 
 /**
@@ -50,9 +51,9 @@ export default class jmStackBarSeries extends jmBarSeries {
 
 		this.initWidth(len);
 		
-		const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0 ) && len < 100;		
+		const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0 ) && len < ANIMATION_DATA_THRESHOLD;		
 		let aniIsEnd = true;
-		const aniCount = (this.style.aniCount || 10);
+		const aniCount = (this.style.aniCount || DEFAULT_ANIMATION_COUNT);
 
 		for(let i=0; i<len; i++) {
 			const point = points[i];			

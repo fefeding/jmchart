@@ -160,12 +160,11 @@ export default class jmHeatmapSeries extends jmSeries {
 	 * @for jmHeatmapSeries
 	 */
 	createLegend() {
-		// 生成图例前的图标
-		var style = this.graph.utils.clone(this.style);
+		const style = this.graph.utils.clone(this.style);
 		style.stroke = style.color;
 		style.fill = style.color;
-		
-		var shape = this.graph.createShape('rect', {
+
+		const shape = this.graph.createShape('rect', {
 			style: style,
 			position: {
 				x: 0,
@@ -177,8 +176,4 @@ export default class jmHeatmapSeries extends jmSeries {
 		
 		this.graph.legend.append(this, shape);
 	}
-}
-
-export {
-	jmHeatmapSeries
 }

@@ -15,7 +15,3 @@ export default class jmStackLineSeries extends jmRangeSeries {
 		super(options);
 	}
 }
-
-export {
-	jmStackLineSeries
-}

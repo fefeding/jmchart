@@ -20,16 +20,16 @@ export default class jmAreaSeries extends jmLineSeries {
 	 * 生成图例
 	 */
 	createLegend() {
-		var style = this.graph.utils.clone(this.style);
+		const style = this.graph.utils.clone(this.style);
 		style.stroke = style.color;
 		style.fill = style.color;
-		var shape = this.graph.createShape('path',{style:style});
+		const shape = this.graph.createShape('path',{style:style});
 
 		if(this.curve || this.style.curve) {
-			var p1 = {x:0,y: this.graph.style.legend.item.shape.height};
-			var p2 = {x:this.graph.style.legend.item.shape.width / 3,y:this.graph.style.legend.item.shape.height/3};
-			var p3 = {x:this.graph.style.legend.item.shape.width / 3 * 2,y:this.graph.style.legend.item.shape.height/3*2};
-			var p4 = {x:this.graph.style.legend.item.shape.width,y:0};
+			const p1 = {x:0,y: this.graph.style.legend.item.shape.height};
+			const p2 = {x:this.graph.style.legend.item.shape.width / 3,y:this.graph.style.legend.item.shape.height/3};
+			const p3 = {x:this.graph.style.legend.item.shape.width / 3 * 2,y:this.graph.style.legend.item.shape.height/3*2};
+			const p4 = {x:this.graph.style.legend.item.shape.width,y:0};
 
 			this.__bezier = this.__bezier || this.graph.createShape('bezier');
 			this.__bezier.cpoints = [

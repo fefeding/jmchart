@@ -3,7 +3,7 @@ import { jmList, jmLine } from 'jmgraph';
 /**
  * 轴
  *
- * @class jmAxis
+ * @class jmMarkLine
  * @module jmChart
  * @param {jmChart} chart 当前图表
  * @param {string} [type] 轴类型(x/y/radar),默认为x
@@ -69,7 +69,8 @@ export default class jmMarkLine extends jmLine {
                     // 如果在操作图层上， 点的X轴需要加上图表图层区域偏移量
                     this.start.x = this.end.x = isTocuhGraph? (point.x + graph.chartArea.position.x): point.x;
 
-                    for(const p of point.points) {
+                    const points = point.points || (point.y !== undefined ? [point] : []);
+                    for(const p of points) {
                         if(!p || typeof p.y === 'undefined') continue;
                         this.markArc = graph.createShape('circle', {
                             style: this.style,

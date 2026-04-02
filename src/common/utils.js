@@ -17,6 +17,6 @@ export default {
             }
             return false;
         }
-        return source != target;
+        return source !== target;
     }
 }

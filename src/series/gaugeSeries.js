@@ -238,11 +238,11 @@ export default class jmGaugeSeries extends jmSeries {
 	 * 生成图例
 	 */
 	createLegend() {
-		var style = this.graph.utils.clone(this.style);
+		const style = this.graph.utils.clone(this.style);
 		style.stroke = style.color;
 		style.fill = style.color;
-		
-		var shape = this.graph.createShape('arc', {
+
+		const shape = this.graph.createShape('arc', {
 			style: style,
 			center: {
 				x: this.graph.style.legend.item.shape.width / 2,
@@ -255,8 +255,4 @@ export default class jmGaugeSeries extends jmSeries {
 		
 		this.graph.legend.append(this, shape);
 	}
-}
-
-export {
-	jmGaugeSeries
 }
