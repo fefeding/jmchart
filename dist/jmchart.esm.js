@@ -14851,6 +14851,7 @@ class jmLineSeries extends jmSeries {
     const len = points.length;
     if (!len) return;
     this.style.stroke = this.style.color;
+    this.style.fill = null;
     this.style.item.stroke = this.style.color;
     const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0) && len < ANIMATION_DATA_THRESHOLD;
     let shapePoints = [];
