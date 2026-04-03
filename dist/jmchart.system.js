@@ -14856,6 +14856,7 @@ System.register([], (function (exports) {
           const len = points.length;
           if (!len) return;
           this.style.stroke = this.style.color;
+          this.style.fill = null;
           this.style.item.stroke = this.style.color;
           const isRunningAni = this.enableAnimate && (dataChanged || this.___animateCounter > 0) && len < ANIMATION_DATA_THRESHOLD;
           let shapePoints = [];
@@ -14997,8 +14998,8 @@ System.register([], (function (exports) {
           // 有指定绘制区域效果才展示
           if (!this.style.area || points.length < 2) return;
 
-          // 基线：取X轴的实际Y位置（chartArea相对坐标），没有X轴时用下边界
-          const axisY = this.graph.xAxis ? this.graph.xAxis.start.y - this.graph.chartArea.position.y : this.graph.chartArea.height;
+          // 基线：使用数据基准线（baseY），在 createPoints 中已根据 minY/baseYValue 正确计算
+          const axisY = this.baseY;
 
           // 过滤有效点
           const validPoints = points.filter(p => p.y != null && typeof p.y !== 'undefined');
@@ -15033,6 +15034,8 @@ System.register([], (function (exports) {
           const style = this.graph.utils.clone(this.style.area, {}, true);
           // 连框颜色如果没指定，就透明
           style.stroke = style.stroke || 'transparent';
+          // 闭合路径，确保 fill/stroke 正确封闭多边形
+          style.close = true;
           if (!style.fill) {
             const color = this.graph.utils.hexToRGBA(this.style.stroke);
             if (isAbove) {
