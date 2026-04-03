@@ -53,6 +53,9 @@ function startServer() {
   if (!serverInstance) {
     const app = express();
     app.use(express.static("."));
+    app.get("*", (req, res) => {
+      res.sendFile("example/index.html", { root: __dirname });
+    });
     serverInstance = app.listen(port, ip, () => {
       console.log(`\n🔥 开发服务器启动成功！`);
       console.log(`🌐 访问地址: http://${ip}:${port}`);
