@@ -703,6 +703,85 @@ chart.on('marklinemove', (args) => {
 8. **数组副作用防护**：`Array.reverse()` 使用 `slice()` 先拷贝再反转，避免修改原数组
 9. **浅拷贝优化**：对于不需要深拷贝的场景使用 `Object.assign` 替代深拷贝
 
+## 最佳实践
+
+### 1. 大数据量优化
+当数据量较大时（>100条），建议：
+- 禁用动画：`enableAnimate: false`
+- 减少数据点显示：`showItem: false`
+- 使用 `touchGraph: true` 提升交互性能
+
+### 2. 响应式设计
+```javascript
+const chart = new jmChart(container, {
+    width: container.clientWidth,
+    height: container.clientHeight
+});
+
+// 监听窗口大小变化
+window.addEventListener('resize', () => {
+    chart.width = container.clientWidth;
+    chart.height = container.clientHeight;
+    chart.refresh();
+});
+```
+
+### 3. 动态数据更新
+```javascript
+// 更新数据后自动刷新
+chart.data = newData;
+chart.refresh();
+
+// 或者使用自动刷新模式
+const chart = new jmChart(container, {
+    autoRefresh: true
+});
+```
+
+### 4. 自定义颜色
+```javascript
+// 使用自定义颜色数组
+const chart = new jmChart(container, {
+    style: {
+        chartColors: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7']
+    }
+});
+
+// 或者使用颜色函数
+chart.createSeries('line', {
+    field: 'value',
+    style: {
+        color: function(point) {
+            return point.yValue > 100 ? '#FF0000' : '#00FF00';
+        }
+    }
+});
+```
+
+## 故障排除
+
+### 常见问题
+
+1. **图表不显示**
+   - 检查容器元素是否存在且有宽高
+   - 确认数据格式正确
+   - 检查浏览器控制台是否有错误
+
+2. **动画卡顿**
+   - 减少数据量或禁用动画
+   - 使用 `touchGraph: true` 优化交互性能
+   - 检查是否有内存泄漏
+
+3. **触摸事件不响应**
+   - 确认容器元素有正确的 CSS 定位
+   - 检查是否有其他元素遮挡
+   - 尝试启用 `touchGraph: true`
+
+4. **图表尺寸异常**
+   - 确保容器有明确的宽度和高度
+   - 检查 CSS 是否影响容器尺寸
+   - 使用 `chart.width` 和 `chart.height` 手动设置
+
 ## 开发
 
 ### 构建项目
